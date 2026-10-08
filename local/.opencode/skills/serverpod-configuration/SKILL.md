@@ -15,9 +15,9 @@ Config files by mode: `config/development.yaml`, `config/staging.yaml`, `config/
 
 ```yaml
 apiServer:
-  port: 8080
+  port: 8180
   publicHost: localhost
-  publicPort: 8080
+  publicPort: 8180
   publicScheme: http
 ```
 
@@ -32,7 +32,7 @@ It is possible to use either PostgreSQL or SQLite as the database.
 ```yaml
 database:
   host: localhost
-  port: 8090
+  port: 8190
   name: my_project
   user: postgres
   dataPath: .serverpod/development/pgdata  # embedded database, see below

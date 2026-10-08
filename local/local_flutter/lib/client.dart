@@ -12,7 +12,7 @@ import 'package:serverpod_flutter/serverpod_flutter.dart';
 // E.g. `flutter run --dart-define=SERVER_URL=https://api.example.com/`.
 //
 // Otherwise, the server URL is fetched from the assets/config.json file or
-// defaults to http://$localhost:8080/ if not found.
+// defaults to http://$localhost:8180/ if not found.
 final serverUrl = getServerUrl();
 
 /// Sets up a global client object that can be used to talk to the server from

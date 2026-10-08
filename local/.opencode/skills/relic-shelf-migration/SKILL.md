@@ -35,7 +35,7 @@ import 'package:shelf/shelf_io.dart' as io;
 void main() async {
   final app = Router();
   // Add routes...
-  await io.serve(app, 'localhost', 8080);
+  await io.serve(app, 'localhost', 8180);
 }
 ```
 
@@ -52,7 +52,7 @@ Future<void> main() async {
       return Response.ok(body: Body.fromString('User $id: $name'));
     });
 
-  await app.serve(address: InternetAddress.loopbackIPv4, port: 8080);
+  await app.serve(address: InternetAddress.loopbackIPv4, port: 8180);
 }
 ```
 
@@ -247,7 +247,7 @@ void main() async {
       .addMiddleware(logRequests())
       .addHandler(router);
 
-  await shelf_io.serve(handler, 'localhost', 8080);
+  await shelf_io.serve(handler, 'localhost', 8180);
 }
 ```
 
@@ -265,7 +265,7 @@ Future<void> main() async {
       return Response.ok(body: Body.fromString('User $id: $name'));
     });
 
-  await app.serve(address: InternetAddress.loopbackIPv4, port: 8080);
+  await app.serve(address: InternetAddress.loopbackIPv4, port: 8180);
 }
 ```
 

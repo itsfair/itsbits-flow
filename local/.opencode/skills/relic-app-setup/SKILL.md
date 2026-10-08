@@ -42,7 +42,7 @@ Future<void> main() async {
 ## Serve options
 
 ```dart
-await app.serve(); // defaults to 0.0.0.0:8080
+await app.serve(); // defaults to 0.0.0.0:8180
 
 await app.serve(
   address: InternetAddress.loopbackIPv4,

@@ -5,7 +5,7 @@ description: Serverpod web server (Relic) — REST APIs, webhooks, middleware, s
 
 # Serverpod Web Server (Relic)
 
-Built on Relic, shares `Session` (DB, logging, auth) with the main server. This skill is for the optional `webServer` listener (default port 8082), not the main API server (default port 8080).
+Built on Relic, shares `Session` (DB, logging, auth) with the main server. This skill is for the optional `webServer` listener (default port 8182), not the main API server (default port 8180).
 
 ## Routes
 

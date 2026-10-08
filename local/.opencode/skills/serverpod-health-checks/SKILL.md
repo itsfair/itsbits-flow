@@ -5,7 +5,7 @@ description: Serverpod health endpoints — /livez, /readyz, /startupz, custom H
 
 # Serverpod Health Checks
 
-Kubernetes-style HTTP health endpoints on the main API server (default port 8080), not the optional web server (default port 8082). Unauthenticated: HTTP status only (200/503). Authenticated requests get detailed JSON (RFC Health Check Response Format) through the server's normal authentication handler.
+Kubernetes-style HTTP health endpoints on the main API server (default port 8180), not the optional web server (default port 8182). Unauthenticated: HTTP status only (200/503). Authenticated requests get detailed JSON (RFC Health Check Response Format) through the server's normal authentication handler.
 
 ## Endpoints
 

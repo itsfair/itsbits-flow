@@ -10,7 +10,7 @@ Reference for the [Serverpod Configuration](../SKILL.md) skill. Environment vari
 | | `SERVERPOD_LOGGING_MODE` | logging (normal\|verbose) |
 | | `SERVERPOD_APPLY_MIGRATIONS` | applyMigrations |
 | | `SERVERPOD_APPLY_REPAIR_MIGRATION` | applyRepairMigration |
-| API server | `SERVERPOD_API_SERVER_PORT` | apiServer.port / 8080 |
+| API server | `SERVERPOD_API_SERVER_PORT` | apiServer.port / 8180 |
 | | `SERVERPOD_API_SERVER_PUBLIC_HOST` | apiServer.publicHost |
 | | `SERVERPOD_API_SERVER_PUBLIC_PORT` | apiServer.publicPort |
 | | `SERVERPOD_API_SERVER_PUBLIC_SCHEME` | apiServer.publicScheme |

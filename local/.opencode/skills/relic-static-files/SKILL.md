@@ -20,7 +20,7 @@ app.anyOf(
     cacheControl: (req, fileInfo) => CacheControlHeader(maxAge: 86400),
   ).asHandler,
 );
-// public/style.css → http://localhost:8080/static/style.css
+// public/style.css → http://localhost:8180/static/style.css
 ```
 
 ## Serve a single file

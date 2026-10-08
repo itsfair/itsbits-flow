@@ -50,9 +50,9 @@ COPY --from=build /app/local_server/migrations/ migrations/
 COPY --from=build /app/local_server/lib/src/generated/protocol.yaml lib/src/generated/protocol.yaml
 
 # Expose ports
-EXPOSE 8080
-EXPOSE 8081
-EXPOSE 8082
+EXPOSE 8180
+EXPOSE 8181
+EXPOSE 8182
 
 # Define the entrypoint command
 ENTRYPOINT ./bin/server --mode=$runmode --server-id=$serverid --logging=$logging --role=$role

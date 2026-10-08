@@ -50,7 +50,7 @@ serverpod:
   #   device: chrome
   #   target: lib/main.dart
   #   web-hostname: 0.0.0.0
-  #   web-port: 8090
+  #   web-port: 8190
   #   release: true
   #   pub: false
   #   dart-define:
