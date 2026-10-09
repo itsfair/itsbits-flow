@@ -140,38 +140,67 @@ server's `docker-compose.yaml` (start with `serverpod start` or
 
 ## Open work items (cross-cutting roadmap)
 
-1. **Membership sync over the method stream**: propagate new/removed
-   global `SiteMembership` events into the local `member_profile`
-   copies (incl. image mirroring at the identical
-   `member_images/<globalAuthUserId>.jpg` paths); membership mirror
-   table (role/active) on the local side; staff switch → local login
-   analog admin setup; roles/status reported back via
+1. **Membership sync over the method stream**: core propagation is
+   IMPLEMENTED (global `site_sync_tasks` queue + real-time stream push;
+   local `SiteSyncProcessor` pulls at every connection event; new
+   member/profile updates/deactivation markers incl. image mirroring at
+   the identical `member_images/<globalAuthUserId>.jpg` paths; local
+   `member_membership` role/active mirror). Remaining: staff switch →
+   local login (employees flow); roles/status reported back via
    `site-device`-restricted endpoints.
 2. **Live status push** to the admin clients (message central) instead
    of 30 s polling in the global sites list.
-3. **Profile-editing sync**: profiles are edited globally only — define
-   and implement how changes propagate (both directions of
-   member_profile data + image objects).
-4. **Local protection layer**: protect all member/employee admin areas
-   behind the `local-admin` login.
+3. **Profile-editing sync**: IMPLEMENTED for the global→local direction
+   (profiles are edited globally only — all global edits enqueue into
+   `site_sync_tasks` and reach every subscribed site with the next
+   connection; real-time when online). The local-side settings (image
+   upload, site details) stay local for now.
+4. **Local protection layer**: STARTED — the local `membersAdmin`
+   endpoint is scope-enforced (`local-admin`); the shell hides
+   drawer/dropdown during setup states. Remaining: apply the same
+   enforcement to further member/employee admin endpoints as they are
+   added.
 5. **Employees flow**: member verifies on site with global credentials →
-   local login created (same model as admin setup).
+   local login created (same model as admin setup); membership role
+   must be adjusted when a member receives a local login.
 6. **Site editor/roadmap**: edit/delete site, memberships view per site;
    "same password globally + locally" — the local copy is created at the
-   *verified* global login (self-healing on password change).
-7. **Security hardening**: presigned/short-lived image URLs for the
-   enrollment transfer instead of raw capability URLs; enforce HTTPS for
-   all transfers in production; rotate S3 credentials before
-   production; encryption at rest for the local `site_connections` row.
+   *verified* global login (self-healing on password change). Site
+   deletion must also drop that site's `site_sync_tasks` rows.
+7. **Security hardening / GDPR**: ABOVE ALL — the subscription consent
+   text (`shared/lib/screens/membership_terms_dialog.dart`) is a plain
+   draft; needs a proper GDPR review (Arts. 13/14 information duties,
+   deletion concepts per Art. 17 — subscriptions currently keep data
+   after deactivation on PURPOSE, document this), re-check on every data
+   set change. Plus: presigned/short-lived image URLs for the enrollment
+   transfer instead of raw capability URLs; enforce HTTPS for all
+   transfers in production; rotate S3 credentials before production;
+   encryption at rest for the local `site_connections` row.
 8. **ESP32 ↔ backend protocol**: ESP as WS client (recommended for
    multiple ESPs) vs. WS server on ESP; authentication of the backend
    against the ESP (API token); secure transport (TLS / mutual auth).
-9. **Disable registration in the platform admin app** (end-user
-   registration must not be possible there).
+9. **Disable registration in the platform admin app**: DONE — the
+   admin apps use the shared login-only sign-in screen
+   (`shared/lib/screens/sign_in_screen.dart`, no sign-up affordances);
+   end-user registration stays in the end-user app's full
+   `SignInWidget`.
 10. **flutter_blue_plus license**: the BLE stack requires a `License` at
     `connect()` — `License.nonprofit` (free, personal/nonprofit/edu) is
     used today; production use by a for-profit needs the paid
     `License.commercial` — decide before launch.
+11. **Site-image upload**: not yet implemented; planned to happen at the
+    LOCAL instance and be pushed to the global backend (reverse of the
+    current sync direction). Placeholder rendering already exists in all
+    UIs (`sites.imageUrl`).
+12. **SiteSyncNotifier scaling**: the real-time push registry is
+    in-process (dev: single server instance); multi-instance production
+    needs a message bus (Redis pub/sub).
+13. **SiteSync task retry cap**: task rows survive failed applications
+    indefinitely (retried on every ping); add an attempt cap + alarm
+    (log/notify) before production.
+14. **Site block/delete**: currently only `revokeSiteConnection`
+    (forces re-setup). An explicit global admin "block" (queue-only, no
+    re-setup) and "delete" (mark + drop queue rows) feature is planned.
 
 Part-specific backlogs live in the workspace/instance AGENTS.md files
 (`global/AGENTS.md`, `local/AGENTS.md`, `doorinterface/AGENTS.md`).
