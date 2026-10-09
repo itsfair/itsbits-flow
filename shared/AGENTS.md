@@ -30,8 +30,15 @@ Client plain-fields (image URL, names, birthday) travel as
 | File | What |
 |---|---|
 | `lib/profile_state.dart` | `MemberProfileData`, `MemberProfileApi`, `ProfileState` (ChangeNotifier; load/update/reset, `isComplete`) |
-| `lib/screens/profile_screen.dart` | Profile editor: names, birthday, optional JPEG image, email + person id + QR code. Honors `kProfileEditingEnabled` (read-only fallback for mirrors) |
+| `lib/screens/profile_screen.dart` | Profile editor: names, birthday, optional JPEG image, email + person id + QR code. `editingEnabled` parameter (default `true`): mirrors (local app) run it read-only — profiles are edited globally only |
+| `lib/screens/sign_in_screen.dart` | Login-only email/password form (NO sign-up affordances by design) + `EmailSignInApi` (host adapter: `emailIdp.login` + **`client.auth.updateSignedInUser`** — the plain endpoint call does NOT store the session). Used by local site admin app + global platform admin app (no registration in admin apps) |
 | `lib/widgets/account_dropdown.dart` | AppBar account menu; host-injected login/logout/navigation; avatar from image URL or initials |
+| `lib/site_directory.dart` | `SiteData` (+ optional `statusLabel`), `MyMembershipData`, `SiteDirectoryApi` (injected backend contract: browse anonymously ok, subscribe/unsubscribe auth'd), `SiteMembershipState` |
+| `lib/widgets/site_card.dart` | `SiteImage` (placeholder fallback), `SiteCard` (image header + online/setup chip) |
+| `lib/widgets/site_carousel.dart` | Horizontal "newest sites" section for home screens |
+| `lib/screens/site_list_screen.dart` | Full list: debounced search, pagination, grid of `SiteCard`s; optional host FAB |
+| `lib/screens/site_detail_body.dart` | Shared site detail display body (image/chip/address/contact) |
+| `lib/screens/membership_terms_dialog.dart` | DSGVO consent dialog before subscribing (default German draft text; hosts may not override yet) |
 | `lib/shared_flags.dart` | `kProfileEditingEnabled` (package-level default; hosts overrule by not wiring editing) |
 
 ## Conventions

@@ -6,7 +6,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../profile_state.dart';
-import '../shared_flags.dart';
 
 /// Lets the user edit their own profile: first name, last name, birthday,
 /// an optional profile image, plus read-only email, user id and its QR
@@ -20,11 +19,19 @@ class ProfileScreen extends StatefulWidget {
   final MemberProfileApi api;
   final ProfileState profileState;
 
+  /// Whether editing controls (names/birthday/image/save) are shown.
+  /// Mirrors (profiles are edited globally only) pass `false`; the
+  /// package default ([kProfileEditingEnabled]) keeps existing apps.
+  final bool editingEnabled;
+
   const ProfileScreen({
     required this.api,
     required this.profileState,
+    this.editingEnabled = true,
     super.key,
   });
+
+  bool get _editing => editingEnabled;
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -34,6 +41,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   MemberProfileApi get api => widget.api;
 
   ProfileState get profileState => widget.profileState;
+
+  bool get editing => widget._editing;
 
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
@@ -198,7 +207,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _buildImageSection(),
           _buildDetailsSection(),
           _buildAccountSection(profile),
-          if (kProfileEditingEnabled) ...[
+          if (editing) ...[
             const SizedBox(height: 24),
             FilledButton.icon(
               onPressed: _saving ? null : _save,
@@ -242,7 +251,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        if (kProfileEditingEnabled) ...[
+        if (editing) ...[
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -274,7 +283,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               '${_birthday!.month.toStringAsFixed(0).padLeft(2, '0')}.'
               '${_birthday!.year}';
 
-    if (!kProfileEditingEnabled) {
+    if (!editing) {
       // Read-only display (mirrors; profiles are edited globally only).
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
