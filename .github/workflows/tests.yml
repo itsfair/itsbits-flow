@@ -1,0 +1,59 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        server: [global/global_server, local/local_server]
+    env:
+      # Serverpod CLI version must match the pubspec constraints.
+      VERSION: '4.0.3'
+      # Embedded PostgreSQL binaries (test config sets database.dataPath;
+      # no Docker needed for tests).
+      SERVERPOD_PASSWORD_database: '9OZVkTZnWZYfO2nAXdW1qhwmfkNWe_Bg'
+      # Site-device session hash pepper (global backend enrollments in tests;
+      # the local server does not need it — no device credential issuance).
+      SERVERPOD_PASSWORD_serverSideSessionKeyHashPepper: 'QNitAhR0q9hVZlwdMyqjLIQYe3x_V0JT'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+
+      # The test config sets `database.dataPath`, so the tests run against an
+      # embedded PostgreSQL that Serverpod starts itself. No Docker needed.
+      # The binaries are downloaded once and cached here between runs. The
+      # bundle changes with the Serverpod version, so the version is in the key.
+      - name: Cache embedded PostgreSQL binaries
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/serverpod/pg-binaries
+          key: serverpod-pg-binaries-${{runner.os}}-${{env.VERSION}}
+
+      - name: Install dependencies
+        run: dart pub get
+
+      - name: Install Serverpod CLI
+        run: |
+          dart install serverpod_cli@$VERSION
+          # `dart install` puts executables in the Dart data home, which is not
+          # on the PATH of a GitHub runner.
+          echo "${XDG_STATE_HOME:-$HOME/.local/state}/Dart/install/bin" >> "$GITHUB_PATH"
+
+      - name: Run Serverpod generator
+        working-directory: ${{ matrix.server }}
+        run: serverpod generate
+
+      - name: Run tests
+        working-directory: ${{ matrix.server }}
+        run: dart test

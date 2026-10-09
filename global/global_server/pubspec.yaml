@@ -12,6 +12,7 @@ dependencies:
   serverpod: 4.0.3
   serverpod_auth_idp_server: 4.0.3
   serverpod_cloud_storage: 4.0.3
+  serverpod_cloud_storage_rustfs: 1.1.0-rc.1
 
 dev_dependencies:
   lints: '>=3.0.0 <7.0.0'
@@ -60,10 +61,11 @@ serverpod:
     global:
       path: ../global_flutter
       displayName: "Global app"
-      auto_launch: true
+      auto_launch: false
       target: lib/driver.dart
     enduser:
       path: ../enduser_flutter
       displayName: "Enduser app"
-      auto_launch: true
+      auto_launch: false
       target: lib/driver.dart
+      device: AC2003

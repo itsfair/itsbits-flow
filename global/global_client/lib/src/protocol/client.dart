@@ -11,8 +11,20 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _ida;
-import 'package:global_client/src/protocol/greetings/greeting.dart'
-    as _i30jj49a;
+import 'dart:typed_data' as _idt;
+import 'package:global_client/src/protocol/admin/user_admin_page.dart'
+    as _il3c8m2k;
+import 'package:global_client/src/protocol/admin/user_admin_summary.dart'
+    as _iw2ravjy;
+import 'package:global_client/src/protocol/profile/member_profile.dart'
+    as _i01pu2ta;
+import 'package:global_client/src/protocol/sites/site.dart' as _i8hsp7h7;
+import 'package:global_client/src/protocol/sites/site_admin_membership_candidate.dart'
+    as _iyuybenn;
+import 'package:global_client/src/protocol/sites/site_enrollment_info.dart'
+    as _i5qr0sul;
+import 'package:global_client/src/protocol/sites/site_event.dart' as _i1j3efl1;
+import 'package:global_client/src/protocol/sites/site_ping.dart' as _izjurmoq;
 import 'package:http/http.dart' as _i85jenna;
 import 'package:serverpod_auth_core_client/serverpod_auth_core_client.dart'
     as _iacc;
@@ -20,6 +32,84 @@ import 'package:serverpod_auth_idp_client/serverpod_auth_idp_client.dart'
     as _iaic;
 import 'package:serverpod_client/serverpod_client.dart' as _isc;
 import 'protocol.dart' as _il2as5qe;
+
+/// Admin endpoint for viewing and managing users of the global instance.
+///
+/// Access is enforced declaratively via [requiredScopes]: only authenticated
+/// users carrying the `global-admin` scope pass endpoint dispatch
+/// (unauthenticated -> unauthenticated, no scope -> insufficient access).
+///
+/// The user list reads the own `member_profile` directory (the built-in
+/// Serverpod UserProfile feature is bypassed; its tables are never read).
+/// {@category Endpoint}
+class EndpointUsersAdmin extends _isc.EndpointRef {
+  EndpointUsersAdmin(_isc.EndpointCaller caller) : super(caller);
+
+  @override
+  String get name => 'usersAdmin';
+
+  /// Lists users, newest first, paginated.
+  ///
+  /// Pass [query] to filter by e-mail or name (case-insensitive substring
+  /// match). [total] lets the UI warn when more pages exist.
+  _ida.Future<_il3c8m2k.AdminUserPage> listUsers({
+    String? query,
+    required int offset,
+    required int limit,
+  }) => caller.callServerEndpoint<_il3c8m2k.AdminUserPage>(
+    'usersAdmin',
+    'listUsers',
+    {
+      'query': query,
+      'offset': offset,
+      'limit': limit,
+    },
+  );
+
+  /// Returns a single user (used by the detail route/deep links in the UI).
+  _ida.Future<_iw2ravjy.AdminUserSummary> getUser({
+    required _isc.UuidValue authUserId,
+  }) => caller.callServerEndpoint<_iw2ravjy.AdminUserSummary>(
+    'usersAdmin',
+    'getUser',
+    {'authUserId': authUserId},
+  );
+
+  /// Blocks or unblocks the given auth user. Blocked users cannot sign in
+  /// and their sessions are revoked.
+  _ida.Future<_iw2ravjy.AdminUserSummary> setBlocked({
+    required _isc.UuidValue authUserId,
+    required bool blocked,
+  }) => caller.callServerEndpoint<_iw2ravjy.AdminUserSummary>(
+    'usersAdmin',
+    'setBlocked',
+    {
+      'authUserId': authUserId,
+      'blocked': blocked,
+    },
+  );
+
+  /// Grants (`isGlobalAdmin == true`) or removes the `global-admin` scope.
+  ///
+  /// Because scopes are baked into the tokens, existing sessions are revoked
+  /// so the change takes effect immediately (instead of leaving the old
+  /// scope valid until token expiration).
+  ///
+  /// Revoking one's own admin scope is rejected: the admin would lock
+  /// themselves out of this management UI with no way back through this
+  /// endpoint. Use a second admin account or manual DB intervention instead.
+  _ida.Future<_iw2ravjy.AdminUserSummary> setGlobalAdmin({
+    required _isc.UuidValue authUserId,
+    required bool isGlobalAdmin,
+  }) => caller.callServerEndpoint<_iw2ravjy.AdminUserSummary>(
+    'usersAdmin',
+    'setGlobalAdmin',
+    {
+      'authUserId': authUserId,
+      'isGlobalAdmin': isGlobalAdmin,
+    },
+  );
+}
 
 /// By extending [EmailIdpBaseEndpoint], the email identity provider endpoints
 /// are made available on the server and enable the corresponding sign-in widget
@@ -246,21 +336,252 @@ class EndpointJwtRefresh extends _iacc.EndpointRefreshJwtTokens {
       );
 }
 
-/// This is an example endpoint that returns a greeting message through
-/// its [hello] method.
+/// Own person/profile endpoints of the global instance (replacing the
+/// built-in Serverpod UserProfile feature, which is bypassed on purpose).
+///
+/// Data lives in the `member_profile` table; profile images are stored in
+/// the RustFS bucket at `member_images/<authUserId>.jpg` (deterministic
+/// name, one object per person, overwrite on change).
+///
+/// Birthday convention: values travel as UTC-midnight date sentinels (the
+/// shared frontend sends `DateTime.utc(y, m, d)` explicitly); validation
+/// is done against UTC calendar days.
 /// {@category Endpoint}
-class EndpointGreeting extends _isc.EndpointRef {
-  EndpointGreeting(_isc.EndpointCaller caller) : super(caller);
+class EndpointMemberProfile extends _isc.EndpointRef {
+  EndpointMemberProfile(_isc.EndpointCaller caller) : super(caller);
 
   @override
-  String get name => 'greeting';
+  String get name => 'memberProfile';
 
-  /// Returns a personalized greeting message: "Hello {name}".
-  _ida.Future<_i30jj49a.Greeting> hello(String name) =>
-      caller.callServerEndpoint<_i30jj49a.Greeting>(
-        'greeting',
-        'hello',
-        {'name': name},
+  /// Returns the signed-in user's own profile.
+  ///
+  /// Self-heals the sparse row if the registration hook missed it (this
+  /// should not happen; the hook fires at registration).
+  _ida.Future<_i01pu2ta.MemberProfile> get() =>
+      caller.callServerEndpoint<_i01pu2ta.MemberProfile>(
+        'memberProfile',
+        'get',
+        {},
+      );
+
+  /// Validates and saves the profile data of the signed-in user.
+  ///
+  /// Unlike the old flow there is no name mirror into the Serverpod
+  /// UserProfile module — everything lives in `member_profile`.
+  _ida.Future<_i01pu2ta.MemberProfile> save({
+    required String firstName,
+    required String lastName,
+    required DateTime birthday,
+  }) => caller.callServerEndpoint<_i01pu2ta.MemberProfile>(
+    'memberProfile',
+    'save',
+    {
+      'firstName': firstName,
+      'lastName': lastName,
+      'birthday': birthday,
+    },
+  );
+
+  /// Stores the uploaded image at `member_images/<authUserId>.jpg`
+  /// (deterministic, overwrites the previous object since every person
+  /// owns exactly one image) and updates the profile's `imageUrl`.
+  ///
+  /// Uploads are expected to be JPEG (the shared frontend's image picker
+  /// produces JPEG bytes only); no magic-byte detection — format
+  /// extensions are a deliberate later extension (TODO).
+  _ida.Future<_i01pu2ta.MemberProfile> setUserImage({
+    required _idt.ByteData image,
+  }) => caller.callServerEndpoint<_i01pu2ta.MemberProfile>(
+    'memberProfile',
+    'setUserImage',
+    {'image': image},
+  );
+
+  /// Deletes the stored object and clears the profile's `imageUrl`.
+  _ida.Future<_i01pu2ta.MemberProfile> removeUserImage() =>
+      caller.callServerEndpoint<_i01pu2ta.MemberProfile>(
+        'memberProfile',
+        'removeUserImage',
+        {},
+      );
+}
+
+/// Device connection endpoint for the local instance.
+///
+/// The local instance opens a long-lived method stream on [connect] and
+/// keeps sending [SitePing]s. Each ping refreshes `site.lastSeenAt` (the
+/// per-site connection chip in the admin UI derives its state from that).
+/// The site is resolved from the enrolled `SiteDeviceSession` mapping via
+/// the SAS session id (`session.authenticated!.authId`).
+///
+/// Live status broadcast to admin clients (Serverpod message central) is a
+/// To-do; the admin list currently polls.
+/// {@category Endpoint}
+class EndpointSiteConnection extends _isc.EndpointRef {
+  EndpointSiteConnection(_isc.EndpointCaller caller) : super(caller);
+
+  @override
+  String get name => 'siteConnection';
+
+  /// The device connection stream. Pings keep the connection and the site
+  /// freshness alive; the stream stays open until the client closes it or
+  /// an error occurs (client handles reconnects; if the credential was
+  /// revoked, a reconnect fails with an auth error and the local instance
+  /// switches to `needsReSetup`).
+  _ida.Stream<_i1j3efl1.SiteEvent> connect(
+    _ida.Stream<_izjurmoq.SitePing> pings,
+  ) =>
+      caller.callStreamingServerEndpoint<
+        _ida.Stream<_i1j3efl1.SiteEvent>,
+        _i1j3efl1.SiteEvent
+      >(
+        'siteConnection',
+        'connect',
+        {},
+        {'pings': pings},
+      );
+}
+
+/// Public endpoint for the local instance enrollment.
+///
+/// The local instance verifies here with the **global credentials of the
+/// site admin** (chosen at site creation). Neither one-time passwords nor
+/// transferred passwords are involved:
+///
+/// - Fresh setup: the site flips to `registered`, the local instance
+///   receives site/admin data plus the device session key (SAS session,
+///   `method: 'device'`, token-level scope `site-device`, non-rotating,
+///   write-once on the local side).
+/// - Recovery: same verification path; the previously issued device
+///   session is revoked and replaced. The transfer data is omitted — the
+///   local instance keeps its already stored admin/member data.
+///
+/// Rate limiting and blocked-user handling come for free with the email
+/// IdP verification (no info leak on wrong credentials).
+/// {@category Endpoint}
+class EndpointSiteEnrollment extends _isc.EndpointRef {
+  EndpointSiteEnrollment(_isc.EndpointCaller caller) : super(caller);
+
+  @override
+  String get name => 'siteEnrollment';
+
+  /// Lists the active `siteAdmin` memberships of a verified user — used by
+  /// the local setup mask when the admin runs more than one site.
+  _ida.Future<List<_iyuybenn.SiteAdminMembershipCandidate>>
+  listSiteAdminCandidates({
+    required String email,
+    required String password,
+  }) => caller.callServerEndpoint<List<_iyuybenn.SiteAdminMembershipCandidate>>(
+    'siteEnrollment',
+    'listSiteAdminCandidates',
+    {
+      'email': email,
+      'password': password,
+    },
+  );
+
+  /// Enrolls the local instance for the site of the verified site admin.
+  ///
+  /// Without [siteId] this resolves the site automatically when the admin
+  /// has exactly one active `siteAdmin` membership. If they own several,
+  /// the response comes back with `requiresSiteSelection = true` and the
+  /// candidates to pick from.
+  _ida.Future<_i5qr0sul.SiteEnrollmentInfo> enroll({
+    required String email,
+    required String password,
+    int? siteId,
+  }) => caller.callServerEndpoint<_i5qr0sul.SiteEnrollmentInfo>(
+    'siteEnrollment',
+    'enroll',
+    {
+      'email': email,
+      'password': password,
+      'siteId': siteId,
+    },
+  );
+}
+
+/// Admin endpoint for creating and viewing sites ("Betriebe").
+///
+/// Access is enforced declaratively via [requiredScopes] (`global-admin`).
+///
+/// Enrollment with the global credentials happens in
+/// [SiteEnrollmentEndpoint]; the persistent device connection uses
+/// [SiteConnectionEndpoint].
+/// {@category Endpoint}
+class EndpointSitesAdmin extends _isc.EndpointRef {
+  EndpointSitesAdmin(_isc.EndpointCaller caller) : super(caller);
+
+  @override
+  String get name => 'sitesAdmin';
+
+  /// Creates a site and seeds the `siteAdmin` membership for the chosen
+  /// first admin. Enrollment (linking the local instance) happens in a
+  /// separate step — the admin enters their global credentials at the local
+  /// setup mask, no secrets are generated here.
+  _ida.Future<_i8hsp7h7.Site> createSite({
+    required String name,
+    required String street,
+    required String zipCode,
+    required String city,
+    required String country,
+    required String companyEmail,
+    required _isc.UuidValue firstAdminId,
+  }) => caller.callServerEndpoint<_i8hsp7h7.Site>(
+    'sitesAdmin',
+    'createSite',
+    {
+      'name': name,
+      'street': street,
+      'zipCode': zipCode,
+      'city': city,
+      'country': country,
+      'companyEmail': companyEmail,
+      'firstAdminId': firstAdminId,
+    },
+  );
+
+  /// Lists sites, newest first, paginated. [query] filters by name,
+  /// company email or city (case-insensitive substring).
+  _ida.Future<List<_i8hsp7h7.Site>> listSites({
+    String? query,
+    required int offset,
+    required int limit,
+  }) => caller.callServerEndpoint<List<_i8hsp7h7.Site>>(
+    'sitesAdmin',
+    'listSites',
+    {
+      'query': query,
+      'offset': offset,
+      'limit': limit,
+    },
+  );
+
+  /// Number of sites matching the given [query] (for the "more available"
+  /// hint in the UI).
+  _ida.Future<int> countSites({String? query}) =>
+      caller.callServerEndpoint<int>(
+        'sitesAdmin',
+        'countSites',
+        {'query': query},
+      );
+
+  /// Returns a single site (detail route/deep links in the UI).
+  _ida.Future<_i8hsp7h7.Site> getSite({required int siteId}) =>
+      caller.callServerEndpoint<_i8hsp7h7.Site>(
+        'sitesAdmin',
+        'getSite',
+        {'siteId': siteId},
+      );
+
+  /// Ends the device credential for the local instance (e.g. to force a
+  /// new enrollment: the next local setup must re-verify global
+  /// credentials). Site data/memberships are kept.
+  _ida.Future<_i8hsp7h7.Site> revokeSiteConnection({required int siteId}) =>
+      caller.callServerEndpoint<_i8hsp7h7.Site>(
+        'sitesAdmin',
+        'revokeSiteConnection',
+        {'siteId': siteId},
       );
 }
 
@@ -302,25 +623,41 @@ class Client extends _isc.ServerpodClientShared {
              disconnectStreamsOnLostInternetConnection,
          httpClientOverride: httpClientOverride,
        ) {
+    usersAdmin = EndpointUsersAdmin(this);
     emailIdp = EndpointEmailIdp(this);
     jwtRefresh = EndpointJwtRefresh(this);
-    greeting = EndpointGreeting(this);
+    memberProfile = EndpointMemberProfile(this);
+    siteConnection = EndpointSiteConnection(this);
+    siteEnrollment = EndpointSiteEnrollment(this);
+    sitesAdmin = EndpointSitesAdmin(this);
     modules = Modules(this);
   }
+
+  late final EndpointUsersAdmin usersAdmin;
 
   late final EndpointEmailIdp emailIdp;
 
   late final EndpointJwtRefresh jwtRefresh;
 
-  late final EndpointGreeting greeting;
+  late final EndpointMemberProfile memberProfile;
+
+  late final EndpointSiteConnection siteConnection;
+
+  late final EndpointSiteEnrollment siteEnrollment;
+
+  late final EndpointSitesAdmin sitesAdmin;
 
   late final Modules modules;
 
   @override
   Map<String, _isc.EndpointRef> get endpointRefLookup => {
+    'usersAdmin': usersAdmin,
     'emailIdp': emailIdp,
     'jwtRefresh': jwtRefresh,
-    'greeting': greeting,
+    'memberProfile': memberProfile,
+    'siteConnection': siteConnection,
+    'siteEnrollment': siteEnrollment,
+    'sitesAdmin': sitesAdmin,
   };
 
   @override

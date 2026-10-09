@@ -1,0 +1,55 @@
+### Transfer data the local instance receives at successful enrollment
+### (fresh setup). Contains no passwords: the device session key is an SAS
+### session key (`AuthStrategy.session`) for the site admin that was issued
+### server-side and has to be stored locally, write-once.
+class: SiteTransferInfo
+fields:
+
+  ### Snapshot of the enrolled site with ALL its properties (the local
+  ### instance caches it for the "Standort" page).
+  siteId: int
+
+  ### Name of the site.
+  siteName: String
+
+  ### Site address data.
+  siteStreet: String?
+  siteZipCode: String?
+  siteCity: String?
+  siteCountry: String?
+
+  ### Contact mail of the operating company.
+  siteCompanyEmail: String?
+
+  ### Setup status at enroll time (pendingSetup|registered).
+  siteStatusName: String?
+
+  ### When the site registered at the global instance.
+  siteRegisteredAt: DateTime?
+
+  ### Email of the site admin (global) — also used as the local admin's
+  ### login email.
+  adminEmail: String?
+
+  ### Global authUserId of the site admin — the exchange key for the local
+  ### members table (`member_profile.globalAuthUserId`), used later for
+  ### door authorization. Local member rows must carry exactly this id.
+  adminAuthUserId: UuidValue
+
+  ### Global profile names of the site admin (may be null until the admin
+  ### completed their profile).
+  adminFirstName: String?
+  adminLastName: String?
+
+  ### Global birthday of the site admin (UTC-midnight date sentinel).
+  adminBirthday: DateTime?
+
+  ### Public image URL of the site admin's profile image (global RustFS).
+  ### The local instance downloads the bytes server-to-server at setup
+  ### (fail-fast). Security TODO (backlog): hand over a short-lived
+  ### presigned URL instead of the raw/eternal object URL.
+  adminImageUrl: String?
+
+  ### The SAS session key for the device connection. Store securely; there
+  ### is no rotation (write once) and the key cannot be recovered.
+  deviceSessionKey: String

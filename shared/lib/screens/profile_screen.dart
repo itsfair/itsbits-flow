@@ -1,0 +1,378 @@
+import 'dart:typed_data';
+
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+
+import '../profile_state.dart';
+import '../shared_flags.dart';
+
+/// Lets the user edit their own profile: first name, last name, birthday,
+/// an optional profile image, plus read-only email, user id and its QR
+/// code.
+///
+/// Data flows through the injected [MemberProfileApi] (own `memberProfile`
+/// endpoints; the built-in Serverpod UserProfile feature is bypassed by
+/// design). After saving, the host app is navigated to `/` (both routers
+/// define home there).
+class ProfileScreen extends StatefulWidget {
+  final MemberProfileApi api;
+  final ProfileState profileState;
+
+  const ProfileScreen({
+    required this.api,
+    required this.profileState,
+    super.key,
+  });
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  MemberProfileApi get api => widget.api;
+
+  ProfileState get profileState => widget.profileState;
+
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
+  final _imagePicker = ImagePicker();
+
+  DateTime? _birthday;
+  Uint8List? _pickedImage;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    profileState.addListener(_onProfileChanged);
+    _seedFormFields(profileState.profile);
+  }
+
+  @override
+  void dispose() {
+    profileState.removeListener(_onProfileChanged);
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    super.dispose();
+  }
+
+  /// Fill the form fields once the profile has been loaded from the server.
+  void _onProfileChanged() {
+    _seedFormFields(profileState.profile);
+    if (mounted) setState(() {});
+  }
+
+  void _seedFormFields(MemberProfileData? profile) {
+    if (_firstNameController.text.isEmpty) {
+      _firstNameController.text = profile?.firstName ?? '';
+      _lastNameController.text = profile?.lastName ?? '';
+      _birthday = profile?.birthday;
+    }
+  }
+
+  Future<void> _pickImage() async {
+    final file = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1024,
+      imageQuality: 85,
+    );
+    if (file == null || !mounted) return;
+
+    final bytes = await file.readAsBytes();
+    setState(() => _pickedImage = bytes);
+  }
+
+  Future<void> _removeImage() async {
+    if (_pickedImage != null) {
+      setState(() => _pickedImage = null);
+      return;
+    }
+
+    try {
+      final updated = await api.removeUserImage();
+      profileState.update(profile: updated);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fehler beim Entfernen des Bildes: $error')),
+        );
+      }
+    }
+  }
+
+  Future<void> _save() async {
+    final firstName = _firstNameController.text.trim();
+    final lastName = _lastNameController.text.trim();
+    final birthday = _birthday;
+
+    if (firstName.isEmpty || lastName.isEmpty || birthday == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Bitte Vorname, Nachname und Geburtstag angeben.'),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _saving = true);
+
+    try {
+      // Send the UTC-midnight sentinel: the client serialization is
+      // toUtc(), so a local-midnight value would drift one day back.
+      final normalizedBirthday = DateTime.utc(
+        birthday.year,
+        birthday.month,
+        birthday.day,
+      );
+
+      var profile = await api.save(
+        firstName: firstName,
+        lastName: lastName,
+        birthday: normalizedBirthday,
+      );
+
+      if (_pickedImage != null) {
+        profile = await api.setUserImage(
+          image: ByteData.sublistView(_pickedImage!),
+        );
+      }
+
+      profileState.update(profile: profile);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Profil gespeichert.')));
+      context.go('/');
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Speichern fehlgeschlagen: $error')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _selectBirthday() async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    final selected = await showDatePicker(
+      context: context,
+      initialDate: _birthday ?? DateTime(2000),
+      firstDate: DateTime(1900),
+      lastDate: today.subtract(const Duration(days: 1)),
+    );
+
+    if (selected != null) {
+      // Keep the date as a UTC-midnight sentinel so the client-side
+      // DateTime serialization (toUtc()) cannot shift the calendar day
+      // (local midnight in UT+1 would become the previous day in UTC).
+      setState(
+        () => _birthday = DateTime.utc(
+          selected.year,
+          selected.month,
+          selected.day,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final profile = profileState.profile;
+
+    if (profile == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildImageSection(),
+          _buildDetailsSection(),
+          _buildAccountSection(profile),
+          if (kProfileEditingEnabled) ...[
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: _saving ? null : _save,
+              icon: _saving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.save_outlined),
+              label: const Text('Speichern'),
+            ),
+          ],
+          const SizedBox(height: 32),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImageSection() {
+    final imageUrl = profileState.imageUrl;
+
+    final ImageProvider? preview = switch ((_pickedImage, imageUrl)) {
+      (final bytes, _) when bytes != null => MemoryImage(bytes),
+      (_, final url?) => NetworkImage(url),
+      _ => null,
+    };
+
+    final hasRemovableImage =
+        _pickedImage != null || profileState.imageUrl != null;
+
+    return Column(
+      children: [
+        Center(
+          child: CircleAvatar(
+            radius: 48,
+            backgroundImage: preview,
+            child: preview == null
+                ? const Icon(Icons.person_outline, size: 44)
+                : null,
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (kProfileEditingEnabled) ...[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              OutlinedButton.icon(
+                onPressed: _pickImage,
+                icon: const Icon(Icons.photo_library_outlined),
+                label: const Text('Profilbild wählen'),
+              ),
+              if (hasRemovableImage) ...[
+                IconButton(
+                  tooltip: 'Bild entfernen',
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: _removeImage,
+                ),
+              ],
+            ],
+          ),
+          const Text('(optional, JPEG)', style: TextStyle(fontSize: 12)),
+        ],
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  Widget _buildDetailsSection() {
+    final birthdayText = _birthday == null
+        ? ''
+        : '${_birthday!.day.toStringAsFixed(0).padLeft(2, '0')}.'
+              '${_birthday!.month.toStringAsFixed(0).padLeft(2, '0')}.'
+              '${_birthday!.year}';
+
+    if (!kProfileEditingEnabled) {
+      // Read-only display (mirrors; profiles are edited globally only).
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Meine Daten',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '${_firstNameController.text} ${_lastNameController.text}'
+                    .trim()
+                    .isEmpty
+                ? '(kein Name im Profil)'
+                : '${_firstNameController.text} ${_lastNameController.text}',
+          ),
+          Text(birthdayText.isEmpty ? '(kein Geburtstag)' : birthdayText),
+          const SizedBox(height: 16),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Meine Daten',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _firstNameController,
+          decoration: const InputDecoration(
+            labelText: 'Vorname',
+            border: OutlineInputBorder(),
+            prefixIcon: Icon(Icons.badge_outlined),
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _lastNameController,
+          decoration: const InputDecoration(
+            labelText: 'Nachname',
+            border: OutlineInputBorder(),
+            prefixIcon: Icon(Icons.badge_outlined),
+          ),
+        ),
+        const SizedBox(height: 12),
+        InkWell(
+          onTap: _selectBirthday,
+          borderRadius: BorderRadius.circular(4),
+          child: InputDecorator(
+            decoration: const InputDecoration(
+              labelText: 'Geburtstag',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.cake_outlined),
+            ),
+            child: Text(birthdayText),
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  Widget _buildAccountSection(MemberProfileData profile) {
+    final userIdString = profile.authUserId;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Mein Konto',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.alternate_email),
+          title: Text(profile.email),
+          subtitle: const Text('E-Mail'),
+        ),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.fingerprint),
+          title: SelectableText(userIdString),
+          subtitle: const Text('Meine ID'),
+        ),
+        const SizedBox(height: 8),
+        Center(
+          child: QrImageView(
+            data: userIdString,
+            version: QrVersions.auto,
+            size: 160,
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+}

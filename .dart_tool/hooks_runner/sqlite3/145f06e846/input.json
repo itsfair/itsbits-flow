@@ -1,0 +1,22 @@
+{
+  "assets": {},
+  "config": {
+    "build_asset_types": [
+      "code_assets/code",
+      "data_assets/data"
+    ],
+    "extensions": {
+      "code_assets": {
+        "link_mode_preference": "dynamic",
+        "target_architecture": "x64",
+        "target_os": "windows"
+      }
+    },
+    "linking_enabled": false
+  },
+  "out_dir_shared": "d:\\programmierung\\itsbits - flow\\.dart_tool\\hooks_runner\\shared\\sqlite3\\build\\",
+  "out_file": "d:\\programmierung\\itsbits - flow\\.dart_tool\\hooks_runner\\sqlite3\\145f06e846\\output.json",
+  "package_name": "sqlite3",
+  "package_root": "C:\\Users\\Simon\\AppData\\Local\\Pub\\Cache\\hosted\\pub.dev\\sqlite3-3.7.0\\",
+  "user_defines": {}
+}

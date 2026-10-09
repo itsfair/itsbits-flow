@@ -1,0 +1,28 @@
+### Membership of a global user at a site ("Betrieb"). Global source of
+### truth for who belongs to which site in which role; the local instance
+### derives its local representation from this during sync (member -> local
+### member_profile copy without login; staff/admin -> linked local AuthUser
+### with login). Membership links the PERSON via member_profile (not the
+### auth user).
+class: SiteMembership
+table: site_memberships
+fields:
+
+  ### The site this membership belongs to.
+  site: Site?, relation(onDelete=Cascade)
+
+  ### The person's profile this membership belongs to.
+  profile: MemberProfile?, relation(onDelete=Cascade)
+
+  ### Role of the user at the site.
+  role: SiteRole, defaultModel=member
+
+  ### Lifecycle status (e.g. invite flows later).
+  active: bool, defaultModel=true
+
+  ### When the membership was created.
+  createdAt: DateTime, defaultModel=now
+indexes:
+  site_role_idx:
+    fields: siteId, profileId
+    unique: true

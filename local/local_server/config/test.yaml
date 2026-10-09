@@ -31,7 +31,7 @@ webServer:
 # This is the database setup for your test server.
 database:
   host: localhost
-  port: 9090
+  port: 9190
   name: local_test
   user: postgres
   dataPath: .serverpod/test/pgdata

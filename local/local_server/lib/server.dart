@@ -2,10 +2,11 @@ import 'dart:io';
 
 import 'package:serverpod_auth_idp_server/core.dart';
 import 'package:serverpod_auth_idp_server/providers/email.dart';
-import 'package:serverpod_cloud_storage/serverpod_cloud_storage.dart';
+import 'package:serverpod_cloud_storage_rustfs/serverpod_cloud_storage_rustfs.dart';
 
 import 'src/cache_busting.dart';
 import 'src/generated/serverpod.dart';
+import 'src/site/global_site_connection.dart';
 import 'src/web/routes/app_config_route.dart';
 
 /// The starting point of the Serverpod server.
@@ -85,21 +86,40 @@ void run(List<String> args) async {
     );
   }
 
-  // Configure cloud storage.
-  // This setup works with Serverpod Cloud without extra configuration.
-  // If you want to use a custom provider for cloud storage, replace these
-  // with your preferred provider.
+  // File storage: RustFS (S3-compatible) as the 'public' storage,
+  // replacing the database-backed default. Credentials/bucket come from
+  // the adapter (SERVERPOD_RUSTFS_* env vars, defaults: rustfsadmin /
+  // rustfsadmin_secret). The endpoint is stage-specific, so it travels
+  // via the `rustFsEndpoint` password (env override:
+  // SERVERPOD_RUSTFS_ENDPOINT; value in config/passwords.yaml — dev uses
+  // the LAN IP for tests from real devices). Never set `publicHost` on
+  // the adapter.
   pod.addCloudStorage(
-    await ServerpodCloudProvider.private(
-      fallback: () => DatabaseCloudStorage('private'),
-    ),
-  );
-  pod.addCloudStorage(
-    await ServerpodCloudProvider.public(
-      fallback: () => DatabaseCloudStorage('public'),
+    RustFsCloudStorage(
+      serverpod: pod,
+      storageId: 'public',
+      public: true,
+      bucket: 'itsbits-flow',
+      baseUri: _rustFsEndpointUri(pod),
     ),
   );
 
   // Start the server.
   await pod.start();
+
+  // Start the site connection worker (no-op until the local instance is
+  // enrolled at a global instance; the worker then connects on every
+  // start).
+  await GlobalSiteConnection.instance.start();
+}
+
+/// Resolves the RustFS endpoint (scheme/host/port of the S3 API) with
+/// the override chain: `SERVERPOD_RUSTFS_ENDPOINT` env var >
+/// `rustFsEndpoint` password (config/passwords.yaml) > local default.
+Uri _rustFsEndpointUri(Serverpod pod) {
+  pod.loadCustomPasswords([
+    (envName: 'SERVERPOD_RUSTFS_ENDPOINT', alias: 'rustFsEndpoint'),
+  ]);
+  final endpoint = pod.getPassword('rustFsEndpoint') ?? 'http://localhost:9200';
+  return Uri.parse(endpoint);
 }

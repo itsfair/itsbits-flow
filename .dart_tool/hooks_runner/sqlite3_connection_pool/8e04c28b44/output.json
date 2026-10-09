@@ -1,0 +1,17 @@
+{
+  "assets": [
+    {
+      "encoding": {
+        "file": "D:\\Programmierung\\itsbits - flow\\.dart_tool\\hooks_runner\\shared\\sqlite3_connection_pool\\build\\8e04c28b44\\sqlite3_connection_pool.dll",
+        "id": "package:sqlite3_connection_pool/sqlite3_connection_pool.dart",
+        "link_mode": {
+          "type": "dynamic_loading_bundle"
+        }
+      },
+      "type": "code_assets/code"
+    }
+  ],
+  "assets_for_linking": {},
+  "status": "success",
+  "timestamp": "2026-10-08 20:40:21.000"
+}

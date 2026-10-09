@@ -1,0 +1,7 @@
+### Exception raised by the admin endpoints (e.g. self-lockout protection):
+### carries a human-readable message for the client.
+exception: UserAdminException
+fields:
+
+  ### Human-readable description of what went wrong.
+  message: String

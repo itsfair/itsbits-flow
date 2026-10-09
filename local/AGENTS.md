@@ -1,4 +1,105 @@
-# Flutter & Serverpod project
+# AGENTS.md — local (Dart workspace: local site instance)
+
+This workspace holds the **local instance** of itsbits-flow — **one
+instance per business/site (door installation)**. Represents the
+on-site operation: self-entry (door access) and later ERP features
+(course management, employee management, shift scheduling). Must keep
+running autonomously during short internet outages. Repo structure,
+domain rules, and conventions: [root AGENTS.md](../AGENTS.md).
+
+## Packages
+
+| Package | What |
+|---|---|
+| `local_server` | Serverpod backend of the local instance |
+| `local_client` | Generated client package (never edited) |
+| `local_flutter` | **Site admin app** (devices, members, access rights; later ERP areas) |
+
+## Purpose (target state)
+
+- Door access authorization: the ESP32 forwards (BLE-received from the
+  end-user app) access data to this instance; verification and door
+  control happen here. **Without a cloud round trip** — the instance
+  holds the member data it needs locally, synchronized from the global
+  instance.
+- Person directory `member_profile` (mirror of the global instance's
+  model; one row per person of the site).
+- Site connection to the global instance (method stream worker).
+- Local admin areas behind the `local-admin` login.
+- ERP extension step by step: courses, employees, shift scheduling.
+
+## Ports (dev)
+
+API server 8180, Insights 8181, Web server 8182; Postgres 8190, Redis
+8191 (disabled), RustFS S3 9200 / console 9201 (host ports differ from
+the global instance 9000/9001 so both stacks can run simultaneously;
+9100 is avoided — Dart DevTools binds it by default).
+DB name `local`. Details and full stack: root AGENTS.md.
+
+## Target endpoints (own code)
+
+| Endpoint | Purpose |
+|---|---|
+| `emailIdp` (`src/auth/email_idp_endpoint.dart`) | Email IdP: local login only — member self-signup/registration is intentionally off |
+| `jwtRefresh` (`src/auth/jwt_refresh_endpoint.dart`) | Renew access tokens |
+| `memberProfile` | Own person endpoints (mirror of global): `get`, `save`, `setUserImage`, `removeUserImage` — for locally logged-in persons (site admin/staff) |
+| `siteSetup` | `enterSetup({email, password, siteId?})`: verifies the **global credentials** of the site admin against the global instance (via the global client package), processes the transfer (member_profile copy + local `local-admin` login + image) — `adminInfo()`, `connectionStatus()` for the app connection chip |
+
+## Key design points
+
+- **member_profile** (symmetric to global): one row per person;
+  `authUserId` optional (only site admin/staff have a local login;
+  `onDelete=SetNull`), **`globalAuthUserId` required + unique**
+  (exchange id, door authorization key, and image-object key),
+  mirrored `email`/`firstName`/`lastName`/`birthday`/`imageUrl`.
+  Profiles are edited **globally only** — local copies are mirrors.
+- **No local self-registration**: local logins are only ever created
+  from *verified* global logins — the site admin at setup (local
+  AuthUser + email login with the same password, scope `local-admin`,
+  linked to the member_profile copy); employees later the same way.
+- **Image handling**: `member_images/<globalAuthUserId>.jpg`
+  (deterministic, one object per person, overwrite on change,
+  JPEG-only). Enrollment transfers the image **fail-fast** (download
+  from the global `imageUrl` first — failure aborts the whole
+  enrollment; then DB transaction, then upload into the local RustFS).
+  A member→user conversion needs no image move (identical path for
+  every person). Flutter web display needs CORS on the local RustFS
+  (console :9101).
+- **Device connection worker** (`GlobalSiteConnection`, started in
+  `server.dart`): connects to the global instance with the
+  non-rotating SAS session key (`method: 'device'`), method stream
+  `siteConnection.connect`, ping every 30 s (keeps global
+  `lastSeenAt` fresh); reconnect with backoff (5→60 s); state machine
+  `noneSetup|connecting|reconnecting|connected|needsReSetup|failure`
+  (`needsReSetup` = revoked/expired → re-run setup with global
+  credentials). Config: `globalApiUrl` password key in
+  `config/passwords.yaml` (dev: `http://localhost:8080`; devices:
+  LAN IP; env override `SERVERPOD_PASSWORD_globalApiUrl`).
+- Birthday as UTC-midnight date sentinel (no server-side
+  re-normalization) — see root AGENTS.md.
+- The built-in Serverpod UserProfile feature is bypassed (the auth
+  module still writes its own profile tables internally — unused).
+
+## Open work items (this part)
+
+- **Membership sync over the connection**: propagate new/removed
+  global membership events into local member_profile copies (incl.
+  image mirroring at the same paths); local membership mirror table
+  (role/active); staff switch → local login analog admin setup;
+  roles/status reported back via `site-device`-restricted endpoints.
+- **Protection layer**: protect all member/employee admin areas behind
+  the `local-admin` login (login flow in the site admin app).
+- **Employees flow**: member verifies on site with global credentials →
+  local login (same model as the admin setup).
+- **Password self-healing**: "same password globally + locally" — the
+  local copy's password is derived from the *verified* global login;
+  define behavior on global password change.
+- Encryption at rest for the stored device session key (before
+  production).
+
+---
+
+## Serverpod workflow (development)
 
 This project is a Flutter app (frontend) backed by a Serverpod server (backend). Always build the app's backend with Serverpod.
 Build for multiple users, use Serverpod's built-in authentication, which is already set up in `lib/server.dart`.
@@ -47,4 +148,14 @@ If the user asks you to test the app:
 
 The app is launched from `local_flutter/lib/driver.dart`, which starts the Flutter driver extension with text entry emulation turned off so the app stays usable by hand. To let the driver type, set `enableTextEntryEmulation: true` there and `hot_restart` the app.
 
-IMPORTANT: After building the first version of the app, update this AGENTS.md file with information about the app we're building. KEEP the info about the MCP server and the checklist. Remove this paragraph.
+### Windows start troubleshooting
+
+Closing the `serverpod start` TUI can leave the watch processes orphaned
+(`dart.exe` watcher + compiled `dartvm.exe` of the previous session still
+alive, holding the ports and the native-assets DLL
+`.dart_tool/serverpod/lib/serverpod_argon2.dll`). A then-started new
+`serverpod start` fails at "Running build hooks" with
+`PathAccessException ... serverpod_argon2.dll (OS Error: Zugriff
+verweigert, errno = 5)`. Fix: end the leftover `dart.exe`/`dartvm.exe`
+processes (`Get-NetTCPConnection -State Listen | Where-Object LocalPort -in <ports>`
+to find them; or Task Manager), then start again.

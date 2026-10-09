@@ -25,6 +25,27 @@ services:
       - global_test_data:/var/lib/postgresql/data
 
 
+  # File storage (RustFS, S3-compatible) for the global instance.
+  # S3 API on :9000, web console on :9001 (login: rustfsadmin /
+  # rustfsadmin_secret); the web console of the local workspace uses
+  # 9101. The server resolves the S3 endpoint via the `rustFsEndpoint`
+  # password (SERVERPOD_RUSTFS_ENDPOINT; see config/passwords.yaml).
+  # Files live at deterministic paths (e.g. member_images/<id>.jpg).
+  rustfs:
+    image: rustfs/rustfs:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - RUSTFS_ACCESS_KEY=rustfsadmin
+      - RUSTFS_SECRET_KEY=rustfsadmin_secret
+      - RUSTFS_CONSOLE_ENABLE=true
+    command: /data
+    volumes:
+      - global_files:/data
+
+
 volumes:
   global_data:
   global_test_data:
+  global_files:

@@ -1,61 +1,125 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:serverpod_auth_idp_flutter/serverpod_auth_idp_flutter.dart';
+import 'package:itsbits_shared/screens/profile_screen.dart';
 
 import 'client.dart';
-import 'screens/greetings_screen.dart';
+import 'layout.dart';
+
+import 'screens/sign_in.dart';
+import 'screens/forbidden.dart';
+import 'screens/sites.dart';
+import 'screens/site_detail.dart';
+import 'screens/members.dart';
+import 'screens/member_detail.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await initializeClient();
+
   runApp(const MyApp());
 }
 
-/// Builds a theme for the given [brightness].
-ThemeData _buildTheme(Brightness brightness) {
-  return ThemeData(
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: Colors.blue,
-      brightness: brightness,
-    ),
-  );
-}
-
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Serverpod Demo',
-      theme: _buildTheme(Brightness.light),
-      darkTheme: _buildTheme(Brightness.dark),
-      themeMode: ThemeMode.system,
-      home: const MyHomePage(title: 'Serverpod Example'),
-    );
-  }
+  State<MyApp> createState() => _MyAppState();
 }
 
-class MyHomePage extends StatelessWidget {
-  const MyHomePage({super.key, required this.title});
+class _MyAppState extends State<MyApp> {
+  late final GoRouter _router = GoRouter(
+    refreshListenable: client.auth.authInfoListenable,
+    redirect: (context, state) {
+      final location = state.matchedLocation;
+      if (!client.auth.isAuthenticated && location != '/sign-in') {
+        return '/sign-in';
+      } else if (client.auth.isAuthenticated &&
+          client.auth.authInfo?.scopeNames.contains('global-admin') != true) {
+        return '/forbidden';
+      } else {
+        return null;
+      }
+    },
+    routes: [
+      ShellRoute(
+        builder: (context, state, child) {
+          return Layout(child: child);
+        },
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/',
+            redirect: (context, state) => '/members',
+          ),
+          GoRoute(
+            path: '/profile',
+            builder: (context, state) => ProfileScreen(
+              api: memberProfileApi,
+              profileState: profileState,
+            ),
+          ),
+          GoRoute(
+            path: '/sign-in',
+            builder: (context, state) => SignIn(),
+          ),
+          GoRoute(
+            path: '/forbidden',
+            builder: (context, state) => const Forbidden(),
+          ),
+          GoRoute(
+            path: '/members',
+            builder: (context, state) => const MembersScreen(),
+          ),
+          GoRoute(
+            path: '/members/:authUserId',
+            builder: (context, state) => MemberDetailScreen(
+              authUserId: state.pathParameters['authUserId']!,
+            ),
+          ),
+          GoRoute(
+            path: '/sites',
+            builder: (context, state) => const SitesScreen(),
+          ),
+          GoRoute(
+            path: '/sites/:siteId',
+            builder: (context, state) => SiteDetailScreen(
+              siteId: int.parse(state.pathParameters['siteId']!),
+            ),
+          ),
+        ],
+      ),
+    ],
+  );
 
-  final String title;
+  @override
+  void initState() {
+    super.initState();
+    client.auth.authInfoListenable.addListener(_onAuthChanged);
+    // Handle a restored session from a previous app run.
+    _onAuthChanged();
+  }
+
+  @override
+  void dispose() {
+    client.auth.authInfoListenable.removeListener(_onAuthChanged);
+    super.dispose();
+  }
+
+  void _onAuthChanged() {
+    if (client.auth.isAuthenticated) {
+      profileState.load();
+    } else {
+      profileState.reset();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: const GreetingsScreen(),
-      // To test authentication in this example app, uncomment the line below
-      // and comment out the line above. This wraps the GreetingsScreen with a
-      // SignInScreen, which automatically shows a sign-in UI when the user is
-      // not authenticated and displays the GreetingsScreen once they sign in.
-      //
-      // body: SignInScreen(
-      //   child: GreetingsScreen(
-      //     onSignOut: () async {
-      //       await client.auth.signOutDevice();
-      //     },
-      //   ),
-      // ),
+    return MaterialApp.router(
+      title: 'Global Admin UI',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      routerConfig: _router,
     );
   }
 }

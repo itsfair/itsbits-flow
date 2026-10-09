@@ -16,7 +16,7 @@ services:
   postgres_test:
     image: ghcr.io/serverpod/postgres:16
     ports:
-      - "9090:5432"
+      - "9190:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_DB: local_test
@@ -25,6 +25,29 @@ services:
       - local_test_data:/var/lib/postgresql/data
 
 
+  # File storage (RustFS, S3-compatible) for the local instance.
+  # S3 API on :9200, web console on :9201 (login: rustfsadmin /
+  # rustfsadmin_secret) — different host ports than the global workspace
+  # (9000/9001) so both stacks can run simultaneously. NOTE: port 9100 is
+  # deliberately avoided — Dart DevTools binds 9100 by default. The
+  # server resolves the S3 endpoint via the `rustFsEndpoint` password
+  # (SERVERPOD_RUSTFS_ENDPOINT; see config/passwords.yaml). Files live
+  # at deterministic paths (e.g. member_images/<globalAuthUserId>.jpg).
+  rustfs:
+    image: rustfs/rustfs:latest
+    ports:
+      - "9200:9000"
+      - "9201:9001"
+    environment:
+      - RUSTFS_ACCESS_KEY=rustfsadmin
+      - RUSTFS_SECRET_KEY=rustfsadmin_secret
+      - RUSTFS_CONSOLE_ENABLE=true
+    command: /data
+    volumes:
+      - local_files:/data
+
+
 volumes:
   local_data:
   local_test_data:
+  local_files:

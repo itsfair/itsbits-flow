@@ -1,61 +1,104 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:serverpod_auth_idp_flutter/serverpod_auth_idp_flutter.dart';
 
 import 'client.dart';
-import 'screens/greetings_screen.dart';
+import 'layout.dart';
+
+import 'screens/profile.dart';
+import 'screens/site_setup.dart';
+import 'screens/sign_in.dart';
+import 'screens/standort.dart';
+
+/// Local mirror of the device-connection setup state: the shell polls
+/// `siteSetup.connectionStatus` and updates this notifier, so the GoRouter
+/// redirect re-evaluates after enrollments/connectivity changes.
+final ValueNotifier<SiteConnectionState> connectionStateNotifier =
+    ValueNotifier(SiteConnectionState.noneSetup);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await initializeClient();
+
   runApp(const MyApp());
 }
 
-/// Builds a theme for the given [brightness].
-ThemeData _buildTheme(Brightness brightness) {
-  return ThemeData(
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: Colors.blue,
-      brightness: brightness,
-    ),
-  );
-}
-
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Serverpod Demo',
-      theme: _buildTheme(Brightness.light),
-      darkTheme: _buildTheme(Brightness.dark),
-      themeMode: ThemeMode.system,
-      home: const MyHomePage(title: 'Serverpod Example'),
-    );
-  }
+  State<MyApp> createState() => _MyAppState();
 }
 
-class MyHomePage extends StatelessWidget {
-  const MyHomePage({super.key, required this.title});
+class _MyAppState extends State<MyApp> {
+  late final GoRouter _router = GoRouter(
+    initialLocation: '/',
+    refreshListenable: Listenable.merge([
+      client.auth.authInfoListenable,
+      connectionStateNotifier,
+    ]),
+    redirect: (context, state) {
+      final location = state.matchedLocation;
+      final enrolled =
+          connectionStateNotifier.value != SiteConnectionState.noneSetup;
+      final signedIn = client.auth.isAuthenticated;
 
-  final String title;
+      // Not enrolled at a global instance yet -> setup screen.
+      if (!enrolled && location != '/setup') {
+        return '/setup';
+      }
+
+      // Enrolled but not locally signed in -> login screen
+      // (first enrollment creates the local login account).
+      if (enrolled && !signedIn && location != '/sign-in') {
+        return '/sign-in';
+      }
+
+      // Signed in users don't need the login/setup screens.
+      if (signedIn && (location == '/sign-in' || location == '/setup')) {
+        return '/';
+      }
+
+      return null;
+    },
+    routes: [
+      ShellRoute(
+        builder: (context, state, child) {
+          return Layout(child: child);
+        },
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/',
+            builder: (context, state) => const HomeScreen(),
+          ),
+          GoRoute(
+            path: '/standort',
+            builder: (context, state) => const StandortScreen(),
+          ),
+          GoRoute(
+            path: '/profile',
+            builder: (context, state) => const ProfileScreen(),
+          ),
+          GoRoute(
+            path: '/setup',
+            builder: (context, state) => const SiteSetupScreen(),
+          ),
+          GoRoute(
+            path: '/sign-in',
+            builder: (context, state) => const LocalSignInScreen(),
+          ),
+        ],
+      ),
+    ],
+  );
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: const GreetingsScreen(),
-      // To test authentication in this example app, uncomment the line below
-      // and comment out the line above. This wraps the GreetingsScreen with a
-      // SignInScreen, which automatically shows a sign-in UI when the user is
-      // not authenticated and displays the GreetingsScreen once they sign in.
-      //
-      // body: SignInScreen(
-      //   child: GreetingsScreen(
-      //     onSignOut: () async {
-      //       await client.auth.signOutDevice();
-      //     },
-      //   ),
-      // ),
+    return MaterialApp.router(
+      title: 'Site Admin UI',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      routerConfig: _router,
     );
   }
 }

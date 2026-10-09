@@ -1,0 +1,55 @@
+#pragma once
+
+#include <NukiBle.h>
+#include <NukiLock.h>
+#include <BleScanner.h>
+#include <Preferences.h>
+
+class NukiManager : public Nuki::SmartlockEventHandler {
+public:
+    NukiManager();
+    void begin(const String& deviceName);
+    void loop();
+
+    bool isPaired();
+    bool isPairing();
+    void startPairing();
+    void cancelPairing();
+    void setUltraPin(uint32_t pin);
+    bool hasUltraPin();
+
+    uint16_t getPollInterval();
+    void setPollInterval(uint16_t seconds);
+
+    String getLockStateStr();
+    int getBatteryPct();
+    bool isBatteryCritical();
+    int getRssi();
+
+    bool unlock();
+    bool lock();
+    bool unlatch();
+    bool unpair();
+
+    void notify(Nuki::EventType eventType) override;
+
+private:
+    BleScanner::Scanner _scanner;
+    NukiLock::NukiLock* _nukiLock = nullptr;
+    Preferences _prefs;
+
+    bool _pairingRequested = false;
+    unsigned long _pairingStart = 0;
+    static const unsigned long _pairingTimeout = 600000;
+
+    bool _stateUpdateNeeded = false;
+    NukiLock::KeyTurnerState _lastState;
+    bool _hasState = false;
+    String _lastLoggedState = "";
+
+    uint16_t _pollInterval = 120;
+    unsigned long _lastStateRequest = 0;
+
+    void requestState();
+    void loadPollInterval();
+};

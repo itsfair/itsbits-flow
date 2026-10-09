@@ -9,5 +9,12 @@ emailIdp:
   - hasAccount:
 jwtRefresh:
   - refreshAccessToken:
-greeting:
-  - hello:
+memberProfile:
+  - get:
+  - save:
+  - setUserImage:
+  - removeUserImage:
+siteSetup:
+  - enterSetup:
+  - connectionStatus:
+  - adminInfo:

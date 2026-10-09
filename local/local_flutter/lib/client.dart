@@ -4,6 +4,10 @@ import 'package:local_client/local_client.dart';
 import 'package:serverpod_auth_idp_flutter/serverpod_auth_idp_flutter.dart';
 import 'package:serverpod_flutter/serverpod_flutter.dart';
 
+// Re-export the generated client and models so app code can import this
+// file as single dependency.
+export 'package:local_client/local_client.dart';
+
 // When you are running the app on a physical device, you need to set the
 // server URL to the IP address of your computer. You can find the IP
 // address by running `ipconfig` on Windows or `ifconfig` on Mac/Linux.

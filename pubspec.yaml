@@ -1,0 +1,18 @@
+name: _
+publish_to: none
+
+environment:
+  sdk: '^3.12.2'
+
+workspace:
+  - global/global_client
+  - global/global_server
+  - global/global_flutter
+  - global/enduser_flutter
+  - local/local_client
+  - local/local_server
+  - local/local_flutter
+  - shared
+
+dependency_overrides:
+  flutter_secure_storage: ^11.0.0

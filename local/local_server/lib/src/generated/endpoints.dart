@@ -10,6 +10,7 @@
 // ignore_for_file: invalid_use_of_internal_member
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
+import 'dart:typed_data' as _idt;
 import 'package:serverpod/serverpod.dart' as _is;
 import 'package:serverpod_auth_core_server/serverpod_auth_core_server.dart'
     as _iacs;
@@ -17,7 +18,8 @@ import 'package:serverpod_auth_idp_server/serverpod_auth_idp_server.dart'
     as _iais;
 import '../auth/email_idp_endpoint.dart' as _iuc1hd5t;
 import '../auth/jwt_refresh_endpoint.dart' as _inwq3ztq;
-import '../greetings/greeting_endpoint.dart' as _il624ik7;
+import '../site/member_profile_endpoint.dart' as _i0gpa131;
+import '../site/site_setup_endpoint.dart' as _iq6hjzpz;
 
 class Endpoints extends _is.EndpointDispatch {
   @override
@@ -35,10 +37,16 @@ class Endpoints extends _is.EndpointDispatch {
           'jwtRefresh',
           null,
         ),
-      'greeting': _il624ik7.GreetingEndpoint()
+      'memberProfile': _i0gpa131.MemberProfileEndpoint()
         ..initialize(
           server,
-          'greeting',
+          'memberProfile',
+          null,
+        ),
+      'siteSetup': _iq6hjzpz.SiteSetupEndpoint()
+        ..initialize(
+          server,
+          'siteSetup',
           null,
         ),
     };
@@ -248,16 +256,38 @@ class Endpoints extends _is.EndpointDispatch {
         ),
       },
     );
-    connectors['greeting'] = _is.EndpointConnector(
-      name: 'greeting',
-      endpoint: endpoints['greeting']!,
+    connectors['memberProfile'] = _is.EndpointConnector(
+      name: 'memberProfile',
+      endpoint: endpoints['memberProfile']!,
       methodConnectors: {
-        'hello': _is.MethodConnector(
-          name: 'hello',
+        'get': _is.MethodConnector(
+          name: 'get',
+          params: {},
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['memberProfile']
+                          as _i0gpa131.MemberProfileEndpoint)
+                      .get(session),
+        ),
+        'save': _is.MethodConnector(
+          name: 'save',
           params: {
-            'name': _is.ParameterDescription(
-              name: 'name',
+            'firstName': _is.ParameterDescription(
+              name: 'firstName',
               type: _is.getType<String>(),
+              nullable: false,
+            ),
+            'lastName': _is.ParameterDescription(
+              name: 'lastName',
+              type: _is.getType<String>(),
+              nullable: false,
+            ),
+            'birthday': _is.ParameterDescription(
+              name: 'birthday',
+              type: _is.getType<DateTime>(),
               nullable: false,
             ),
           },
@@ -266,10 +296,104 @@ class Endpoints extends _is.EndpointDispatch {
                 _is.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['greeting'] as _il624ik7.GreetingEndpoint).hello(
+                  (endpoints['memberProfile']
+                          as _i0gpa131.MemberProfileEndpoint)
+                      .save(
+                        session,
+                        firstName: params['firstName'],
+                        lastName: params['lastName'],
+                        birthday: params['birthday'],
+                      ),
+        ),
+        'setUserImage': _is.MethodConnector(
+          name: 'setUserImage',
+          params: {
+            'image': _is.ParameterDescription(
+              name: 'image',
+              type: _is.getType<_idt.ByteData>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['memberProfile']
+                          as _i0gpa131.MemberProfileEndpoint)
+                      .setUserImage(
+                        session,
+                        image: params['image'],
+                      ),
+        ),
+        'removeUserImage': _is.MethodConnector(
+          name: 'removeUserImage',
+          params: {},
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['memberProfile']
+                          as _i0gpa131.MemberProfileEndpoint)
+                      .removeUserImage(session),
+        ),
+      },
+    );
+    connectors['siteSetup'] = _is.EndpointConnector(
+      name: 'siteSetup',
+      endpoint: endpoints['siteSetup']!,
+      methodConnectors: {
+        'enterSetup': _is.MethodConnector(
+          name: 'enterSetup',
+          params: {
+            'email': _is.ParameterDescription(
+              name: 'email',
+              type: _is.getType<String>(),
+              nullable: false,
+            ),
+            'password': _is.ParameterDescription(
+              name: 'password',
+              type: _is.getType<String>(),
+              nullable: false,
+            ),
+            'siteId': _is.ParameterDescription(
+              name: 'siteId',
+              type: _is.getType<int?>(),
+              nullable: true,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['siteSetup'] as _iq6hjzpz.SiteSetupEndpoint)
+                  .enterSetup(
                     session,
-                    params['name'],
+                    email: params['email'],
+                    password: params['password'],
+                    siteId: params['siteId'],
                   ),
+        ),
+        'connectionStatus': _is.MethodConnector(
+          name: 'connectionStatus',
+          params: {},
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['siteSetup'] as _iq6hjzpz.SiteSetupEndpoint)
+                  .connectionStatus(session),
+        ),
+        'adminInfo': _is.MethodConnector(
+          name: 'adminInfo',
+          params: {},
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['siteSetup'] as _iq6hjzpz.SiteSetupEndpoint)
+                  .adminInfo(session),
         ),
       },
     );

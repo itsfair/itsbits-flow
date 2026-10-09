@@ -1,3 +1,8 @@
+usersAdmin:
+  - listUsers:
+  - getUser:
+  - setBlocked:
+  - setGlobalAdmin:
 emailIdp:
   - login:
   - startRegistration:
@@ -9,5 +14,19 @@ emailIdp:
   - hasAccount:
 jwtRefresh:
   - refreshAccessToken:
-greeting:
-  - hello:
+memberProfile:
+  - get:
+  - save:
+  - setUserImage:
+  - removeUserImage:
+siteConnection:
+  - connect:
+siteEnrollment:
+  - listSiteAdminCandidates:
+  - enroll:
+sitesAdmin:
+  - createSite:
+  - listSites:
+  - countSites:
+  - getSite:
+  - revokeSiteConnection:

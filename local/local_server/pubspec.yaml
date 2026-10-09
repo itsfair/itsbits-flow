@@ -12,6 +12,10 @@ dependencies:
   serverpod: 4.0.3
   serverpod_auth_idp_server: 4.0.3
   serverpod_cloud_storage: 4.0.3
+  serverpod_cloud_storage_rustfs: 1.1.0-rc.1
+  global_client:
+    path: ../../global/global_client
+  serverpod_auth_core_client: 4.0.3
 
 dev_dependencies:
   lints: '>=3.0.0 <7.0.0'
@@ -60,5 +64,5 @@ serverpod:
     local:
       path: ../local_flutter
       displayName: "Local app"
-      auto_launch: true
+      auto_launch: false
       target: lib/driver.dart

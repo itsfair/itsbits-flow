@@ -1,0 +1,108 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:itsbits_shared/widgets/account_dropdown.dart';
+import 'package:serverpod_auth_idp_flutter/serverpod_auth_idp_flutter.dart';
+
+import '../client.dart';
+
+/// Shell layout of the end-user app. The account dropdown comes from the
+/// shared package and is consumed identically by the global admin app —
+/// changes apply to both.
+class Layout extends StatefulWidget {
+  final Widget child;
+
+  const Layout({required this.child, super.key});
+
+  @override
+  State<Layout> createState() => _LayoutState();
+}
+
+class _LayoutState extends State<Layout> {
+  bool _isSignedIn = false;
+
+  @override
+  void initState() {
+    super.initState();
+    client.auth.authInfoListenable.addListener(_updateAuthState);
+    _updateAuthState();
+  }
+
+  @override
+  void dispose() {
+    client.auth.authInfoListenable.removeListener(_updateAuthState);
+    super.dispose();
+  }
+
+  void _updateAuthState() {
+    setState(() {
+      _isSignedIn = client.auth.isAuthenticated;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Profile data changes (e.g. after the profile screen saves) must
+    // re-render the dropdown avatar/initials.
+    return ListenableBuilder(
+      listenable: profileState,
+      builder: (context, _) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Home'),
+            backgroundColor: Colors.blue[900],
+            foregroundColor: Colors.white,
+            actions: [
+              AccountDropdown(
+                isSignedIn: _isSignedIn,
+                fullName: profileState.fullName,
+                imageUrl: profileState.imageUrl,
+                extraItems: const [],
+                onLogin: (context) => context.go('/sign-in'),
+                onLogout: () => client.auth.signOutDevice(),
+                onProfile: (context) => context.go('/profile'),
+                onSignedOut: () {
+                  if (mounted) context.go('/');
+                },
+              ),
+            ],
+          ),
+          body: widget.child,
+          bottomNavigationBar: BottomAppBar(
+            shape: CircularNotchedRectangle(),
+            notchMargin: 6.0,
+            child: Row(
+              mainAxisSize: MainAxisSize.max,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                IconButton(
+                  icon: const Icon(Icons.home),
+                  onPressed: () {
+                    context.go('/');
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.notifications),
+                  onPressed: () {},
+                ),
+                const SizedBox(width: 40), // Platz für den FAB
+                IconButton(
+                  icon: const Icon(Icons.messenger),
+                  onPressed: () {},
+                ),
+              ],
+            ),
+          ),
+          floatingActionButtonLocation:
+              FloatingActionButtonLocation.centerDocked,
+          floatingActionButton: FloatingActionButton(
+            shape: const CircleBorder(),
+            onPressed: () {
+              context.go('/qr-reader');
+            },
+            child: const Icon(Icons.qr_code_scanner),
+          ),
+        );
+      },
+    );
+  }
+}

@@ -1,4 +1,98 @@
-# Flutter & Serverpod project
+# AGENTS.md — global (Dart workspace: global instance)
+
+This workspace holds the **global instance** — the single central
+platform level of itsbits-flow. End users register here (email +
+password); user accounts and profiles live here. Repo structure,
+domain rules, and conventions: [root AGENTS.md](../AGENTS.md).
+
+## Packages
+
+| Package | What |
+|---|---|
+| `global_server` | Serverpod backend of the global instance |
+| `global_client` | Generated client package (never edited) |
+| `global_flutter` | **Platform admin app** (manage the global instance) |
+| `enduser_flutter` | **End-user app** (runs on a physical device; not launched by `serverpod start` on the dev machine every time) |
+
+## Purpose (target state)
+
+- Registration/login of end users (email IdP) and password reset.
+- Own person/profile model `member_profile` — the data basis the local
+  instances synchronize from (site admins, member profiles).
+- Platform admin areas: user management (`usersAdmin`), sites
+  management (`sitesAdmin`).
+- Site connection level: enrollment of local instances
+  (`siteEnrollment`) and the device method stream (`siteConnection`).
+- Later possibly global entities (e.g. course catalog).
+
+## Ports (dev)
+
+API server 8080, Insights 8081, Web server 8082; Postgres 8090, Redis
+8091 (disabled), RustFS S3 9000 / console 9001. DB name `global`.
+Details and full stack: root AGENTS.md.
+
+## Flutter apps (dev)
+
+Declared under `serverpod: flutter_apps:` in `global_server/pubspec.yaml`:
+
+- `global` → `global_flutter` (platform admin app)
+- `enduser` → `enduser_flutter`
+
+## Target endpoints (own code)
+
+| Endpoint | Purpose |
+|---|---|
+| `emailIdp` (`src/auth/email_idp_endpoint.dart`) | Email IdP: registration, login, password reset (verification codes are only logged in dev). `onAfterAccountCreated` hook creates the sparse `member_profile` row |
+| `jwtRefresh` (`src/auth/jwt_refresh_endpoint.dart`) | Renew access tokens |
+| `memberProfile` | Own person endpoints: `get`, `save` (names 1–60 chars + birthday), `setUserImage`, `removeUserImage` |
+| `usersAdmin` | Platform admin: `listUsers` (50/page, email/name filter), `getUser`, `setBlocked`, `setGlobalAdmin` |
+| `sitesAdmin` | Platform admin, sites: `createSite` (no secrets), `listSites`/`countSites`, `getSite`, `revokeSiteConnection` |
+| `siteEnrollment` | Public: `listSiteAdminCandidates` + `enroll({email, password, siteId?})` for the local instance |
+| `siteConnection` | Device connection method stream (`connect(Stream<SitePing>) → Stream<SiteEvent>`), scope `site-device` |
+
+## Key design points
+
+- **member_profile** (own person model): `authUser` relation (required;
+  sparse row at registration), `email`, `firstName`/`lastName`,
+  `birthday` (UTC-midnight sentinel), `imageUrl`, `createdAt`; unique
+  index on `authUserId`. Images at `member_images/<authUserId>.jpg`
+  (deterministic, overwrite, JPEG-only for now). The built-in Serverpod
+  UserProfile feature is bypassed by design.
+- **Admin scopes**: `global-admin` scope enforced declaratively via
+  `Endpoint.requiredScopes`; scopes are baked into tokens at login —
+  `setBlocked`/`setGlobalAdmin` revoke all tokens afterwards. Blocking
+  yourself / revoking your own scope is rejected. The **first admin**
+  is created manually (SQL: scope on the auth user row) + re-login.
+- **Site linkage**: `SiteMembership.profile` FK → `member_profile`
+  (membership links the person via the directory, not the auth user).
+- **Site setup**: `createSite` generates no secrets — the site admin
+  sets up the local instance on site with their global credentials
+  (`siteEnrollment.enroll`); device credential = non-rotating SAS
+  session key (`method: 'device'`, token-level scope `site-device`,
+  pepper `serverSideSessionKeyHashPepper`).
+- Auth setup in `lib/server.dart` (`initializeAuthServices`: JWT +
+  site-device token manager + EmailIdp incl. the member_profile hook).
+- Known harmless log entries with device connections: an
+  `Invalid JWT access token` debug line (JWT is the primary token
+  manager; the SAS key is validated afterwards by the session manager)
+  and a persistent `STREAM siteConnection.connect` entry (the long-lived
+  method stream — normal while a site is connected).
+
+## Open work items (this part)
+
+- Protect/limit registration in the platform admin app (end-user
+  registration must not be possible there — attempts with blank texts +
+  controller subclass did not work; look for another approach).
+- Live status push to admin clients instead of 30 s polling
+  (cross-cutting, see root AGENTS.md).
+- Integration tests for `usersAdmin` endpoints; confirmation dialog on
+  block; keep admin endpoints strictly behind `requiredScopes`.
+- Add `SERVERPOD_PASSWORD_serverSideSessionKeyHashPepper` to CI test
+  workflow; unify CI tool versions.
+
+---
+
+## Serverpod workflow (development)
 
 This project is a Flutter app (frontend) backed by a Serverpod server (backend). Always build the app's backend with Serverpod.
 Build for multiple users, use Serverpod's built-in authentication, which is already set up in `lib/server.dart`.
@@ -47,4 +141,14 @@ If the user asks you to test the app:
 
 The app is launched from `global_flutter/lib/driver.dart`, which starts the Flutter driver extension with text entry emulation turned off so the app stays usable by hand. To let the driver type, set `enableTextEntryEmulation: true` there and `hot_restart` the app.
 
-IMPORTANT: After building the first version of the app, update this AGENTS.md file with information about the app we're building. KEEP the info about the MCP server and the checklist. Remove this paragraph.
+### Windows start troubleshooting
+
+Closing the `serverpod start` TUI can leave the watch processes orphaned
+(`dart.exe` watcher + compiled `dartvm.exe` of the previous session still
+alive, holding the ports and the native-assets DLL
+`.dart_tool/serverpod/lib/serverpod_argon2.dll`). A then-started new
+`serverpod start` fails at "Running build hooks" with
+`PathAccessException ... serverpod_argon2.dll (OS Error: Zugriff
+verweigert, errno = 5)`. Fix: end the leftover `dart.exe`/`dartvm.exe`
+processes (`Get-NetTCPConnection -State Listen | Where-Object LocalPort -in <ports>`
+to find them; or Task Manager), then start again.
