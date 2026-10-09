@@ -6,6 +6,7 @@ import 'package:serverpod_auth_idp_flutter/serverpod_auth_idp_flutter.dart';
 import 'package:serverpod_flutter/serverpod_flutter.dart';
 
 import 'member_profile_api.dart';
+import 'site_directory_api.dart';
 
 // When you are running the app on a physical device, you need to set the
 // server URL to the IP address of your computer. You can find the IP
@@ -30,6 +31,11 @@ final GlobalMemberProfileApi memberProfileApi = GlobalMemberProfileApi(
 
 /// Holds the signed-in user's profile data for the shared widgets.
 final ProfileState profileState = ProfileState(memberProfileApi);
+
+/// Site directory (browse/subscribe/unsubscribe) for the end-user app.
+final GlobalSiteDirectoryApi siteDirectoryApi = GlobalSiteDirectoryApi(
+  client,
+);
 
 Future<void> initializeClient() async {
   client = Client(await serverUrl)

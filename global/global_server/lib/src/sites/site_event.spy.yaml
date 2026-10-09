@@ -10,3 +10,7 @@ fields:
 
   ### Millisecond timestamp of the senders send time.
   sentAtMs: int, defaultModel=0
+
+  ### Set (true) when the server pushes spontaneously (queue-triggered):
+  ### the client should pull pending sync tasks from `siteSync` now.
+  needsSiteSync: bool, defaultModel=false

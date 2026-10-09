@@ -1,0 +1,30 @@
+### One pending member-data delivery to a site's local instance. Written
+### ALWAYS first (queue is the source of truth); a connected site is
+### additionally kicked over its method stream so it pulls immediately.
+### The pull response assembles the CURRENT global state (profile fields,
+### role, active) from the live database, so entries for the same
+### person+site collapse via the unique index — no per-change history.
+### Rows are deleted only after the local instance confirmed processing
+### (no lost updates when the site dies mid-transfer).
+class: SiteSyncTask
+table: site_sync_tasks
+fields:
+
+  ### The site the data must be delivered to.
+  site: Site?, relation(onDelete=Cascade)
+
+  ### The person whose profile/membership changed.
+  profile: MemberProfile?, relation(onDelete=Cascade)
+
+  ### Delivery attempts so far (capped; keeps the row on failure).
+  attempts: int, defaultModel=0
+
+  ### Last delivery error (processing/diagnostics).
+  lastError: String?
+
+  ### When the pending delivery was noted (refreshed on collapse).
+  createdAt: DateTime, defaultModel=now
+indexes:
+  site_profile_unique_idx:
+    fields: siteId, profileId
+    unique: true

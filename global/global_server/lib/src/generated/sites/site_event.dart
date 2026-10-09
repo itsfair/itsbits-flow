@@ -19,14 +19,17 @@ abstract class SiteEvent
     int? pongSentAtMs,
     int? pingSentAtMs,
     int? sentAtMs,
+    bool? needsSiteSync,
   }) : pongSentAtMs = pongSentAtMs ?? 0,
        pingSentAtMs = pingSentAtMs ?? 0,
-       sentAtMs = sentAtMs ?? 0;
+       sentAtMs = sentAtMs ?? 0,
+       needsSiteSync = needsSiteSync ?? false;
 
   factory SiteEvent({
     int? pongSentAtMs,
     int? pingSentAtMs,
     int? sentAtMs,
+    bool? needsSiteSync,
   }) = _SiteEventImpl;
 
   factory SiteEvent.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -34,6 +37,9 @@ abstract class SiteEvent
       pongSentAtMs: jsonSerialization['pongSentAtMs'] as int?,
       pingSentAtMs: jsonSerialization['pingSentAtMs'] as int?,
       sentAtMs: jsonSerialization['sentAtMs'] as int?,
+      needsSiteSync: jsonSerialization['needsSiteSync'] == null
+          ? null
+          : _is.BoolJsonExtension.fromJson(jsonSerialization['needsSiteSync']),
     );
   }
 
@@ -46,6 +52,10 @@ abstract class SiteEvent
   /// Millisecond timestamp of the senders send time.
   int sentAtMs;
 
+  /// Set (true) when the server pushes spontaneously (queue-triggered):
+  /// the client should pull pending sync tasks from `siteSync` now.
+  bool needsSiteSync;
+
   /// Returns a shallow copy of this [SiteEvent]
   /// with some or all fields replaced by the given arguments.
   @_is.useResult
@@ -53,6 +63,7 @@ abstract class SiteEvent
     int? pongSentAtMs,
     int? pingSentAtMs,
     int? sentAtMs,
+    bool? needsSiteSync,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -61,6 +72,7 @@ abstract class SiteEvent
       'pongSentAtMs': pongSentAtMs,
       'pingSentAtMs': pingSentAtMs,
       'sentAtMs': sentAtMs,
+      'needsSiteSync': needsSiteSync,
     };
   }
 
@@ -71,6 +83,7 @@ abstract class SiteEvent
       'pongSentAtMs': pongSentAtMs,
       'pingSentAtMs': pingSentAtMs,
       'sentAtMs': sentAtMs,
+      'needsSiteSync': needsSiteSync,
     };
   }
 
@@ -85,10 +98,12 @@ class _SiteEventImpl extends SiteEvent {
     int? pongSentAtMs,
     int? pingSentAtMs,
     int? sentAtMs,
+    bool? needsSiteSync,
   }) : super._(
          pongSentAtMs: pongSentAtMs,
          pingSentAtMs: pingSentAtMs,
          sentAtMs: sentAtMs,
+         needsSiteSync: needsSiteSync,
        );
 
   /// Returns a shallow copy of this [SiteEvent]
@@ -99,11 +114,13 @@ class _SiteEventImpl extends SiteEvent {
     int? pongSentAtMs,
     int? pingSentAtMs,
     int? sentAtMs,
+    bool? needsSiteSync,
   }) {
     return SiteEvent(
       pongSentAtMs: pongSentAtMs ?? this.pongSentAtMs,
       pingSentAtMs: pingSentAtMs ?? this.pingSentAtMs,
       sentAtMs: sentAtMs ?? this.sentAtMs,
+      needsSiteSync: needsSiteSync ?? this.needsSiteSync,
     );
   }
 }

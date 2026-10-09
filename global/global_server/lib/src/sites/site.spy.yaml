@@ -18,6 +18,11 @@ fields:
   ### mail-based delivery of setup material).
   companyEmail: String
 
+  ### Public URL of the site image (placeholder; the upload itself will be
+  ### implemented later and happens at the local instance, pushed from
+  ### there to the global backend).
+  imageUrl: String?
+
   ### Connect status of the site (setup pending / registered).
   status: SiteSetupStatus, defaultModel=pendingSetup
 

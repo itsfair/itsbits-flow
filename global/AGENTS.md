@@ -38,6 +38,25 @@ Declared under `serverpod: flutter_apps:` in `global_server/pubspec.yaml`:
 - `global` → `global_flutter` (platform admin app)
 - `enduser` → `enduser_flutter`
 
+### enduser_flutter (current state)
+
+- Home: horizontal "Neueste Sites" carousel (newest 5, registered only)
+  + entry to the full site list (`/sites`) — both rendered by the SHARED
+  `site_directory` components (graph via `SiteDirectoryApi` adapter,
+  `lib/site_directory_api.dart`).
+- Site detail (`/site/:siteId`): shared display body + the membership
+  FAB (states: Anmelden for signed-out users / Abonnieren-when-online /
+  Meine Mitgliedschaft / Erneut abonnieren for deactivated rows).
+  Subscribing runs the shared DSGVO consent dialog first
+  (`membership_terms_dialog.dart`, draft text — review backlog item 7).
+- Membership screen (`/membership/:siteId`): site info + own membership
+  data + access-authorization placeholder section + unsubscribe
+  (marker-only: data kept, reactivation possible).
+- Sign-in uses the FULL `SignInWidget` (end-user registration is
+  enduser-app-only); the admin apps use the shared login-only screen.
+- BLE door flow is separate (`/qr-reader`, `/ble-test`) and not yet
+  wired to the membership screen.
+
 ## Target endpoints (own code)
 
 | Endpoint | Purpose |
@@ -48,7 +67,9 @@ Declared under `serverpod: flutter_apps:` in `global_server/pubspec.yaml`:
 | `usersAdmin` | Platform admin: `listUsers` (50/page, email/name filter), `getUser`, `setBlocked`, `setGlobalAdmin` |
 | `sitesAdmin` | Platform admin, sites: `createSite` (no secrets), `listSites`/`countSites`, `getSite`, `revokeSiteConnection` |
 | `siteEnrollment` | Public: `listSiteAdminCandidates` + `enroll({email, password, siteId?})` for the local instance |
-| `siteConnection` | Device connection method stream (`connect(Stream<SitePing>) → Stream<SiteEvent>`), scope `site-device` |
+| `siteConnection` | Device connection method stream (`connect(Stream<SitePing>) → Stream<SiteEvent>`), scope `site-device`. Genuinely duplex: yields an initial `needsSiteSync` event at stream start plus spontaneous ones via the in-process `SiteSyncNotifier` (queue-triggered real-time push) |
+| `siteDirectory` | End-user site directory (`SitePublic`, no login for browsing): `listLatest` (carousel), `list`/`count` (search/pagination, registered-only), `getSite`. Authenticated: `myMembership`, `subscribe` (validations: site registered + currently connected + member_profile complete), `unsubscribe` (marker only, data kept) |
+| `siteSync` | Device-scoped member-data delivery (pull model, `site-device` scope): `pullPending` (assembles payloads from CURRENT global state; one per (site, profile)), `confirmProcessed` (deletes task rows) |
 
 ## Key design points
 
@@ -65,6 +86,22 @@ Declared under `serverpod: flutter_apps:` in `global_server/pubspec.yaml`:
   is created manually (SQL: scope on the auth user row) + re-login.
 - **Site linkage**: `SiteMembership.profile` FK → `member_profile`
   (membership links the person via the directory, not the auth user).
+- **Member-data sync (end-user subscriptions)**: `site_sync_tasks` queue
+  (unique per site+profile, entries collapse since payloads always reflect
+  the current state) is the source of truth; rows are deleted only after
+  the local instance confirmed processing. Queue writes first, then a
+  best-effort real-time push via `SiteSyncNotifier` (in-process
+  StreamController registry merged into each site's method stream —
+  multi-instance deployments need Redis pub/sub: TODO). All global
+  profile edits (`save`, `setUserImage`, `removeUserImage`) and
+  subscribe/unsubscribe enqueue for every active membership.
+- **Subscription rules**: only fully registered sites are end-user
+  visible (`SitePublic` projection, no internals); subscribe requires the
+  site currently connected (90 s heartbeat window,
+  `SiteConnectionStatus` helper) and a complete member_profile
+  (`MemberProfileChecks.profileIsComplete`, reusable). Unsubscribe sets
+  `active=false` + `endedAt`, keeps the row (reactivation replaces the
+  marker).
 - **Site setup**: `createSite` generates no secrets — the site admin
   sets up the local instance on site with their global credentials
   (`siteEnrollment.enroll`); device credential = non-rotating SAS

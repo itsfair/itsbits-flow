@@ -20,6 +20,8 @@ import 'package:global_server/src/generated/admin/user_admin_summary.dart'
     as _i6s0j5k6;
 import 'package:global_server/src/generated/profile/member_profile.dart'
     as _ih6gitpx;
+import 'package:global_server/src/generated/sites/my_membership_info.dart'
+    as _iup1l3le;
 import 'package:global_server/src/generated/sites/site.dart' as _inl2gdz9;
 import 'package:global_server/src/generated/sites/site_admin_membership_candidate.dart'
     as _igjb6jg5;
@@ -27,6 +29,10 @@ import 'package:global_server/src/generated/sites/site_enrollment_info.dart'
     as _icnabjvy;
 import 'package:global_server/src/generated/sites/site_event.dart' as _ip757k8u;
 import 'package:global_server/src/generated/sites/site_ping.dart' as _i2wwgvmf;
+import 'package:global_server/src/generated/sites/site_public.dart'
+    as _insc1xa7;
+import 'package:global_server/src/generated/sites/site_sync_member.dart'
+    as _ivmpa84h;
 import 'package:serverpod/serverpod.dart' as _is;
 import 'package:serverpod_auth_core_server/serverpod_auth_core_server.dart'
     as _iacs;
@@ -174,7 +180,11 @@ class TestEndpoints {
 
   late final _SiteConnectionEndpoint siteConnection;
 
+  late final _SiteDirectoryEndpoint siteDirectory;
+
   late final _SiteEnrollmentEndpoint siteEnrollment;
+
+  late final _SiteSyncEndpoint siteSync;
 
   late final _SitesAdminEndpoint sitesAdmin;
 }
@@ -206,7 +216,15 @@ class _InternalTestEndpoints extends TestEndpoints
       endpoints,
       serializationManager,
     );
+    siteDirectory = _SiteDirectoryEndpoint(
+      endpoints,
+      serializationManager,
+    );
     siteEnrollment = _SiteEnrollmentEndpoint(
+      endpoints,
+      serializationManager,
+    );
+    siteSync = _SiteSyncEndpoint(
       endpoints,
       serializationManager,
     );
@@ -866,6 +884,240 @@ class _SiteConnectionEndpoint {
   }
 }
 
+class _SiteDirectoryEndpoint {
+  _SiteDirectoryEndpoint(
+    this._endpointDispatch,
+    this._serializationManager,
+  );
+
+  final _is.EndpointDispatch _endpointDispatch;
+
+  final _is.SerializationManager _serializationManager;
+
+  _ida.Future<List<_insc1xa7.SitePublic>> listLatest(
+    _ist.TestSessionBuilder sessionBuilder, {
+    required int limit,
+  }) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'siteDirectory',
+            method: 'listLatest',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'siteDirectory',
+          methodName: 'listLatest',
+          parameters: _ist.testObjectToJson({'limit': limit}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<List<_insc1xa7.SitePublic>>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _ida.Future<List<_insc1xa7.SitePublic>> listSites(
+    _ist.TestSessionBuilder sessionBuilder, {
+    String? query,
+    required int offset,
+    required int limit,
+  }) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'siteDirectory',
+            method: 'listSites',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'siteDirectory',
+          methodName: 'listSites',
+          parameters: _ist.testObjectToJson({
+            'query': query,
+            'offset': offset,
+            'limit': limit,
+          }),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<List<_insc1xa7.SitePublic>>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _ida.Future<int> countSites(
+    _ist.TestSessionBuilder sessionBuilder, {
+    String? query,
+  }) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'siteDirectory',
+            method: 'countSites',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'siteDirectory',
+          methodName: 'countSites',
+          parameters: _ist.testObjectToJson({'query': query}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<int>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _ida.Future<_insc1xa7.SitePublic> getSite(
+    _ist.TestSessionBuilder sessionBuilder, {
+    required int siteId,
+  }) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'siteDirectory',
+            method: 'getSite',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'siteDirectory',
+          methodName: 'getSite',
+          parameters: _ist.testObjectToJson({'siteId': siteId}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<_insc1xa7.SitePublic>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _ida.Future<_iup1l3le.MyMembershipInfo?> myMembership(
+    _ist.TestSessionBuilder sessionBuilder, {
+    required int siteId,
+  }) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'siteDirectory',
+            method: 'myMembership',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'siteDirectory',
+          methodName: 'myMembership',
+          parameters: _ist.testObjectToJson({'siteId': siteId}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<_iup1l3le.MyMembershipInfo?>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _ida.Future<_iup1l3le.MyMembershipInfo> subscribe(
+    _ist.TestSessionBuilder sessionBuilder, {
+    required int siteId,
+  }) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'siteDirectory',
+            method: 'subscribe',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'siteDirectory',
+          methodName: 'subscribe',
+          parameters: _ist.testObjectToJson({'siteId': siteId}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<_iup1l3le.MyMembershipInfo>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _ida.Future<void> unsubscribe(
+    _ist.TestSessionBuilder sessionBuilder, {
+    required int siteId,
+  }) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'siteDirectory',
+            method: 'unsubscribe',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'siteDirectory',
+          methodName: 'unsubscribe',
+          parameters: _ist.testObjectToJson({'siteId': siteId}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<void>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+}
+
 class _SiteEnrollmentEndpoint {
   _SiteEnrollmentEndpoint(
     this._endpointDispatch,
@@ -942,6 +1194,78 @@ class _SiteEnrollmentEndpoint {
                   _localCallContext.arguments,
                 )
                 as _ida.Future<_icnabjvy.SiteEnrollmentInfo>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+}
+
+class _SiteSyncEndpoint {
+  _SiteSyncEndpoint(
+    this._endpointDispatch,
+    this._serializationManager,
+  );
+
+  final _is.EndpointDispatch _endpointDispatch;
+
+  final _is.SerializationManager _serializationManager;
+
+  _ida.Future<List<_ivmpa84h.SiteSyncMember>> pullPending(
+    _ist.TestSessionBuilder sessionBuilder,
+  ) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'siteSync',
+            method: 'pullPending',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'siteSync',
+          methodName: 'pullPending',
+          parameters: _ist.testObjectToJson({}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<List<_ivmpa84h.SiteSyncMember>>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _ida.Future<void> confirmProcessed(
+    _ist.TestSessionBuilder sessionBuilder, {
+    required List<int> taskIds,
+  }) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'siteSync',
+            method: 'confirmProcessed',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'siteSync',
+          methodName: 'confirmProcessed',
+          parameters: _ist.testObjectToJson({'taskIds': taskIds}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<void>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();

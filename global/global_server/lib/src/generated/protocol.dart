@@ -14,6 +14,10 @@
 import 'package:global_server/src/generated/sites/site.dart' as _inl2gdz9;
 import 'package:global_server/src/generated/sites/site_admin_membership_candidate.dart'
     as _igjb6jg5;
+import 'package:global_server/src/generated/sites/site_public.dart'
+    as _insc1xa7;
+import 'package:global_server/src/generated/sites/site_sync_member.dart'
+    as _ivmpa84h;
 import 'package:serverpod/protocol.dart' as _isp;
 import 'package:serverpod/serverpod.dart' as _is;
 import 'package:serverpod_auth_core_server/serverpod_auth_core_server.dart'
@@ -24,6 +28,7 @@ import 'admin/user_admin_exception.dart' as _ipzw5jrh;
 import 'admin/user_admin_page.dart' as _ib47g35s;
 import 'admin/user_admin_summary.dart' as _idu811wg;
 import 'profile/member_profile.dart' as _i1iocmvy;
+import 'sites/my_membership_info.dart' as _ia7esjvv;
 import 'sites/site.dart' as _ilajh623;
 import 'sites/site_admin_exception.dart' as _ie4pusq6;
 import 'sites/site_admin_membership_candidate.dart' as _ib7ux6dk;
@@ -32,13 +37,17 @@ import 'sites/site_enrollment_info.dart' as _itnt8dpd;
 import 'sites/site_event.dart' as _iw3gj98k;
 import 'sites/site_membership.dart' as _iioeq9li;
 import 'sites/site_ping.dart' as _icfqqkiq;
+import 'sites/site_public.dart' as _ix6rnrmo;
 import 'sites/site_role.dart' as _iuk2ydaa;
 import 'sites/site_setup_status.dart' as _ijgbvr7h;
+import 'sites/site_sync_member.dart' as _i4azfjze;
+import 'sites/site_sync_task.dart' as _iplwnvy0;
 import 'sites/site_transfer_info.dart' as _i1cuvu3u;
 export 'admin/user_admin_exception.dart';
 export 'admin/user_admin_page.dart';
 export 'admin/user_admin_summary.dart';
 export 'profile/member_profile.dart';
+export 'sites/my_membership_info.dart';
 export 'sites/site.dart';
 export 'sites/site_admin_exception.dart';
 export 'sites/site_admin_membership_candidate.dart';
@@ -47,8 +56,11 @@ export 'sites/site_enrollment_info.dart';
 export 'sites/site_event.dart';
 export 'sites/site_membership.dart';
 export 'sites/site_ping.dart';
+export 'sites/site_public.dart';
 export 'sites/site_role.dart';
 export 'sites/site_setup_status.dart';
+export 'sites/site_sync_member.dart';
+export 'sites/site_sync_task.dart';
 export 'sites/site_transfer_info.dart';
 
 class Protocol extends _is.DatabaseSerializationManager {
@@ -243,6 +255,12 @@ class Protocol extends _is.DatabaseSerializationManager {
           dartType: 'bool',
         ),
         _isp.ColumnDefinition(
+          name: 'endedAt',
+          columnType: _isp.ColumnType.timestampWithoutTimeZone,
+          isNullable: true,
+          dartType: 'DateTime?',
+        ),
+        _isp.ColumnDefinition(
           name: 'createdAt',
           columnType: _isp.ColumnType.timestampWithoutTimeZone,
           isNullable: false,
@@ -274,6 +292,93 @@ class Protocol extends _is.DatabaseSerializationManager {
       indexes: [
         _isp.IndexDefinition(
           indexName: 'site_role_idx',
+          tableSpace: null,
+          elements: [
+            _isp.IndexElementDefinition(
+              type: _isp.IndexElementDefinitionType.column,
+              definition: 'siteId',
+            ),
+            _isp.IndexElementDefinition(
+              type: _isp.IndexElementDefinitionType.column,
+              definition: 'profileId',
+            ),
+          ],
+          type: 'btree',
+          isUnique: true,
+          isPrimary: false,
+        ),
+      ],
+      managed: true,
+    ),
+    _isp.TableDefinition(
+      name: 'site_sync_tasks',
+      dartName: 'SiteSyncTask',
+      schema: 'public',
+      module: 'global',
+      columns: [
+        _isp.ColumnDefinition(
+          name: 'id',
+          columnType: _isp.ColumnType.bigint,
+          isNullable: false,
+          dartType: 'int?',
+          columnDefault: 'serial',
+        ),
+        _isp.ColumnDefinition(
+          name: 'siteId',
+          columnType: _isp.ColumnType.bigint,
+          isNullable: false,
+          dartType: 'int',
+        ),
+        _isp.ColumnDefinition(
+          name: 'profileId',
+          columnType: _isp.ColumnType.bigint,
+          isNullable: false,
+          dartType: 'int',
+        ),
+        _isp.ColumnDefinition(
+          name: 'attempts',
+          columnType: _isp.ColumnType.bigint,
+          isNullable: false,
+          dartType: 'int',
+        ),
+        _isp.ColumnDefinition(
+          name: 'lastError',
+          columnType: _isp.ColumnType.text,
+          isNullable: true,
+          dartType: 'String?',
+        ),
+        _isp.ColumnDefinition(
+          name: 'createdAt',
+          columnType: _isp.ColumnType.timestampWithoutTimeZone,
+          isNullable: false,
+          dartType: 'DateTime',
+        ),
+      ],
+      foreignKeys: [
+        _isp.ForeignKeyDefinition(
+          constraintName: 'site_sync_tasks_fk_0',
+          columns: ['siteId'],
+          referenceTable: 'sites',
+          referenceTableSchema: 'public',
+          referenceColumns: ['id'],
+          onUpdate: _isp.ForeignKeyAction.noAction,
+          onDelete: _isp.ForeignKeyAction.cascade,
+          matchType: null,
+        ),
+        _isp.ForeignKeyDefinition(
+          constraintName: 'site_sync_tasks_fk_1',
+          columns: ['profileId'],
+          referenceTable: 'member_profile',
+          referenceTableSchema: 'public',
+          referenceColumns: ['id'],
+          onUpdate: _isp.ForeignKeyAction.noAction,
+          onDelete: _isp.ForeignKeyAction.cascade,
+          matchType: null,
+        ),
+      ],
+      indexes: [
+        _isp.IndexDefinition(
+          indexName: 'site_profile_unique_idx',
           tableSpace: null,
           elements: [
             _isp.IndexElementDefinition(
@@ -342,6 +447,12 @@ class Protocol extends _is.DatabaseSerializationManager {
           dartType: 'String',
         ),
         _isp.ColumnDefinition(
+          name: 'imageUrl',
+          columnType: _isp.ColumnType.text,
+          isNullable: true,
+          dartType: 'String?',
+        ),
+        _isp.ColumnDefinition(
           name: 'status',
           columnType: _isp.ColumnType.text,
           isNullable: false,
@@ -401,8 +512,8 @@ class Protocol extends _is.DatabaseSerializationManager {
       ],
       managed: true,
     ),
-    ..._iais.Protocol.targetTableDefinitions,
     ..._iacs.Protocol.targetTableDefinitions,
+    ..._iais.Protocol.targetTableDefinitions,
     ..._isp.Protocol.targetTableDefinitions,
   ];
 
@@ -445,6 +556,9 @@ class Protocol extends _is.DatabaseSerializationManager {
     if (t == _i1iocmvy.MemberProfile) {
       return _i1iocmvy.MemberProfile.fromJson(data) as T;
     }
+    if (t == _ia7esjvv.MyMembershipInfo) {
+      return _ia7esjvv.MyMembershipInfo.fromJson(data) as T;
+    }
     if (t == _ilajh623.Site) {
       return _ilajh623.Site.fromJson(data) as T;
     }
@@ -469,11 +583,20 @@ class Protocol extends _is.DatabaseSerializationManager {
     if (t == _icfqqkiq.SitePing) {
       return _icfqqkiq.SitePing.fromJson(data) as T;
     }
+    if (t == _ix6rnrmo.SitePublic) {
+      return _ix6rnrmo.SitePublic.fromJson(data) as T;
+    }
     if (t == _iuk2ydaa.SiteRole) {
       return _iuk2ydaa.SiteRole.fromJson(data) as T;
     }
     if (t == _ijgbvr7h.SiteSetupStatus) {
       return _ijgbvr7h.SiteSetupStatus.fromJson(data) as T;
+    }
+    if (t == _i4azfjze.SiteSyncMember) {
+      return _i4azfjze.SiteSyncMember.fromJson(data) as T;
+    }
+    if (t == _iplwnvy0.SiteSyncTask) {
+      return _iplwnvy0.SiteSyncTask.fromJson(data) as T;
     }
     if (t == _i1cuvu3u.SiteTransferInfo) {
       return _i1cuvu3u.SiteTransferInfo.fromJson(data) as T;
@@ -492,6 +615,10 @@ class Protocol extends _is.DatabaseSerializationManager {
     }
     if (t == _is.getType<_i1iocmvy.MemberProfile?>()) {
       return (data != null ? _i1iocmvy.MemberProfile.fromJson(data) : null)
+          as T;
+    }
+    if (t == _is.getType<_ia7esjvv.MyMembershipInfo?>()) {
+      return (data != null ? _ia7esjvv.MyMembershipInfo.fromJson(data) : null)
           as T;
     }
     if (t == _is.getType<_ilajh623.Site?>()) {
@@ -525,12 +652,22 @@ class Protocol extends _is.DatabaseSerializationManager {
     if (t == _is.getType<_icfqqkiq.SitePing?>()) {
       return (data != null ? _icfqqkiq.SitePing.fromJson(data) : null) as T;
     }
+    if (t == _is.getType<_ix6rnrmo.SitePublic?>()) {
+      return (data != null ? _ix6rnrmo.SitePublic.fromJson(data) : null) as T;
+    }
     if (t == _is.getType<_iuk2ydaa.SiteRole?>()) {
       return (data != null ? _iuk2ydaa.SiteRole.fromJson(data) : null) as T;
     }
     if (t == _is.getType<_ijgbvr7h.SiteSetupStatus?>()) {
       return (data != null ? _ijgbvr7h.SiteSetupStatus.fromJson(data) : null)
           as T;
+    }
+    if (t == _is.getType<_i4azfjze.SiteSyncMember?>()) {
+      return (data != null ? _i4azfjze.SiteSyncMember.fromJson(data) : null)
+          as T;
+    }
+    if (t == _is.getType<_iplwnvy0.SiteSyncTask?>()) {
+      return (data != null ? _iplwnvy0.SiteSyncTask.fromJson(data) : null) as T;
     }
     if (t == _is.getType<_i1cuvu3u.SiteTransferInfo?>()) {
       return (data != null ? _i1cuvu3u.SiteTransferInfo.fromJson(data) : null)
@@ -553,6 +690,12 @@ class Protocol extends _is.DatabaseSerializationManager {
               .toList()
           as T;
     }
+    if (t == List<_insc1xa7.SitePublic>) {
+      return (data as List)
+              .map((e) => deserialize<_insc1xa7.SitePublic>(e))
+              .toList()
+          as T;
+    }
     if (t == List<_igjb6jg5.SiteAdminMembershipCandidate>) {
       return (data as List)
               .map(
@@ -561,15 +704,24 @@ class Protocol extends _is.DatabaseSerializationManager {
               .toList()
           as T;
     }
+    if (t == List<_ivmpa84h.SiteSyncMember>) {
+      return (data as List)
+              .map((e) => deserialize<_ivmpa84h.SiteSyncMember>(e))
+              .toList()
+          as T;
+    }
+    if (t == List<int>) {
+      return (data as List).map((e) => deserialize<int>(e)).toList() as T;
+    }
     if (t == List<_inl2gdz9.Site>) {
       return (data as List).map((e) => deserialize<_inl2gdz9.Site>(e)).toList()
           as T;
     }
     try {
-      return _iais.Protocol().deserialize<T>(data, t);
+      return _iacs.Protocol().deserialize<T>(data, t);
     } on _is.DeserializationTypeNotFoundException catch (_) {}
     try {
-      return _iacs.Protocol().deserialize<T>(data, t);
+      return _iais.Protocol().deserialize<T>(data, t);
     } on _is.DeserializationTypeNotFoundException catch (_) {}
     try {
       return _isp.Protocol().deserialize<T>(data, t);
@@ -583,6 +735,7 @@ class Protocol extends _is.DatabaseSerializationManager {
       _ib47g35s.AdminUserPage => 'AdminUserPage',
       _idu811wg.AdminUserSummary => 'AdminUserSummary',
       _i1iocmvy.MemberProfile => 'MemberProfile',
+      _ia7esjvv.MyMembershipInfo => 'MyMembershipInfo',
       _ilajh623.Site => 'Site',
       _ie4pusq6.SiteAdminException => 'SiteAdminException',
       _ib7ux6dk.SiteAdminMembershipCandidate => 'SiteAdminMembershipCandidate',
@@ -591,8 +744,11 @@ class Protocol extends _is.DatabaseSerializationManager {
       _iw3gj98k.SiteEvent => 'SiteEvent',
       _iioeq9li.SiteMembership => 'SiteMembership',
       _icfqqkiq.SitePing => 'SitePing',
+      _ix6rnrmo.SitePublic => 'SitePublic',
       _iuk2ydaa.SiteRole => 'SiteRole',
       _ijgbvr7h.SiteSetupStatus => 'SiteSetupStatus',
+      _i4azfjze.SiteSyncMember => 'SiteSyncMember',
+      _iplwnvy0.SiteSyncTask => 'SiteSyncTask',
       _i1cuvu3u.SiteTransferInfo => 'SiteTransferInfo',
       _ => null,
     };
@@ -616,6 +772,8 @@ class Protocol extends _is.DatabaseSerializationManager {
         return 'AdminUserSummary';
       case _i1iocmvy.MemberProfile():
         return 'MemberProfile';
+      case _ia7esjvv.MyMembershipInfo():
+        return 'MyMembershipInfo';
       case _ilajh623.Site():
         return 'Site';
       case _ie4pusq6.SiteAdminException():
@@ -632,24 +790,30 @@ class Protocol extends _is.DatabaseSerializationManager {
         return 'SiteMembership';
       case _icfqqkiq.SitePing():
         return 'SitePing';
+      case _ix6rnrmo.SitePublic():
+        return 'SitePublic';
       case _iuk2ydaa.SiteRole():
         return 'SiteRole';
       case _ijgbvr7h.SiteSetupStatus():
         return 'SiteSetupStatus';
+      case _i4azfjze.SiteSyncMember():
+        return 'SiteSyncMember';
+      case _iplwnvy0.SiteSyncTask():
+        return 'SiteSyncTask';
       case _i1cuvu3u.SiteTransferInfo():
         return 'SiteTransferInfo';
-    }
-    className = _iais.Protocol().getClassNameForObject(data);
-    if (className != null) {
-      return className.contains('.')
-          ? className
-          : 'serverpod_auth_idp.$className';
     }
     className = _iacs.Protocol().getClassNameForObject(data);
     if (className != null) {
       return className.contains('.')
           ? className
           : 'serverpod_auth_core.$className';
+    }
+    className = _iais.Protocol().getClassNameForObject(data);
+    if (className != null) {
+      return className.contains('.')
+          ? className
+          : 'serverpod_auth_idp.$className';
     }
     className = _isp.Protocol().getClassNameForObject(data);
     if (className != null) {
@@ -676,6 +840,9 @@ class Protocol extends _is.DatabaseSerializationManager {
     if (dataClassName == 'MemberProfile') {
       return deserialize<_i1iocmvy.MemberProfile>(data['data']);
     }
+    if (dataClassName == 'MyMembershipInfo') {
+      return deserialize<_ia7esjvv.MyMembershipInfo>(data['data']);
+    }
     if (dataClassName == 'Site') {
       return deserialize<_ilajh623.Site>(data['data']);
     }
@@ -700,22 +867,31 @@ class Protocol extends _is.DatabaseSerializationManager {
     if (dataClassName == 'SitePing') {
       return deserialize<_icfqqkiq.SitePing>(data['data']);
     }
+    if (dataClassName == 'SitePublic') {
+      return deserialize<_ix6rnrmo.SitePublic>(data['data']);
+    }
     if (dataClassName == 'SiteRole') {
       return deserialize<_iuk2ydaa.SiteRole>(data['data']);
     }
     if (dataClassName == 'SiteSetupStatus') {
       return deserialize<_ijgbvr7h.SiteSetupStatus>(data['data']);
     }
+    if (dataClassName == 'SiteSyncMember') {
+      return deserialize<_i4azfjze.SiteSyncMember>(data['data']);
+    }
+    if (dataClassName == 'SiteSyncTask') {
+      return deserialize<_iplwnvy0.SiteSyncTask>(data['data']);
+    }
     if (dataClassName == 'SiteTransferInfo') {
       return deserialize<_i1cuvu3u.SiteTransferInfo>(data['data']);
-    }
-    if (dataClassName.startsWith('serverpod_auth_idp.')) {
-      data['className'] = dataClassName.substring(19);
-      return _iais.Protocol().deserializeByClassName(data);
     }
     if (dataClassName.startsWith('serverpod_auth_core.')) {
       data['className'] = dataClassName.substring(20);
       return _iacs.Protocol().deserializeByClassName(data);
+    }
+    if (dataClassName.startsWith('serverpod_auth_idp.')) {
+      data['className'] = dataClassName.substring(19);
+      return _iais.Protocol().deserializeByClassName(data);
     }
     if (dataClassName.startsWith('serverpod.')) {
       data['className'] = dataClassName.substring(10);
@@ -725,20 +901,20 @@ class Protocol extends _is.DatabaseSerializationManager {
   }
 
   void _registerHostProtocols() {
-    _iais.Protocol().registerHostProtocol('global', this);
     _iacs.Protocol().registerHostProtocol('global', this);
+    _iais.Protocol().registerHostProtocol('global', this);
   }
 
   @override
   _is.Table? getTableForType(Type t) {
     {
-      var table = _iais.Protocol().getTableForType(t);
+      var table = _iacs.Protocol().getTableForType(t);
       if (table != null) {
         return table;
       }
     }
     {
-      var table = _iacs.Protocol().getTableForType(t);
+      var table = _iais.Protocol().getTableForType(t);
       if (table != null) {
         return table;
       }
@@ -758,6 +934,8 @@ class Protocol extends _is.DatabaseSerializationManager {
         return _iuoqdo0q.SiteDeviceSession.t;
       case _iioeq9li.SiteMembership:
         return _iioeq9li.SiteMembership.t;
+      case _iplwnvy0.SiteSyncTask:
+        return _iplwnvy0.SiteSyncTask.t;
     }
     return null;
   }
@@ -779,10 +957,10 @@ class Protocol extends _is.DatabaseSerializationManager {
       return null;
     }
     try {
-      return _iais.Protocol().mapRecordToJson(record);
+      return _iacs.Protocol().mapRecordToJson(record);
     } catch (_) {}
     try {
-      return _iacs.Protocol().mapRecordToJson(record);
+      return _iais.Protocol().mapRecordToJson(record);
     } catch (_) {}
     throw Exception('Unsupported record type ${record.runtimeType}');
   }

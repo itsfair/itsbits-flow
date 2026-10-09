@@ -22,7 +22,9 @@ import '../auth/email_idp_endpoint.dart' as _iuc1hd5t;
 import '../auth/jwt_refresh_endpoint.dart' as _inwq3ztq;
 import '../profile/member_profile_endpoint.dart' as _i9yekdp0;
 import '../sites/site_connection_endpoint.dart' as _iy15yji6;
+import '../sites/site_directory_endpoint.dart' as _ic6n5bkb;
 import '../sites/site_enrollment_endpoint.dart' as _ii29ea4g;
+import '../sites/site_sync_endpoint.dart' as _iojr50j8;
 import '../sites/sites_admin_endpoint.dart' as _i6ok1ur0;
 
 class Endpoints extends _is.EndpointDispatch {
@@ -59,10 +61,22 @@ class Endpoints extends _is.EndpointDispatch {
           'siteConnection',
           null,
         ),
+      'siteDirectory': _ic6n5bkb.SiteDirectoryEndpoint()
+        ..initialize(
+          server,
+          'siteDirectory',
+          null,
+        ),
       'siteEnrollment': _ii29ea4g.SiteEnrollmentEndpoint()
         ..initialize(
           server,
           'siteEnrollment',
+          null,
+        ),
+      'siteSync': _iojr50j8.SiteSyncEndpoint()
+        ..initialize(
+          server,
+          'siteSync',
           null,
         ),
       'sitesAdmin': _i6ok1ur0.SitesAdminEndpoint()
@@ -501,6 +515,171 @@ class Endpoints extends _is.EndpointDispatch {
         ),
       },
     );
+    connectors['siteDirectory'] = _is.EndpointConnector(
+      name: 'siteDirectory',
+      endpoint: endpoints['siteDirectory']!,
+      methodConnectors: {
+        'listLatest': _is.MethodConnector(
+          name: 'listLatest',
+          params: {
+            'limit': _is.ParameterDescription(
+              name: 'limit',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['siteDirectory']
+                          as _ic6n5bkb.SiteDirectoryEndpoint)
+                      .listLatest(
+                        session,
+                        limit: params['limit'],
+                      ),
+        ),
+        'listSites': _is.MethodConnector(
+          name: 'listSites',
+          params: {
+            'query': _is.ParameterDescription(
+              name: 'query',
+              type: _is.getType<String?>(),
+              nullable: true,
+            ),
+            'offset': _is.ParameterDescription(
+              name: 'offset',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+            'limit': _is.ParameterDescription(
+              name: 'limit',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['siteDirectory']
+                          as _ic6n5bkb.SiteDirectoryEndpoint)
+                      .listSites(
+                        session,
+                        query: params['query'],
+                        offset: params['offset'],
+                        limit: params['limit'],
+                      ),
+        ),
+        'countSites': _is.MethodConnector(
+          name: 'countSites',
+          params: {
+            'query': _is.ParameterDescription(
+              name: 'query',
+              type: _is.getType<String?>(),
+              nullable: true,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['siteDirectory']
+                          as _ic6n5bkb.SiteDirectoryEndpoint)
+                      .countSites(
+                        session,
+                        query: params['query'],
+                      ),
+        ),
+        'getSite': _is.MethodConnector(
+          name: 'getSite',
+          params: {
+            'siteId': _is.ParameterDescription(
+              name: 'siteId',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['siteDirectory']
+                          as _ic6n5bkb.SiteDirectoryEndpoint)
+                      .getSite(
+                        session,
+                        siteId: params['siteId'],
+                      ),
+        ),
+        'myMembership': _is.MethodConnector(
+          name: 'myMembership',
+          params: {
+            'siteId': _is.ParameterDescription(
+              name: 'siteId',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['siteDirectory']
+                          as _ic6n5bkb.SiteDirectoryEndpoint)
+                      .myMembership(
+                        session,
+                        siteId: params['siteId'],
+                      ),
+        ),
+        'subscribe': _is.MethodConnector(
+          name: 'subscribe',
+          params: {
+            'siteId': _is.ParameterDescription(
+              name: 'siteId',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['siteDirectory']
+                          as _ic6n5bkb.SiteDirectoryEndpoint)
+                      .subscribe(
+                        session,
+                        siteId: params['siteId'],
+                      ),
+        ),
+        'unsubscribe': _is.MethodConnector(
+          name: 'unsubscribe',
+          params: {
+            'siteId': _is.ParameterDescription(
+              name: 'siteId',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['siteDirectory']
+                          as _ic6n5bkb.SiteDirectoryEndpoint)
+                      .unsubscribe(
+                        session,
+                        siteId: params['siteId'],
+                      ),
+        ),
+      },
+    );
     connectors['siteEnrollment'] = _is.EndpointConnector(
       name: 'siteEnrollment',
       endpoint: endpoints['siteEnrollment']!,
@@ -564,6 +743,41 @@ class Endpoints extends _is.EndpointDispatch {
                         password: params['password'],
                         siteId: params['siteId'],
                       ),
+        ),
+      },
+    );
+    connectors['siteSync'] = _is.EndpointConnector(
+      name: 'siteSync',
+      endpoint: endpoints['siteSync']!,
+      methodConnectors: {
+        'pullPending': _is.MethodConnector(
+          name: 'pullPending',
+          params: {},
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['siteSync'] as _iojr50j8.SiteSyncEndpoint)
+                  .pullPending(session),
+        ),
+        'confirmProcessed': _is.MethodConnector(
+          name: 'confirmProcessed',
+          params: {
+            'taskIds': _is.ParameterDescription(
+              name: 'taskIds',
+              type: _is.getType<List<int>>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['siteSync'] as _iojr50j8.SiteSyncEndpoint)
+                  .confirmProcessed(
+                    session,
+                    taskIds: params['taskIds'],
+                  ),
         ),
       },
     );
@@ -721,9 +935,9 @@ class Endpoints extends _is.EndpointDispatch {
         ),
       },
     );
-    modules['serverpod_auth_idp'] = _iais.Endpoints()
-      ..initializeEndpoints(server);
     modules['serverpod_auth_core'] = _iacs.Endpoints()
+      ..initializeEndpoints(server);
+    modules['serverpod_auth_idp'] = _iais.Endpoints()
       ..initializeEndpoints(server);
   }
 }

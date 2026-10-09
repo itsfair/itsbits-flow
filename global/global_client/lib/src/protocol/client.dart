@@ -18,6 +18,8 @@ import 'package:global_client/src/protocol/admin/user_admin_summary.dart'
     as _iw2ravjy;
 import 'package:global_client/src/protocol/profile/member_profile.dart'
     as _i01pu2ta;
+import 'package:global_client/src/protocol/sites/my_membership_info.dart'
+    as _iybsvnt4;
 import 'package:global_client/src/protocol/sites/site.dart' as _i8hsp7h7;
 import 'package:global_client/src/protocol/sites/site_admin_membership_candidate.dart'
     as _iyuybenn;
@@ -25,6 +27,9 @@ import 'package:global_client/src/protocol/sites/site_enrollment_info.dart'
     as _i5qr0sul;
 import 'package:global_client/src/protocol/sites/site_event.dart' as _i1j3efl1;
 import 'package:global_client/src/protocol/sites/site_ping.dart' as _izjurmoq;
+import 'package:global_client/src/protocol/sites/site_public.dart' as _idicvci9;
+import 'package:global_client/src/protocol/sites/site_sync_member.dart'
+    as _is9y68do;
 import 'package:http/http.dart' as _i85jenna;
 import 'package:serverpod_auth_core_client/serverpod_auth_core_client.dart'
     as _iacc;
@@ -411,6 +416,14 @@ class EndpointMemberProfile extends _isc.EndpointRef {
 /// The local instance opens a long-lived method stream on [connect] and
 /// keeps sending [SitePing]s. Each ping refreshes `site.lastSeenAt` (the
 /// per-site connection chip in the admin UI derives its state from that).
+///
+/// The stream is genuinely duplex: [SiteSyncNotifier]-triggered server
+/// events (`needsSiteSync`) are yielded spontaneously too, so the local
+/// instance can pull pending member-data deliveries in real time instead
+/// of waiting up to a ping interval. A `needsSiteSync` event is also
+/// yielded once at stream start so a freshly (re-)connected site pulls
+/// everything queued while it was offline.
+///
 /// The site is resolved from the enrolled `SiteDeviceSession` mapping via
 /// the SAS session id (`session.authenticated!.authId`).
 ///
@@ -439,6 +452,99 @@ class EndpointSiteConnection extends _isc.EndpointRef {
         'connect',
         {},
         {'pings': pings},
+      );
+}
+
+/// End-user directory for sites ("Betriebe"): browseable WITHOUT login
+/// (`listLatest`, `list`, `count`, `getSite` — only fully registered sites
+/// are visible). Subscribing/unsubscribing requires a signed-in user whose
+/// member_profile is complete.
+///
+/// Membership = global `SiteMembership` row (role `member`, unique per
+/// person+site). Creating/reactivating one also enqueues the member-data
+/// delivery to the site's local instance (`SiteSyncQueue`) and kicks a
+/// real-time stream event if the site is currently connected.
+/// {@category Endpoint}
+class EndpointSiteDirectory extends _isc.EndpointRef {
+  EndpointSiteDirectory(_isc.EndpointCaller caller) : super(caller);
+
+  @override
+  String get name => 'siteDirectory';
+
+  /// The newest registered sites for the home screen carousel.
+  _ida.Future<List<_idicvci9.SitePublic>> listLatest({required int limit}) =>
+      caller.callServerEndpoint<List<_idicvci9.SitePublic>>(
+        'siteDirectory',
+        'listLatest',
+        {'limit': limit},
+      );
+
+  /// All registered sites, newest first, paginated; [query] filters name,
+  /// company email or city (case-insensitive substring).
+  _ida.Future<List<_idicvci9.SitePublic>> listSites({
+    String? query,
+    required int offset,
+    required int limit,
+  }) => caller.callServerEndpoint<List<_idicvci9.SitePublic>>(
+    'siteDirectory',
+    'listSites',
+    {
+      'query': query,
+      'offset': offset,
+      'limit': limit,
+    },
+  );
+
+  /// Number of sites matching [query] (pagination/"more available" hint).
+  _ida.Future<int> countSites({String? query}) =>
+      caller.callServerEndpoint<int>(
+        'siteDirectory',
+        'countSites',
+        {'query': query},
+      );
+
+  /// A single registered site (detail view). Unregistered/unknown sites
+  /// are indistinguishable on purpose (no leak of setup states).
+  _ida.Future<_idicvci9.SitePublic> getSite({required int siteId}) =>
+      caller.callServerEndpoint<_idicvci9.SitePublic>(
+        'siteDirectory',
+        'getSite',
+        {'siteId': siteId},
+      );
+
+  /// The signed-in user's membership at the site (null = not subscribed).
+  _ida.Future<_iybsvnt4.MyMembershipInfo?> myMembership({
+    required int siteId,
+  }) => caller.callServerEndpoint<_iybsvnt4.MyMembershipInfo?>(
+    'siteDirectory',
+    'myMembership',
+    {'siteId': siteId},
+  );
+
+  /// Subscribes the signed-in user to a site. Requires:
+  /// - a complete member_profile (reusable `profileIsComplete` rule),
+  /// - a registered site whose local instance is currently connected
+  ///   (the initial data transfer happens right away; offline sites are
+  ///   rejected here by design).
+  ///
+  /// An existing deactivated membership is reactivated in place (history
+  /// is kept; delivery to the site re-triggers via the sync queue).
+  _ida.Future<_iybsvnt4.MyMembershipInfo> subscribe({required int siteId}) =>
+      caller.callServerEndpoint<_iybsvnt4.MyMembershipInfo>(
+        'siteDirectory',
+        'subscribe',
+        {'siteId': siteId},
+      );
+
+  /// Ends the signed-in user's membership at the site: only a marker
+  /// (inclusive `endedAt`) is set — the membership row and the local data
+  /// are kept for later viewing; the local instance marks its mirror
+  /// inactive via the sync queue.
+  _ida.Future<void> unsubscribe({required int siteId}) =>
+      caller.callServerEndpoint<void>(
+        'siteDirectory',
+        'unsubscribe',
+        {'siteId': siteId},
       );
 }
 
@@ -499,6 +605,40 @@ class EndpointSiteEnrollment extends _isc.EndpointRef {
       'siteId': siteId,
     },
   );
+}
+
+/// Member-data sync pull endpoint for the local instances (`site-device`
+/// scope), the counterpart of [SitesAdminEndpoint]'s device connection:
+///
+/// - `pullPending` assembles a batch of pending deliveries from the CURRENT
+///   global state (one payload per (site, profile); entries collapse, see
+///   `SiteSyncQueue`).
+/// - After successfully applying a payload locally, the local instance
+///   confirms via [confirmProcessed] — only then the task row is deleted
+///   (at-least-once delivery; failed items stay with attempts/lastError).
+/// {@category Endpoint}
+class EndpointSiteSync extends _isc.EndpointRef {
+  EndpointSiteSync(_isc.EndpointCaller caller) : super(caller);
+
+  @override
+  String get name => 'siteSync';
+
+  /// Pending deliveries for this site's local instance (oldest first).
+  _ida.Future<List<_is9y68do.SiteSyncMember>> pullPending() =>
+      caller.callServerEndpoint<List<_is9y68do.SiteSyncMember>>(
+        'siteSync',
+        'pullPending',
+        {},
+      );
+
+  /// Deletes the confirmed task rows (scoped to the calling site — the
+  /// local instance never sees other sites' ids anyway).
+  _ida.Future<void> confirmProcessed({required List<int> taskIds}) =>
+      caller.callServerEndpoint<void>(
+        'siteSync',
+        'confirmProcessed',
+        {'taskIds': taskIds},
+      );
 }
 
 /// Admin endpoint for creating and viewing sites ("Betriebe").
@@ -587,13 +727,13 @@ class EndpointSitesAdmin extends _isc.EndpointRef {
 
 class Modules {
   Modules(Client client) {
-    serverpod_auth_idp = _iaic.Caller(client);
     serverpod_auth_core = _iacc.Caller(client);
+    serverpod_auth_idp = _iaic.Caller(client);
   }
 
-  late final _iaic.Caller serverpod_auth_idp;
-
   late final _iacc.Caller serverpod_auth_core;
+
+  late final _iaic.Caller serverpod_auth_idp;
 }
 
 class Client extends _isc.ServerpodClientShared {
@@ -628,7 +768,9 @@ class Client extends _isc.ServerpodClientShared {
     jwtRefresh = EndpointJwtRefresh(this);
     memberProfile = EndpointMemberProfile(this);
     siteConnection = EndpointSiteConnection(this);
+    siteDirectory = EndpointSiteDirectory(this);
     siteEnrollment = EndpointSiteEnrollment(this);
+    siteSync = EndpointSiteSync(this);
     sitesAdmin = EndpointSitesAdmin(this);
     modules = Modules(this);
   }
@@ -643,7 +785,11 @@ class Client extends _isc.ServerpodClientShared {
 
   late final EndpointSiteConnection siteConnection;
 
+  late final EndpointSiteDirectory siteDirectory;
+
   late final EndpointSiteEnrollment siteEnrollment;
+
+  late final EndpointSiteSync siteSync;
 
   late final EndpointSitesAdmin sitesAdmin;
 
@@ -656,13 +802,15 @@ class Client extends _isc.ServerpodClientShared {
     'jwtRefresh': jwtRefresh,
     'memberProfile': memberProfile,
     'siteConnection': siteConnection,
+    'siteDirectory': siteDirectory,
     'siteEnrollment': siteEnrollment,
+    'siteSync': siteSync,
     'sitesAdmin': sitesAdmin,
   };
 
   @override
   Map<String, _isc.ModuleEndpointCaller> get moduleLookup => {
-    'serverpod_auth_idp': modules.serverpod_auth_idp,
     'serverpod_auth_core': modules.serverpod_auth_core,
+    'serverpod_auth_idp': modules.serverpod_auth_idp,
   };
 }

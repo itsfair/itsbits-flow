@@ -33,6 +33,7 @@ abstract class SiteMembership
     this.profile,
     _icyjzuro.SiteRole? role,
     bool? active,
+    this.endedAt,
     DateTime? createdAt,
   }) : role = role ?? _icyjzuro.SiteRole.member,
        active = active ?? true,
@@ -46,6 +47,7 @@ abstract class SiteMembership
     _ieelrt66.MemberProfile? profile,
     _icyjzuro.SiteRole? role,
     bool? active,
+    DateTime? endedAt,
     DateTime? createdAt,
   }) = _SiteMembershipImpl;
 
@@ -70,6 +72,9 @@ abstract class SiteMembership
       active: jsonSerialization['active'] == null
           ? null
           : _is.BoolJsonExtension.fromJson(jsonSerialization['active']),
+      endedAt: jsonSerialization['endedAt'] == null
+          ? null
+          : _is.DateTimeJsonExtension.fromJson(jsonSerialization['endedAt']),
       createdAt: jsonSerialization['createdAt'] == null
           ? null
           : _is.DateTimeJsonExtension.fromJson(jsonSerialization['createdAt']),
@@ -99,6 +104,10 @@ abstract class SiteMembership
   /// Lifecycle status (e.g. invite flows later).
   bool active;
 
+  /// Deactivation marker (membership ended; the row is kept for later
+  /// viewing). Null while the membership is active.
+  DateTime? endedAt;
+
   /// When the membership was created.
   DateTime createdAt;
 
@@ -116,6 +125,7 @@ abstract class SiteMembership
     _ieelrt66.MemberProfile? profile,
     _icyjzuro.SiteRole? role,
     bool? active,
+    DateTime? endedAt,
     DateTime? createdAt,
   });
   @override
@@ -129,6 +139,7 @@ abstract class SiteMembership
       if (profile != null) 'profile': profile?.toJson(),
       'role': role.toJson(),
       'active': active,
+      if (endedAt != null) 'endedAt': endedAt?.toJson(),
       'createdAt': createdAt.toJson(),
     };
   }
@@ -144,6 +155,7 @@ abstract class SiteMembership
       if (profile != null) 'profile': profile?.toJsonForProtocol(),
       'role': role.toJson(),
       'active': active,
+      if (endedAt != null) 'endedAt': endedAt?.toJson(),
       'createdAt': createdAt.toJson(),
     };
   }
@@ -193,6 +205,7 @@ class _SiteMembershipImpl extends SiteMembership {
     _ieelrt66.MemberProfile? profile,
     _icyjzuro.SiteRole? role,
     bool? active,
+    DateTime? endedAt,
     DateTime? createdAt,
   }) : super._(
          id: id,
@@ -202,6 +215,7 @@ class _SiteMembershipImpl extends SiteMembership {
          profile: profile,
          role: role,
          active: active,
+         endedAt: endedAt,
          createdAt: createdAt,
        );
 
@@ -217,6 +231,7 @@ class _SiteMembershipImpl extends SiteMembership {
     Object? profile = _Undefined,
     _icyjzuro.SiteRole? role,
     bool? active,
+    Object? endedAt = _Undefined,
     DateTime? createdAt,
   }) {
     return SiteMembership(
@@ -229,6 +244,7 @@ class _SiteMembershipImpl extends SiteMembership {
           : this.profile?.copyWith(),
       role: role ?? this.role,
       active: active ?? this.active,
+      endedAt: endedAt is DateTime? ? endedAt : this.endedAt,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -259,6 +275,12 @@ class SiteMembershipUpdateTable extends _is.UpdateTable<SiteMembershipTable> {
     value,
   );
 
+  _is.ColumnValue<DateTime, DateTime> endedAt(DateTime? value) =>
+      _is.ColumnValue(
+        table.endedAt,
+        value,
+      );
+
   _is.ColumnValue<DateTime, DateTime> createdAt(DateTime value) =>
       _is.ColumnValue(
         table.createdAt,
@@ -287,6 +309,10 @@ class SiteMembershipTable extends _is.Table<int?> {
       'active',
       this,
     );
+    endedAt = _is.ColumnDateTime(
+      'endedAt',
+      this,
+    );
     createdAt = _is.ColumnDateTime(
       'createdAt',
       this,
@@ -310,6 +336,10 @@ class SiteMembershipTable extends _is.Table<int?> {
 
   /// Lifecycle status (e.g. invite flows later).
   late final _is.ColumnBool active;
+
+  /// Deactivation marker (membership ended; the row is kept for later
+  /// viewing). Null while the membership is active.
+  late final _is.ColumnDateTime endedAt;
 
   /// When the membership was created.
   late final _is.ColumnDateTime createdAt;
@@ -347,6 +377,7 @@ class SiteMembershipTable extends _is.Table<int?> {
     profileId,
     role,
     active,
+    endedAt,
     createdAt,
   ];
 

@@ -21,9 +21,20 @@ memberProfile:
   - removeUserImage:
 siteConnection:
   - connect:
+siteDirectory:
+  - listLatest:
+  - listSites:
+  - countSites:
+  - getSite:
+  - myMembership:
+  - subscribe:
+  - unsubscribe:
 siteEnrollment:
   - listSiteAdminCandidates:
   - enroll:
+siteSync:
+  - pullPending:
+  - confirmProcessed:
 sitesAdmin:
   - createSite:
   - listSites:

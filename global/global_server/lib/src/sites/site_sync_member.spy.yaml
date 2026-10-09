@@ -1,0 +1,38 @@
+### One member-data delivery assembled from the CURRENT global state at
+### pull time (queue entries collapse, so the payload is always "now").
+### The local instance applies this as an upsert of the person's mirror
+### row plus its membership mirror; `active=false` deactivates locally
+### (data is kept, not deleted).
+class: SiteSyncMember
+fields:
+
+  ### Id of the site_sync_tasks row this payload belongs to (used by the
+  ### local instance to confirm processing).
+  taskId: int
+
+  ### Global member_profile id (reference only).
+  profileId: int
+
+  ### The exchange id (global authUserId / door key / image-object key).
+  globalAuthUserId: UuidValue
+
+  email: String
+  firstName: String?
+  lastName: String?
+  birthday: DateTime?
+
+  ### Public image URL on the global instance (null = no image; the local
+  ### instance overwrites its copy when a task arrives with image set).
+  imageUrl: String?
+
+  ### Membership role (member/staff/siteAdmin — see global SiteRole).
+  roleName: String
+
+  ### Membership lifecycle (false = deactivated; local keeps the data).
+  active: bool
+
+  ### Deactivation marker of the membership (null while active).
+  endedAt: DateTime?
+
+  ### When the membership was created.
+  membershipCreatedAt: DateTime?

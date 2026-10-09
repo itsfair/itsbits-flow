@@ -29,6 +29,7 @@ abstract class Site
     required this.city,
     required this.country,
     required this.companyEmail,
+    this.imageUrl,
     _i3pb1w5u.SiteSetupStatus? status,
     required this.firstAdminId,
     this.firstAdmin,
@@ -46,6 +47,7 @@ abstract class Site
     required String city,
     required String country,
     required String companyEmail,
+    String? imageUrl,
     _i3pb1w5u.SiteSetupStatus? status,
     required _isc.UuidValue firstAdminId,
     _iacc.AuthUser? firstAdmin,
@@ -63,6 +65,7 @@ abstract class Site
       city: jsonSerialization['city'] as String,
       country: jsonSerialization['country'] as String,
       companyEmail: jsonSerialization['companyEmail'] as String,
+      imageUrl: jsonSerialization['imageUrl'] as String?,
       status: jsonSerialization['status'] == null
           ? null
           : _i3pb1w5u.SiteSetupStatus.fromJson(
@@ -113,6 +116,11 @@ abstract class Site
   /// mail-based delivery of setup material).
   String companyEmail;
 
+  /// Public URL of the site image (placeholder; the upload itself will be
+  /// implemented later and happens at the local instance, pushed from
+  /// there to the global backend).
+  String? imageUrl;
+
   /// Connect status of the site (setup pending / registered).
   _i3pb1w5u.SiteSetupStatus status;
 
@@ -142,6 +150,7 @@ abstract class Site
     String? city,
     String? country,
     String? companyEmail,
+    String? imageUrl,
     _i3pb1w5u.SiteSetupStatus? status,
     _isc.UuidValue? firstAdminId,
     _iacc.AuthUser? firstAdmin,
@@ -160,6 +169,7 @@ abstract class Site
       'city': city,
       'country': country,
       'companyEmail': companyEmail,
+      if (imageUrl != null) 'imageUrl': imageUrl,
       'status': status.toJson(),
       'firstAdminId': firstAdminId.toJson(),
       if (firstAdmin != null) 'firstAdmin': firstAdmin?.toJson(),
@@ -180,6 +190,7 @@ abstract class Site
       'city': city,
       'country': country,
       'companyEmail': companyEmail,
+      if (imageUrl != null) 'imageUrl': imageUrl,
       'status': status.toJson(),
       'firstAdminId': firstAdminId.toJson(),
       if (firstAdmin != null) 'firstAdmin': firstAdmin?.toJson(),
@@ -206,6 +217,7 @@ class _SiteImpl extends Site {
     required String city,
     required String country,
     required String companyEmail,
+    String? imageUrl,
     _i3pb1w5u.SiteSetupStatus? status,
     required _isc.UuidValue firstAdminId,
     _iacc.AuthUser? firstAdmin,
@@ -220,6 +232,7 @@ class _SiteImpl extends Site {
          city: city,
          country: country,
          companyEmail: companyEmail,
+         imageUrl: imageUrl,
          status: status,
          firstAdminId: firstAdminId,
          firstAdmin: firstAdmin,
@@ -240,6 +253,7 @@ class _SiteImpl extends Site {
     String? city,
     String? country,
     String? companyEmail,
+    Object? imageUrl = _Undefined,
     _i3pb1w5u.SiteSetupStatus? status,
     _isc.UuidValue? firstAdminId,
     Object? firstAdmin = _Undefined,
@@ -255,6 +269,7 @@ class _SiteImpl extends Site {
       city: city ?? this.city,
       country: country ?? this.country,
       companyEmail: companyEmail ?? this.companyEmail,
+      imageUrl: imageUrl is String? ? imageUrl : this.imageUrl,
       status: status ?? this.status,
       firstAdminId: firstAdminId ?? this.firstAdminId,
       firstAdmin: firstAdmin is _iacc.AuthUser?

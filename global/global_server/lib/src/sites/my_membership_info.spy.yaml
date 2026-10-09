@@ -1,0 +1,10 @@
+### The signed-in end user's membership at a site (for the subscribe state
+### and the membership screen in the end-user app). Plain-data projection —
+### the profile snapshot travels separately via `memberProfile`.
+class: MyMembershipInfo
+fields:
+  siteId: int
+  roleName: String
+  active: bool
+  endedAt: DateTime?
+  createdAt: DateTime

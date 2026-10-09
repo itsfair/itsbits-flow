@@ -20,6 +20,10 @@ fields:
   ### Lifecycle status (e.g. invite flows later).
   active: bool, defaultModel=true
 
+  ### Deactivation marker (membership ended; the row is kept for later
+  ### viewing). Null while the membership is active.
+  endedAt: DateTime?
+
   ### When the membership was created.
   createdAt: DateTime, defaultModel=now
 indexes:

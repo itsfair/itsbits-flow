@@ -8,8 +8,11 @@ import 'layout.dart';
 
 import 'screens/ble_test.dart';
 import 'screens/home.dart';
+import 'screens/membership.dart';
 import 'screens/qr_reader.dart';
 import 'screens/sign_in.dart';
+import 'screens/site_detail.dart';
+import 'screens/sites_list.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -57,6 +60,22 @@ class _MyAppState extends State<MyApp> {
           GoRoute(
             path: '/',
             builder: (context, state) => HomePage(),
+          ),
+          GoRoute(
+            path: '/sites',
+            builder: (context, state) => const SitesListScreen(),
+          ),
+          GoRoute(
+            path: '/site/:siteId',
+            builder: (context, state) => SiteDetailScreen(
+              siteId: int.parse(state.pathParameters['siteId']!),
+            ),
+          ),
+          GoRoute(
+            path: '/membership/:siteId',
+            builder: (context, state) => MembershipScreen(
+              siteId: int.parse(state.pathParameters['siteId']!),
+            ),
           ),
           GoRoute(
             path: '/qr-reader',

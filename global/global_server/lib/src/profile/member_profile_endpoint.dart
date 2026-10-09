@@ -4,6 +4,7 @@ import 'package:serverpod/serverpod.dart';
 import 'package:serverpod_auth_idp_server/core.dart';
 
 import '../generated/protocol.dart';
+import '../sites/site_sync_queue.dart';
 
 /// Own person/profile endpoints of the global instance (replacing the
 /// built-in Serverpod UserProfile feature, which is bypassed on purpose).
@@ -47,7 +48,7 @@ class MemberProfileEndpoint extends Endpoint {
     _validateBirthday(birthday);
 
     final row = await _ownRow(session, authUserId);
-    return MemberProfile.db.updateRow(
+    final updated = await MemberProfile.db.updateRow(
       session,
       row.copyWith(
         firstName: first,
@@ -55,6 +56,8 @@ class MemberProfileEndpoint extends Endpoint {
         birthday: birthday,
       ),
     );
+    await SiteSyncQueue.enqueueForProfile(session, updated.id!);
+    return updated;
   }
 
   /// Stores the uploaded image at `member_images/<authUserId>.jpg`
@@ -82,10 +85,12 @@ class MemberProfileEndpoint extends Endpoint {
       path: path,
     );
 
-    return MemberProfile.db.updateRow(
+    final updated = await MemberProfile.db.updateRow(
       session,
       row.copyWith(imageUrl: url.toString()),
     );
+    await SiteSyncQueue.enqueueForProfile(session, updated.id!);
+    return updated;
   }
 
   /// Deletes the stored object and clears the profile's `imageUrl`.
@@ -100,10 +105,12 @@ class MemberProfileEndpoint extends Endpoint {
       );
     }
 
-    return MemberProfile.db.updateRow(
+    final updated = await MemberProfile.db.updateRow(
       session,
       row.copyWith(imageUrl: null),
     );
+    await SiteSyncQueue.enqueueForProfile(session, updated.id!);
+    return updated;
   }
 
   // -- Private helpers

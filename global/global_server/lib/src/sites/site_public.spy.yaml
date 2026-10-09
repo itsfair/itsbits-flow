@@ -1,0 +1,22 @@
+### Public projection of a site for the end-user directory (`siteDirectory`
+### endpoint — no login required for browsing). Deliberately omits internal
+### linkage (firstAdmin, raw heartbeat timestamps); the connectivity state
+### travels as a computed boolean.
+class: SitePublic
+fields:
+  id: int
+  name: String
+  street: String
+  zipCode: String
+  city: String
+  country: String
+  companyEmail: String
+
+  ### Public site image URL (placeholder until the upload feature exists).
+  imageUrl: String?
+
+  ### Computed server-side from the lastSeenAt heartbeat freshness.
+  isOnline: bool
+
+  ### When the site record was created (carousel order: newest first).
+  createdAt: DateTime

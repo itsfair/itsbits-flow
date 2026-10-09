@@ -29,6 +29,7 @@ abstract class Site implements _is.TableRow<int?>, _is.ProtocolSerialization {
     required this.city,
     required this.country,
     required this.companyEmail,
+    this.imageUrl,
     _i3pb1w5u.SiteSetupStatus? status,
     required this.firstAdminId,
     this.firstAdmin,
@@ -46,6 +47,7 @@ abstract class Site implements _is.TableRow<int?>, _is.ProtocolSerialization {
     required String city,
     required String country,
     required String companyEmail,
+    String? imageUrl,
     _i3pb1w5u.SiteSetupStatus? status,
     required _is.UuidValue firstAdminId,
     _iacs.AuthUser? firstAdmin,
@@ -63,6 +65,7 @@ abstract class Site implements _is.TableRow<int?>, _is.ProtocolSerialization {
       city: jsonSerialization['city'] as String,
       country: jsonSerialization['country'] as String,
       companyEmail: jsonSerialization['companyEmail'] as String,
+      imageUrl: jsonSerialization['imageUrl'] as String?,
       status: jsonSerialization['status'] == null
           ? null
           : _i3pb1w5u.SiteSetupStatus.fromJson(
@@ -113,6 +116,11 @@ abstract class Site implements _is.TableRow<int?>, _is.ProtocolSerialization {
   /// mail-based delivery of setup material).
   String companyEmail;
 
+  /// Public URL of the site image (placeholder; the upload itself will be
+  /// implemented later and happens at the local instance, pushed from
+  /// there to the global backend).
+  String? imageUrl;
+
   /// Connect status of the site (setup pending / registered).
   _i3pb1w5u.SiteSetupStatus status;
 
@@ -145,6 +153,7 @@ abstract class Site implements _is.TableRow<int?>, _is.ProtocolSerialization {
     String? city,
     String? country,
     String? companyEmail,
+    String? imageUrl,
     _i3pb1w5u.SiteSetupStatus? status,
     _is.UuidValue? firstAdminId,
     _iacs.AuthUser? firstAdmin,
@@ -163,6 +172,7 @@ abstract class Site implements _is.TableRow<int?>, _is.ProtocolSerialization {
       'city': city,
       'country': country,
       'companyEmail': companyEmail,
+      if (imageUrl != null) 'imageUrl': imageUrl,
       'status': status.toJson(),
       'firstAdminId': firstAdminId.toJson(),
       if (firstAdmin != null) 'firstAdmin': firstAdmin?.toJson(),
@@ -183,6 +193,7 @@ abstract class Site implements _is.TableRow<int?>, _is.ProtocolSerialization {
       'city': city,
       'country': country,
       'companyEmail': companyEmail,
+      if (imageUrl != null) 'imageUrl': imageUrl,
       'status': status.toJson(),
       'firstAdminId': firstAdminId.toJson(),
       if (firstAdmin != null) 'firstAdmin': firstAdmin?.toJson(),
@@ -231,6 +242,7 @@ class _SiteImpl extends Site {
     required String city,
     required String country,
     required String companyEmail,
+    String? imageUrl,
     _i3pb1w5u.SiteSetupStatus? status,
     required _is.UuidValue firstAdminId,
     _iacs.AuthUser? firstAdmin,
@@ -245,6 +257,7 @@ class _SiteImpl extends Site {
          city: city,
          country: country,
          companyEmail: companyEmail,
+         imageUrl: imageUrl,
          status: status,
          firstAdminId: firstAdminId,
          firstAdmin: firstAdmin,
@@ -265,6 +278,7 @@ class _SiteImpl extends Site {
     String? city,
     String? country,
     String? companyEmail,
+    Object? imageUrl = _Undefined,
     _i3pb1w5u.SiteSetupStatus? status,
     _is.UuidValue? firstAdminId,
     Object? firstAdmin = _Undefined,
@@ -280,6 +294,7 @@ class _SiteImpl extends Site {
       city: city ?? this.city,
       country: country ?? this.country,
       companyEmail: companyEmail ?? this.companyEmail,
+      imageUrl: imageUrl is String? ? imageUrl : this.imageUrl,
       status: status ?? this.status,
       firstAdminId: firstAdminId ?? this.firstAdminId,
       firstAdmin: firstAdmin is _iacs.AuthUser?
@@ -324,6 +339,11 @@ class SiteUpdateTable extends _is.UpdateTable<SiteTable> {
 
   _is.ColumnValue<String, String> companyEmail(String value) => _is.ColumnValue(
     table.companyEmail,
+    value,
+  );
+
+  _is.ColumnValue<String, String> imageUrl(String? value) => _is.ColumnValue(
+    table.imageUrl,
     value,
   );
 
@@ -387,6 +407,10 @@ class SiteTable extends _is.Table<int?> {
       'companyEmail',
       this,
     );
+    imageUrl = _is.ColumnString(
+      'imageUrl',
+      this,
+    );
     status = _is.ColumnEnum(
       'status',
       this,
@@ -428,6 +452,11 @@ class SiteTable extends _is.Table<int?> {
   /// mail-based delivery of setup material).
   late final _is.ColumnString companyEmail;
 
+  /// Public URL of the site image (placeholder; the upload itself will be
+  /// implemented later and happens at the local instance, pushed from
+  /// there to the global backend).
+  late final _is.ColumnString imageUrl;
+
   /// Connect status of the site (setup pending / registered).
   late final _is.ColumnEnum<_i3pb1w5u.SiteSetupStatus> status;
 
@@ -468,6 +497,7 @@ class SiteTable extends _is.Table<int?> {
     city,
     country,
     companyEmail,
+    imageUrl,
     status,
     firstAdminId,
     registeredAt,

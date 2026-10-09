@@ -66,40 +66,44 @@ class _LayoutState extends State<Layout> {
               ),
             ],
           ),
-          drawer: Drawer(
-            child: ListView(
-              children: [
-                const DrawerHeader(
-                  decoration: BoxDecoration(color: Colors.blue),
-                  child: Text(
-                    'Navigation',
-                    style: TextStyle(color: Colors.white, fontSize: 24),
+          // The hamburger (drawer) is only available to signed-in users;
+          // signed out the app keeps the account dropdown's login button.
+          drawer: _isSignedIn
+              ? Drawer(
+                  child: ListView(
+                    children: [
+                      const DrawerHeader(
+                        decoration: BoxDecoration(color: Colors.blue),
+                        child: Text(
+                          'Navigation',
+                          style: TextStyle(color: Colors.white, fontSize: 24),
+                        ),
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.home),
+                        title: const Text('Home'),
+                        onTap: () {
+                          context.go('/');
+                        },
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.people),
+                        title: const Text('Members'),
+                        onTap: () {
+                          context.go('/members');
+                        },
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.location_city),
+                        title: const Text('Sites'),
+                        onTap: () {
+                          context.go('/sites');
+                        },
+                      ),
+                    ],
                   ),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.home),
-                  title: const Text('Home'),
-                  onTap: () {
-                    context.go('/');
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.people),
-                  title: const Text('Members'),
-                  onTap: () {
-                    context.go('/members');
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.location_city),
-                  title: const Text('Sites'),
-                  onTap: () {
-                    context.go('/sites');
-                  },
-                ),
-              ],
-            ),
-          ),
+                )
+              : null,
           body: widget.child,
         );
       },

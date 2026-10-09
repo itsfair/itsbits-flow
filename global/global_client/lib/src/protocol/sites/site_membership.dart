@@ -32,6 +32,7 @@ abstract class SiteMembership
     this.profile,
     _icyjzuro.SiteRole? role,
     bool? active,
+    this.endedAt,
     DateTime? createdAt,
   }) : role = role ?? _icyjzuro.SiteRole.member,
        active = active ?? true,
@@ -45,6 +46,7 @@ abstract class SiteMembership
     _ieelrt66.MemberProfile? profile,
     _icyjzuro.SiteRole? role,
     bool? active,
+    DateTime? endedAt,
     DateTime? createdAt,
   }) = _SiteMembershipImpl;
 
@@ -69,6 +71,9 @@ abstract class SiteMembership
       active: jsonSerialization['active'] == null
           ? null
           : _isc.BoolJsonExtension.fromJson(jsonSerialization['active']),
+      endedAt: jsonSerialization['endedAt'] == null
+          ? null
+          : _isc.DateTimeJsonExtension.fromJson(jsonSerialization['endedAt']),
       createdAt: jsonSerialization['createdAt'] == null
           ? null
           : _isc.DateTimeJsonExtension.fromJson(jsonSerialization['createdAt']),
@@ -96,6 +101,10 @@ abstract class SiteMembership
   /// Lifecycle status (e.g. invite flows later).
   bool active;
 
+  /// Deactivation marker (membership ended; the row is kept for later
+  /// viewing). Null while the membership is active.
+  DateTime? endedAt;
+
   /// When the membership was created.
   DateTime createdAt;
 
@@ -110,6 +119,7 @@ abstract class SiteMembership
     _ieelrt66.MemberProfile? profile,
     _icyjzuro.SiteRole? role,
     bool? active,
+    DateTime? endedAt,
     DateTime? createdAt,
   });
   @override
@@ -123,6 +133,7 @@ abstract class SiteMembership
       if (profile != null) 'profile': profile?.toJson(),
       'role': role.toJson(),
       'active': active,
+      if (endedAt != null) 'endedAt': endedAt?.toJson(),
       'createdAt': createdAt.toJson(),
     };
   }
@@ -138,6 +149,7 @@ abstract class SiteMembership
       if (profile != null) 'profile': profile?.toJsonForProtocol(),
       'role': role.toJson(),
       'active': active,
+      if (endedAt != null) 'endedAt': endedAt?.toJson(),
       'createdAt': createdAt.toJson(),
     };
   }
@@ -159,6 +171,7 @@ class _SiteMembershipImpl extends SiteMembership {
     _ieelrt66.MemberProfile? profile,
     _icyjzuro.SiteRole? role,
     bool? active,
+    DateTime? endedAt,
     DateTime? createdAt,
   }) : super._(
          id: id,
@@ -168,6 +181,7 @@ class _SiteMembershipImpl extends SiteMembership {
          profile: profile,
          role: role,
          active: active,
+         endedAt: endedAt,
          createdAt: createdAt,
        );
 
@@ -183,6 +197,7 @@ class _SiteMembershipImpl extends SiteMembership {
     Object? profile = _Undefined,
     _icyjzuro.SiteRole? role,
     bool? active,
+    Object? endedAt = _Undefined,
     DateTime? createdAt,
   }) {
     return SiteMembership(
@@ -195,6 +210,7 @@ class _SiteMembershipImpl extends SiteMembership {
           : this.profile?.copyWith(),
       role: role ?? this.role,
       active: active ?? this.active,
+      endedAt: endedAt is DateTime? ? endedAt : this.endedAt,
       createdAt: createdAt ?? this.createdAt,
     );
   }
