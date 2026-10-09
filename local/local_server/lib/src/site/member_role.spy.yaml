@@ -1,0 +1,7 @@
+### Mirror of the global `SiteRole` (kept separate so the generated local
+### protocol stays independent of the global client package).
+enum: MemberRole
+values:
+  - member
+  - staff
+  - siteAdmin

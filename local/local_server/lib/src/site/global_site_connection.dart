@@ -11,6 +11,7 @@ import 'package:serverpod_auth_idp_server/providers/email.dart'
     hide AuthSuccess;
 
 import '../generated/protocol.dart';
+import 'site_sync_processor.dart';
 
 /// Scope of the local site admin on this local instance (created at setup).
 const String kLocalAdminScope = 'local-admin';
@@ -362,6 +363,14 @@ class GlobalSiteConnection {
           _retryDelay = _initialRetryDelay;
           if (_state != SiteConnectionState.connected) {
             _setState(SiteConnectionState.connected);
+          }
+          // Pull pending member-data deliveries only on a real signal: the
+          // global backend yields a needsSiteSync event at stream start,
+          // spontaneously on every queue write and piggy-backed on the
+          // pong when the queue is non-empty — strictly signal-driven,
+          // no periodic pulling.
+          if (event.needsSiteSync) {
+            unawaited(SiteSyncProcessor.instance.processPending());
           }
         },
         onError: (Object error) => _handleStreamError(error),

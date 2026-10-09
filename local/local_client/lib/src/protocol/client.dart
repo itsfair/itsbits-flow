@@ -15,8 +15,11 @@ import 'dart:typed_data' as _idt;
 import 'package:http/http.dart' as _i85jenna;
 import 'package:local_client/src/protocol/site/local_admin_info.dart'
     as _iwwog9lz;
+import 'package:local_client/src/protocol/site/member_detail.dart' as _ietksnoz;
 import 'package:local_client/src/protocol/site/member_profile.dart'
     as _iakvgpur;
+import 'package:local_client/src/protocol/site/member_summary.dart'
+    as _i5ndcnpn;
 import 'package:local_client/src/protocol/site/site_connection_info.dart'
     as _i0a8fvnn;
 import 'package:local_client/src/protocol/site/site_setup_result.dart'
@@ -328,6 +331,54 @@ class EndpointMemberProfile extends _isc.EndpointRef {
       );
 }
 
+/// Admin endpoint for the local member directory (read-only this step):
+/// lists/searches the site's member_profile mirror records and returns
+/// one member in detail. Editing happens globally only (sync rule).
+///
+/// Access is enforced declaratively via [requiredScopes] (`local-admin`
+/// scope of the site admin's local login).
+/// {@category Endpoint}
+class EndpointMembersAdmin extends _isc.EndpointRef {
+  EndpointMembersAdmin(_isc.EndpointCaller caller) : super(caller);
+
+  @override
+  String get name => 'membersAdmin';
+
+  /// Lists the site's members (newest profiles first), paginated; [query]
+  /// filters by email, first name or last name (case-insensitive
+  /// substring).
+  _ida.Future<List<_i5ndcnpn.MemberSummary>> listMembers({
+    String? query,
+    required int offset,
+    required int limit,
+  }) => caller.callServerEndpoint<List<_i5ndcnpn.MemberSummary>>(
+    'membersAdmin',
+    'listMembers',
+    {
+      'query': query,
+      'offset': offset,
+      'limit': limit,
+    },
+  );
+
+  /// Number of members matching [query] (pagination hint).
+  _ida.Future<int> countMembers({String? query}) =>
+      caller.callServerEndpoint<int>(
+        'membersAdmin',
+        'countMembers',
+        {'query': query},
+      );
+
+  /// One member in detail; unknown exchange ids are rejected.
+  _ida.Future<_ietksnoz.MemberDetail> getMember({
+    required _isc.UuidValue globalAuthUserId,
+  }) => caller.callServerEndpoint<_ietksnoz.MemberDetail>(
+    'membersAdmin',
+    'getMember',
+    {'globalAuthUserId': globalAuthUserId},
+  );
+}
+
 /// Local setup endpoint: connects this instance to its site's global
 /// instance by verifying with the **global credentials of the site admin**
 /// (the one chosen at site creation). Fills the local member_profile copy
@@ -422,6 +473,7 @@ class Client extends _isc.ServerpodClientShared {
     emailIdp = EndpointEmailIdp(this);
     jwtRefresh = EndpointJwtRefresh(this);
     memberProfile = EndpointMemberProfile(this);
+    membersAdmin = EndpointMembersAdmin(this);
     siteSetup = EndpointSiteSetup(this);
     modules = Modules(this);
   }
@@ -432,6 +484,8 @@ class Client extends _isc.ServerpodClientShared {
 
   late final EndpointMemberProfile memberProfile;
 
+  late final EndpointMembersAdmin membersAdmin;
+
   late final EndpointSiteSetup siteSetup;
 
   late final Modules modules;
@@ -441,6 +495,7 @@ class Client extends _isc.ServerpodClientShared {
     'emailIdp': emailIdp,
     'jwtRefresh': jwtRefresh,
     'memberProfile': memberProfile,
+    'membersAdmin': membersAdmin,
     'siteSetup': siteSetup,
   };
 

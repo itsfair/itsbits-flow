@@ -16,8 +16,12 @@ import 'dart:io' as _idi;
 import 'dart:typed_data' as _idt;
 import 'package:local_server/src/generated/site/local_admin_info.dart'
     as _iuevfklr;
+import 'package:local_server/src/generated/site/member_detail.dart'
+    as _i37j5gup;
 import 'package:local_server/src/generated/site/member_profile.dart'
     as _i44z2qc2;
+import 'package:local_server/src/generated/site/member_summary.dart'
+    as _in3590t5;
 import 'package:local_server/src/generated/site/site_connection_info.dart'
     as _imohagwc;
 import 'package:local_server/src/generated/site/site_setup_result.dart'
@@ -165,6 +169,8 @@ class TestEndpoints {
 
   late final _MemberProfileEndpoint memberProfile;
 
+  late final _MembersAdminEndpoint membersAdmin;
+
   late final _SiteSetupEndpoint siteSetup;
 }
 
@@ -184,6 +190,10 @@ class _InternalTestEndpoints extends TestEndpoints
       serializationManager,
     );
     memberProfile = _MemberProfileEndpoint(
+      endpoints,
+      serializationManager,
+    );
+    membersAdmin = _MembersAdminEndpoint(
       endpoints,
       serializationManager,
     );
@@ -643,6 +653,118 @@ class _MemberProfileEndpoint {
                   _localCallContext.arguments,
                 )
                 as _ida.Future<_i44z2qc2.MemberProfile>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+}
+
+class _MembersAdminEndpoint {
+  _MembersAdminEndpoint(
+    this._endpointDispatch,
+    this._serializationManager,
+  );
+
+  final _is.EndpointDispatch _endpointDispatch;
+
+  final _is.SerializationManager _serializationManager;
+
+  _ida.Future<List<_in3590t5.MemberSummary>> listMembers(
+    _ist.TestSessionBuilder sessionBuilder, {
+    String? query,
+    required int offset,
+    required int limit,
+  }) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'membersAdmin',
+            method: 'listMembers',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'membersAdmin',
+          methodName: 'listMembers',
+          parameters: _ist.testObjectToJson({
+            'query': query,
+            'offset': offset,
+            'limit': limit,
+          }),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<List<_in3590t5.MemberSummary>>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _ida.Future<int> countMembers(
+    _ist.TestSessionBuilder sessionBuilder, {
+    String? query,
+  }) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'membersAdmin',
+            method: 'countMembers',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'membersAdmin',
+          methodName: 'countMembers',
+          parameters: _ist.testObjectToJson({'query': query}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<int>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _ida.Future<_i37j5gup.MemberDetail> getMember(
+    _ist.TestSessionBuilder sessionBuilder, {
+    required _is.UuidValue globalAuthUserId,
+  }) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'membersAdmin',
+            method: 'getMember',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'membersAdmin',
+          methodName: 'getMember',
+          parameters: _ist.testObjectToJson({
+            'globalAuthUserId': globalAuthUserId,
+          }),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<_i37j5gup.MemberDetail>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();

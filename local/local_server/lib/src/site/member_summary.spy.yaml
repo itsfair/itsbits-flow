@@ -1,0 +1,20 @@
+### Row of the local member directory (member_profile mirror) for the
+### site admin UI's members list. Plain-data projection — no internals
+### (image URL included for the list card).
+class: MemberSummary
+fields:
+  ### Exchange id (global authUserId = door key, also route id).
+  globalAuthUserId: UuidValue
+  email: String
+  firstName: String?
+  lastName: String?
+  imageUrl: String?
+
+  ### Whether the person has a local login (site admin / staff).
+  hasLocalLogin: bool
+
+  ### Membership mirror fields (null when the person is not yet a
+  ### synced member — e.g. the admin before the first sync).
+  roleName: String?
+  active: bool?
+  endedAt: DateTime?

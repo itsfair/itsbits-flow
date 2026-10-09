@@ -11,6 +11,8 @@
 // ignore_for_file: dead_code, unnecessary_type_check
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
+import 'package:local_server/src/generated/site/member_summary.dart'
+    as _in3590t5;
 import 'package:serverpod/protocol.dart' as _isp;
 import 'package:serverpod/serverpod.dart' as _is;
 import 'package:serverpod_auth_core_server/serverpod_auth_core_server.dart'
@@ -18,7 +20,11 @@ import 'package:serverpod_auth_core_server/serverpod_auth_core_server.dart'
 import 'package:serverpod_auth_idp_server/serverpod_auth_idp_server.dart'
     as _iais;
 import 'site/local_admin_info.dart' as _isettk53;
+import 'site/member_detail.dart' as _ibduyanx;
+import 'site/member_membership.dart' as _i7xewumy;
 import 'site/member_profile.dart' as _iv3515ms;
+import 'site/member_role.dart' as _im7fwdsr;
+import 'site/member_summary.dart' as _ipy883wg;
 import 'site/site_candidate_local.dart' as _iin2gxgd;
 import 'site/site_connection.dart' as _irwm5040;
 import 'site/site_connection_info.dart' as _i9oolunz;
@@ -26,7 +32,11 @@ import 'site/site_connection_state.dart' as _ifrxdjdr;
 import 'site/site_setup_exception.dart' as _imfczqeb;
 import 'site/site_setup_result.dart' as _in5mc098;
 export 'site/local_admin_info.dart';
+export 'site/member_detail.dart';
+export 'site/member_membership.dart';
 export 'site/member_profile.dart';
+export 'site/member_role.dart';
+export 'site/member_summary.dart';
 export 'site/site_candidate_local.dart';
 export 'site/site_connection.dart';
 export 'site/site_connection_info.dart';
@@ -42,6 +52,98 @@ class Protocol extends _is.DatabaseSerializationManager {
   static final Protocol _instance = Protocol._().._registerHostProtocols();
 
   static List<_isp.TableDefinition> get targetTableDefinitions => [
+    _isp.TableDefinition(
+      name: 'member_memberships',
+      dartName: 'MemberMembership',
+      schema: 'public',
+      module: 'local',
+      columns: [
+        _isp.ColumnDefinition(
+          name: 'id',
+          columnType: _isp.ColumnType.bigint,
+          isNullable: false,
+          dartType: 'int?',
+          columnDefault: 'serial',
+        ),
+        _isp.ColumnDefinition(
+          name: 'memberProfileId',
+          columnType: _isp.ColumnType.bigint,
+          isNullable: false,
+          dartType: 'int',
+        ),
+        _isp.ColumnDefinition(
+          name: 'globalAuthUserId',
+          columnType: _isp.ColumnType.uuid,
+          isNullable: false,
+          dartType: 'UuidValue',
+        ),
+        _isp.ColumnDefinition(
+          name: 'role',
+          columnType: _isp.ColumnType.text,
+          isNullable: false,
+          dartType: 'protocol:MemberRole',
+        ),
+        _isp.ColumnDefinition(
+          name: 'active',
+          columnType: _isp.ColumnType.boolean,
+          isNullable: false,
+          dartType: 'bool',
+        ),
+        _isp.ColumnDefinition(
+          name: 'endedAt',
+          columnType: _isp.ColumnType.timestampWithoutTimeZone,
+          isNullable: true,
+          dartType: 'DateTime?',
+        ),
+        _isp.ColumnDefinition(
+          name: 'createdAt',
+          columnType: _isp.ColumnType.timestampWithoutTimeZone,
+          isNullable: false,
+          dartType: 'DateTime',
+        ),
+      ],
+      foreignKeys: [
+        _isp.ForeignKeyDefinition(
+          constraintName: 'member_memberships_fk_0',
+          columns: ['memberProfileId'],
+          referenceTable: 'member_profile',
+          referenceTableSchema: 'public',
+          referenceColumns: ['id'],
+          onUpdate: _isp.ForeignKeyAction.noAction,
+          onDelete: _isp.ForeignKeyAction.cascade,
+          matchType: null,
+        ),
+      ],
+      indexes: [
+        _isp.IndexDefinition(
+          indexName: 'member_membership_profile_unique_idx',
+          tableSpace: null,
+          elements: [
+            _isp.IndexElementDefinition(
+              type: _isp.IndexElementDefinitionType.column,
+              definition: 'memberProfileId',
+            ),
+          ],
+          type: 'btree',
+          isUnique: true,
+          isPrimary: false,
+        ),
+        _isp.IndexDefinition(
+          indexName: 'member_membership_global_auth_user_idx',
+          tableSpace: null,
+          elements: [
+            _isp.IndexElementDefinition(
+              type: _isp.IndexElementDefinitionType.column,
+              definition: 'globalAuthUserId',
+            ),
+          ],
+          type: 'btree',
+          isUnique: false,
+          isPrimary: false,
+        ),
+      ],
+      managed: true,
+    ),
     _isp.TableDefinition(
       name: 'member_profile',
       dartName: 'MemberProfile',
@@ -265,8 +367,20 @@ class Protocol extends _is.DatabaseSerializationManager {
     if (t == _isettk53.LocalAdminInfo) {
       return _isettk53.LocalAdminInfo.fromJson(data) as T;
     }
+    if (t == _ibduyanx.MemberDetail) {
+      return _ibduyanx.MemberDetail.fromJson(data) as T;
+    }
+    if (t == _i7xewumy.MemberMembership) {
+      return _i7xewumy.MemberMembership.fromJson(data) as T;
+    }
     if (t == _iv3515ms.MemberProfile) {
       return _iv3515ms.MemberProfile.fromJson(data) as T;
+    }
+    if (t == _im7fwdsr.MemberRole) {
+      return _im7fwdsr.MemberRole.fromJson(data) as T;
+    }
+    if (t == _ipy883wg.MemberSummary) {
+      return _ipy883wg.MemberSummary.fromJson(data) as T;
     }
     if (t == _iin2gxgd.SiteCandidateLocal) {
       return _iin2gxgd.SiteCandidateLocal.fromJson(data) as T;
@@ -290,8 +404,22 @@ class Protocol extends _is.DatabaseSerializationManager {
       return (data != null ? _isettk53.LocalAdminInfo.fromJson(data) : null)
           as T;
     }
+    if (t == _is.getType<_ibduyanx.MemberDetail?>()) {
+      return (data != null ? _ibduyanx.MemberDetail.fromJson(data) : null) as T;
+    }
+    if (t == _is.getType<_i7xewumy.MemberMembership?>()) {
+      return (data != null ? _i7xewumy.MemberMembership.fromJson(data) : null)
+          as T;
+    }
     if (t == _is.getType<_iv3515ms.MemberProfile?>()) {
       return (data != null ? _iv3515ms.MemberProfile.fromJson(data) : null)
+          as T;
+    }
+    if (t == _is.getType<_im7fwdsr.MemberRole?>()) {
+      return (data != null ? _im7fwdsr.MemberRole.fromJson(data) : null) as T;
+    }
+    if (t == _is.getType<_ipy883wg.MemberSummary?>()) {
+      return (data != null ? _ipy883wg.MemberSummary.fromJson(data) : null)
           as T;
     }
     if (t == _is.getType<_iin2gxgd.SiteCandidateLocal?>()) {
@@ -326,6 +454,12 @@ class Protocol extends _is.DatabaseSerializationManager {
               .toList()
           as T;
     }
+    if (t == List<_in3590t5.MemberSummary>) {
+      return (data as List)
+              .map((e) => deserialize<_in3590t5.MemberSummary>(e))
+              .toList()
+          as T;
+    }
     try {
       return _iais.Protocol().deserialize<T>(data, t);
     } on _is.DeserializationTypeNotFoundException catch (_) {}
@@ -341,7 +475,11 @@ class Protocol extends _is.DatabaseSerializationManager {
   static String? getClassNameForType(Type type) {
     return switch (type) {
       _isettk53.LocalAdminInfo => 'LocalAdminInfo',
+      _ibduyanx.MemberDetail => 'MemberDetail',
+      _i7xewumy.MemberMembership => 'MemberMembership',
       _iv3515ms.MemberProfile => 'MemberProfile',
+      _im7fwdsr.MemberRole => 'MemberRole',
+      _ipy883wg.MemberSummary => 'MemberSummary',
       _iin2gxgd.SiteCandidateLocal => 'SiteCandidateLocal',
       _irwm5040.SiteConnection => 'SiteConnection',
       _i9oolunz.SiteConnectionInfo => 'SiteConnectionInfo',
@@ -364,8 +502,16 @@ class Protocol extends _is.DatabaseSerializationManager {
     switch (data) {
       case _isettk53.LocalAdminInfo():
         return 'LocalAdminInfo';
+      case _ibduyanx.MemberDetail():
+        return 'MemberDetail';
+      case _i7xewumy.MemberMembership():
+        return 'MemberMembership';
       case _iv3515ms.MemberProfile():
         return 'MemberProfile';
+      case _im7fwdsr.MemberRole():
+        return 'MemberRole';
+      case _ipy883wg.MemberSummary():
+        return 'MemberSummary';
       case _iin2gxgd.SiteCandidateLocal():
         return 'SiteCandidateLocal';
       case _irwm5040.SiteConnection():
@@ -407,8 +553,20 @@ class Protocol extends _is.DatabaseSerializationManager {
     if (dataClassName == 'LocalAdminInfo') {
       return deserialize<_isettk53.LocalAdminInfo>(data['data']);
     }
+    if (dataClassName == 'MemberDetail') {
+      return deserialize<_ibduyanx.MemberDetail>(data['data']);
+    }
+    if (dataClassName == 'MemberMembership') {
+      return deserialize<_i7xewumy.MemberMembership>(data['data']);
+    }
     if (dataClassName == 'MemberProfile') {
       return deserialize<_iv3515ms.MemberProfile>(data['data']);
+    }
+    if (dataClassName == 'MemberRole') {
+      return deserialize<_im7fwdsr.MemberRole>(data['data']);
+    }
+    if (dataClassName == 'MemberSummary') {
+      return deserialize<_ipy883wg.MemberSummary>(data['data']);
     }
     if (dataClassName == 'SiteCandidateLocal') {
       return deserialize<_iin2gxgd.SiteCandidateLocal>(data['data']);
@@ -469,6 +627,8 @@ class Protocol extends _is.DatabaseSerializationManager {
       }
     }
     switch (t) {
+      case _i7xewumy.MemberMembership:
+        return _i7xewumy.MemberMembership.t;
       case _iv3515ms.MemberProfile:
         return _iv3515ms.MemberProfile.t;
       case _irwm5040.SiteConnection:

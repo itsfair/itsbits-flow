@@ -44,6 +44,8 @@ DB name `local`. Details and full stack: root AGENTS.md.
 | `jwtRefresh` (`src/auth/jwt_refresh_endpoint.dart`) | Renew access tokens |
 | `memberProfile` | Own person endpoints (mirror of global): `get`, `save`, `setUserImage`, `removeUserImage` — for locally logged-in persons (site admin/staff) |
 | `siteSetup` | `enterSetup({email, password, siteId?})`: verifies the **global credentials** of the site admin against the global instance (via the global client package), processes the transfer (member_profile copy + local `local-admin` login + image) — `adminInfo()`, `connectionStatus()` for the app connection chip |
+| `membersAdmin` | Local member directory (read-only, `local-admin` scope): `listMembers` (search/pagination), `countMembers`, `getMember({globalAuthUserId})` — member_profile mirror + `member_membership` mirror (role/active/endedAt) |
+| `siteSync` (pull side only, in `SiteSyncProcessor`) | Pulls pending member-data deliveries from the global `siteSync` endpoint on every connection event (initial `needsSiteSync` fire, stream pushes, pings as watchdog) and confirms them |
 
 ## Key design points
 
@@ -75,20 +77,39 @@ DB name `local`. Details and full stack: root AGENTS.md.
   credentials). Config: `globalApiUrl` password key in
   `config/passwords.yaml` (dev: `http://localhost:8080`; devices:
   LAN IP; env override `SERVERPOD_PASSWORD_globalApiUrl`).
+- **Member sync** (`SiteSyncProcessor`, triggered on every connection
+  event): pulls the pending batch (one payload per person; bytes apply
+  as an idempotent upsert — at-least-once). Fresh member: fail-fast
+  image transfer (enrollment principle); existing member: text fields
+  always applied, image best-effort overwrite/removal at the same
+  deterministic path; task confirmed only on full success (failed stays
+  pending, retried at the next ping). Deactivations mirror
+  `active=false`/`endedAt` — person data kept. Local membership mirror
+  table: `member_membership` (one membership per person, role, active,
+  endedAt).
 - Birthday as UTC-midnight date sentinel (no server-side
   re-normalization) — see root AGENTS.md.
-- The built-in Serverpod UserProfile feature is bypassed (the auth
-  module still writes its own profile tables internally — unused).
+- **Admin app shell state machine**: the setup mask (`/setup`) is forced
+  while the connection is `noneSetup`/`needsReSetup` (drawer + login
+  dropdown hidden; banner shows the reason: first setup vs. corrupted
+  credential). Enrolled + signed out → `/sign-in`; signed in → free
+  navigation (staff scopes come with the employees flow). The profile
+  screen uses the SHARED `ProfileScreen` with `editingEnabled: false`
+  (read-only; the id field carries the `globalAuthUserId` door key for
+  the QR). The built-in Serverpod UserProfile feature is bypassed (the
+  auth module still writes its own profile tables internally — unused).
 
 ## Open work items (this part)
 
-- **Membership sync over the connection**: propagate new/removed
-  global membership events into local member_profile copies (incl.
-  image mirroring at the same paths); local membership mirror table
-  (role/active); staff switch → local login analog admin setup;
-  roles/status reported back via `site-device`-restricted endpoints.
-- **Protection layer**: protect all member/employee admin areas behind
-  the `local-admin` login (login flow in the site admin app).
+- **Membership sync over the connection**: core propagation (new
+  members, profile updates, deactivation markers) IS implemented via
+  `SiteSyncProcessor`. Remaining: staff/admin role switch → local login
+  (analyzed with the employees flow); roles/status reporting back to
+  global via `site-device`-restricted endpoints.
+- **Protection layer**: FIRST part implemented — the `membersAdmin`
+  endpoint is enforced via the `local-admin` scope. Remaining: protect
+  the other member/employee admin areas the same way as they appear
+  (login flow already lives in the site admin app shell).
 - **Employees flow**: member verifies on site with global credentials →
   local login (same model as the admin setup).
 - **Password self-healing**: "same password globally + locally" — the

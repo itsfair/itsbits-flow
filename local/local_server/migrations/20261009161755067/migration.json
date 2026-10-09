@@ -1,0 +1,124 @@
+{
+  "__className__": "serverpod.DatabaseMigration",
+  "actions": [
+    {
+      "__className__": "serverpod.DatabaseMigrationAction",
+      "type": "createTable",
+      "createTable": {
+        "__className__": "serverpod.TableDefinition",
+        "name": "member_memberships",
+        "dartName": "MemberMembership",
+        "module": "local",
+        "schema": "public",
+        "columns": [
+          {
+            "__className__": "serverpod.ColumnDefinition",
+            "name": "id",
+            "fieldName": "id",
+            "columnType": 6,
+            "isNullable": false,
+            "columnDefault": "serial",
+            "dartType": "int?"
+          },
+          {
+            "__className__": "serverpod.ColumnDefinition",
+            "name": "memberProfileId",
+            "fieldName": "memberProfileId",
+            "columnType": 6,
+            "isNullable": false,
+            "dartType": "int"
+          },
+          {
+            "__className__": "serverpod.ColumnDefinition",
+            "name": "globalAuthUserId",
+            "fieldName": "globalAuthUserId",
+            "columnType": 7,
+            "isNullable": false,
+            "dartType": "UuidValue"
+          },
+          {
+            "__className__": "serverpod.ColumnDefinition",
+            "name": "role",
+            "fieldName": "role",
+            "columnType": 0,
+            "isNullable": false,
+            "dartType": "protocol:MemberRole"
+          },
+          {
+            "__className__": "serverpod.ColumnDefinition",
+            "name": "active",
+            "fieldName": "active",
+            "columnType": 1,
+            "isNullable": false,
+            "dartType": "bool"
+          },
+          {
+            "__className__": "serverpod.ColumnDefinition",
+            "name": "endedAt",
+            "fieldName": "endedAt",
+            "columnType": 4,
+            "isNullable": true,
+            "dartType": "DateTime?"
+          },
+          {
+            "__className__": "serverpod.ColumnDefinition",
+            "name": "createdAt",
+            "fieldName": "createdAt",
+            "columnType": 4,
+            "isNullable": false,
+            "dartType": "DateTime"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "__className__": "serverpod.ForeignKeyDefinition",
+            "constraintName": "member_memberships_fk_0",
+            "columns": [
+              "memberProfileId"
+            ],
+            "referenceTable": "member_profile",
+            "referenceTableSchema": "public",
+            "referenceColumns": [
+              "id"
+            ],
+            "onUpdate": 3,
+            "onDelete": 4
+          }
+        ],
+        "indexes": [
+          {
+            "__className__": "serverpod.IndexDefinition",
+            "indexName": "member_membership_profile_unique_idx",
+            "elements": [
+              {
+                "__className__": "serverpod.IndexElementDefinition",
+                "type": 0,
+                "definition": "memberProfileId"
+              }
+            ],
+            "type": "btree",
+            "isUnique": true,
+            "isPrimary": false
+          },
+          {
+            "__className__": "serverpod.IndexDefinition",
+            "indexName": "member_membership_global_auth_user_idx",
+            "elements": [
+              {
+                "__className__": "serverpod.IndexElementDefinition",
+                "type": 0,
+                "definition": "globalAuthUserId"
+              }
+            ],
+            "type": "btree",
+            "isUnique": false,
+            "isPrimary": false
+          }
+        ],
+        "managed": true
+      }
+    }
+  ],
+  "warnings": [],
+  "migrationApiVersion": 1
+}

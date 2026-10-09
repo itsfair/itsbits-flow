@@ -2,12 +2,19 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:itsbits_shared/widgets/account_dropdown.dart';
+import 'package:serverpod_auth_idp_flutter/serverpod_auth_idp_flutter.dart';
 
 import 'client.dart';
 import 'main.dart';
 
-/// Shell layout of the site admin app: drawer navigation + AppBar with the
-/// per-site connection chip (polled from the local backend).
+/// Shell layout of the site admin app.
+///
+/// Visible surface follows the connection state:
+/// - `noneSetup` / `needsReSetup`: the setup mask is the whole app (no
+///   drawer, no login dropdown).
+/// - enrolled + not signed in: login dropdown button in the AppBar.
+/// - enrolled + signed in: avatar dropdown + drawer (free navigation).
 class Layout extends StatefulWidget {
   final Widget child;
 
@@ -21,6 +28,7 @@ class _LayoutState extends State<Layout> {
   SiteConnectionInfo? _status;
   String? _error;
   Timer? _pollTimer;
+  bool _isSignedIn = false;
 
   @override
   void initState() {
@@ -29,11 +37,14 @@ class _LayoutState extends State<Layout> {
     _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       _refreshStatus();
     });
+    client.auth.authInfoListenable.addListener(_updateAuthState);
+    _updateAuthState();
   }
 
   @override
   void dispose() {
     _pollTimer?.cancel();
+    client.auth.authInfoListenable.removeListener(_updateAuthState);
     super.dispose();
   }
 
@@ -52,71 +63,116 @@ class _LayoutState extends State<Layout> {
     }
   }
 
+  void _updateAuthState() {
+    setState(() {
+      _isSignedIn = client.auth.isAuthenticated;
+    });
+  }
+
   void _goTo(final String location) {
     context.go(location);
   }
 
+  /// True while the setup mask must be the whole app.
+  bool get _setupNeeded =>
+      _status == null ||
+      switch (_status?.state) {
+        SiteConnectionState.noneSetup ||
+        SiteConnectionState.needsReSetup => true,
+        _ => false,
+      };
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Home'),
-        backgroundColor: Colors.blue[900],
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.location_city),
-            tooltip: 'Standort',
-            onPressed: () => _goTo('/standort'),
-          ),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(44),
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: _error != null
-                ? Text(
-                    'Status-Abfrage fehlgeschlagen: $_error',
-                    style: const TextStyle(color: Colors.redAccent),
-                  )
-                : _buildChip(),
-          ),
-        ),
-      ),
-      drawer: Drawer(
-        child: ListView(
-          children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(color: Colors.blue),
-              child: Text(
-                'Navigation',
-                style: TextStyle(color: Colors.white, fontSize: 24),
+    // Profile data changes (image/name sync from global) re-render the
+    // dropdown avatar.
+    return ListenableBuilder(
+      listenable: profileState,
+      builder: (context, _) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Standort-Verwaltung'),
+            backgroundColor: Colors.blue[900],
+            foregroundColor: Colors.white,
+            actions: [
+              if (!_setupNeeded)
+                AccountDropdown(
+                  isSignedIn: _isSignedIn,
+                  fullName: profileState.fullName,
+                  imageUrl: profileState.imageUrl,
+                  extraItems: [
+                    AccountMenuItem(
+                      value: 'standort',
+                      title: 'Standort',
+                      icon: Icons.location_city,
+                      onTap: (context) => context.go('/standort'),
+                    ),
+                  ],
+                  onLogin: (context) => context.go('/sign-in'),
+                  onLogout: () => client.auth.signOutDevice(),
+                  onProfile: (context) => context.go('/profile'),
+                  onSignedOut: () {
+                    if (mounted) context.go('/');
+                  },
+                ),
+            ],
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(44),
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: _error != null
+                    ? Text(
+                        'Status-Abfrage fehlgeschlagen: $_error',
+                        style: const TextStyle(color: Colors.redAccent),
+                      )
+                    : _buildChip(),
               ),
             ),
-            ListTile(
-              leading: const Icon(Icons.home),
-              title: const Text('Home'),
-              onTap: () => _goTo('/'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.location_city),
-              title: const Text('Standort'),
-              onTap: () => _goTo('/standort'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.person_outline),
-              title: const Text('Profil'),
-              onTap: () => _goTo('/profile'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.settings),
-              title: const Text('Site-Einrichtung'),
-              onTap: () => _goTo('/setup'),
-            ),
-          ],
-        ),
-      ),
-      body: widget.child,
+          ),
+          drawer: (!_setupNeeded && _isSignedIn)
+              ? Drawer(
+                  child: ListView(
+                    children: [
+                      const DrawerHeader(
+                        decoration: BoxDecoration(color: Colors.blue),
+                        child: Text(
+                          'Navigation',
+                          style: TextStyle(color: Colors.white, fontSize: 24),
+                        ),
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.home),
+                        title: const Text('Start'),
+                        onTap: () => _goTo('/'),
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.people),
+                        title: const Text('Members'),
+                        onTap: () => _goTo('/members'),
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.lock_open),
+                        title: const Text('Selbsteinlass'),
+                        onTap: () => _goTo('/selbsteinlass'),
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.location_city),
+                        title: const Text('Standort'),
+                        onTap: () => _goTo('/standort'),
+                      ),
+                    ],
+                  ),
+                )
+              : null,
+          body: _setupNeeded
+              ? _SetupReasonBanner(
+                  state: _status?.state,
+                  error: _status?.lastError,
+                  child: widget.child,
+                )
+              : widget.child,
+        );
+      },
     );
   }
 
@@ -154,25 +210,54 @@ class _LayoutState extends State<Layout> {
   }
 }
 
-/// Home: overview page (devices/members follow in later stages).
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+/// Shows the current setup state/reason above the setup mask (first setup
+/// vs. credential loss / revoked connection).
+class _SetupReasonBanner extends StatelessWidget {
+  final SiteConnectionState? state;
+  final String? error;
+  final Widget child;
+
+  const _SetupReasonBanner({
+    required this.state,
+    required this.error,
+    required this.child,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text('Start page (device management in a later stage)'),
-          const SizedBox(height: 16),
-          FilledButton.icon(
-            onPressed: () => context.go('/standort'),
-            icon: const Icon(Icons.location_city),
-            label: const Text('Standort'),
+    final theme = Theme.of(context);
+    final isReSetup = state == SiteConnectionState.needsReSetup;
+
+    return Column(
+      children: [
+        MaterialBanner(
+          content: Text(
+            isReSetup
+                ? 'Die Geräte-Anmeldung zur globalen Instanz ist nicht mehr '
+                      'gültig — bitte erneut einrichten.'
+                : 'Diese Instanz ist noch nicht mit der globalen Instanz '
+                      'verbunden — bitte einrichten.',
+            style: TextStyle(
+              color: isReSetup ? theme.colorScheme.error : null,
+            ),
           ),
-        ],
-      ),
+          leading: Icon(
+            isReSetup ? Icons.lock_reset : Icons.add_business,
+          ),
+          backgroundColor: isReSetup
+              ? theme.colorScheme.errorContainer
+              : theme.colorScheme.surfaceContainerHighest,
+          actions: [
+            if (error != null)
+              Tooltip(
+                message: error!,
+                child: const Icon(Icons.info_outline),
+              ),
+            const SizedBox(width: 8),
+          ],
+        ),
+        Expanded(child: child),
+      ],
     );
   }
 }

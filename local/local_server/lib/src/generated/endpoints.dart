@@ -19,6 +19,7 @@ import 'package:serverpod_auth_idp_server/serverpod_auth_idp_server.dart'
 import '../auth/email_idp_endpoint.dart' as _iuc1hd5t;
 import '../auth/jwt_refresh_endpoint.dart' as _inwq3ztq;
 import '../site/member_profile_endpoint.dart' as _i0gpa131;
+import '../site/members_admin_endpoint.dart' as _i37hx4yi;
 import '../site/site_setup_endpoint.dart' as _iq6hjzpz;
 
 class Endpoints extends _is.EndpointDispatch {
@@ -41,6 +42,12 @@ class Endpoints extends _is.EndpointDispatch {
         ..initialize(
           server,
           'memberProfile',
+          null,
+        ),
+      'membersAdmin': _i37hx4yi.MembersAdminEndpoint()
+        ..initialize(
+          server,
+          'membersAdmin',
           null,
         ),
       'siteSetup': _iq6hjzpz.SiteSetupEndpoint()
@@ -337,6 +344,84 @@ class Endpoints extends _is.EndpointDispatch {
                   (endpoints['memberProfile']
                           as _i0gpa131.MemberProfileEndpoint)
                       .removeUserImage(session),
+        ),
+      },
+    );
+    connectors['membersAdmin'] = _is.EndpointConnector(
+      name: 'membersAdmin',
+      endpoint: endpoints['membersAdmin']!,
+      methodConnectors: {
+        'listMembers': _is.MethodConnector(
+          name: 'listMembers',
+          params: {
+            'query': _is.ParameterDescription(
+              name: 'query',
+              type: _is.getType<String?>(),
+              nullable: true,
+            ),
+            'offset': _is.ParameterDescription(
+              name: 'offset',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+            'limit': _is.ParameterDescription(
+              name: 'limit',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['membersAdmin'] as _i37hx4yi.MembersAdminEndpoint)
+                      .listMembers(
+                        session,
+                        query: params['query'],
+                        offset: params['offset'],
+                        limit: params['limit'],
+                      ),
+        ),
+        'countMembers': _is.MethodConnector(
+          name: 'countMembers',
+          params: {
+            'query': _is.ParameterDescription(
+              name: 'query',
+              type: _is.getType<String?>(),
+              nullable: true,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['membersAdmin'] as _i37hx4yi.MembersAdminEndpoint)
+                      .countMembers(
+                        session,
+                        query: params['query'],
+                      ),
+        ),
+        'getMember': _is.MethodConnector(
+          name: 'getMember',
+          params: {
+            'globalAuthUserId': _is.ParameterDescription(
+              name: 'globalAuthUserId',
+              type: _is.getType<_is.UuidValue>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['membersAdmin'] as _i37hx4yi.MembersAdminEndpoint)
+                      .getMember(
+                        session,
+                        globalAuthUserId: params['globalAuthUserId'],
+                      ),
         ),
       },
     );

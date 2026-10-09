@@ -1,0 +1,32 @@
+### Local mirror of a global site membership (role/active bookkeeping —
+### root-AGENTS open item). Deactivation sets `active=false` + `endedAt`;
+### the person rows are KEPT so the site can still view its members.
+### Staff/admin roles later switch the local login behavior (employees
+### flow) — that mapping is implemented with the employees feature.
+class: MemberMembership
+table: member_memberships
+fields:
+
+  ### The local member_profile copy this membership belongs to.
+  memberProfile: MemberProfile?, relation(onDelete=Cascade)
+
+  ### Denormalized exchange id (same as the profile's globalAuthUserId).
+  globalAuthUserId: UuidValue
+
+  ### Mirror of the global SiteRole.
+  role: MemberRole, defaultModel=member
+
+  ### Lifecycle mirror (false = deactivated; data kept).
+  active: bool, defaultModel=true
+
+  ### Deactivation marker (null while active).
+  endedAt: DateTime?
+
+  ### When the membership known to this instance was created.
+  createdAt: DateTime, defaultModel=now
+indexes:
+  member_membership_profile_unique_idx:
+    fields: memberProfileId
+    unique: true
+  member_membership_global_auth_user_idx:
+    fields: globalAuthUserId

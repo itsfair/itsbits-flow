@@ -5,7 +5,11 @@ import 'package:serverpod_auth_idp_flutter/serverpod_auth_idp_flutter.dart';
 import 'client.dart';
 import 'layout.dart';
 
+import 'screens/home.dart';
+import 'screens/member_detail.dart';
+import 'screens/members.dart';
 import 'screens/profile.dart';
+import 'screens/selbsteinlass.dart';
 import 'screens/site_setup.dart';
 import 'screens/sign_in.dart';
 import 'screens/standort.dart';
@@ -15,6 +19,16 @@ import 'screens/standort.dart';
 /// redirect re-evaluates after enrollments/connectivity changes.
 final ValueNotifier<SiteConnectionState> connectionStateNotifier =
     ValueNotifier(SiteConnectionState.noneSetup);
+
+/// Redirect rules (see local AGENTS.md):
+/// - `noneSetup` / `needsReSetup`: the SETUP masking is forced for every
+///   route — the drawer and the login entry are hidden app-side.
+/// - enrolled + not signed in: always on `/sign-in`.
+/// - signed in: free navigation.
+final Set<SiteConnectionState> kSetupStates = {
+  SiteConnectionState.noneSetup,
+  SiteConnectionState.needsReSetup,
+};
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,26 +51,25 @@ class _MyAppState extends State<MyApp> {
     refreshListenable: Listenable.merge([
       client.auth.authInfoListenable,
       connectionStateNotifier,
+      profileState,
     ]),
     redirect: (context, state) {
       final location = state.matchedLocation;
-      final enrolled =
-          connectionStateNotifier.value != SiteConnectionState.noneSetup;
+      final setupNeeded = kSetupStates.contains(connectionStateNotifier.value);
       final signedIn = client.auth.isAuthenticated;
 
-      // Not enrolled at a global instance yet -> setup screen.
-      if (!enrolled && location != '/setup') {
-        return '/setup';
+      // Setup mask is the whole app while the connection is not usable.
+      if (setupNeeded) {
+        return null;
       }
 
-      // Enrolled but not locally signed in -> login screen
-      // (first enrollment creates the local login account).
-      if (enrolled && !signedIn && location != '/sign-in') {
-        return '/sign-in';
+      // Enrolled: signed-out users live on the login screen.
+      if (!signedIn) {
+        return location == '/sign-in' ? null : '/sign-in';
       }
 
-      // Signed in users don't need the login/setup screens.
-      if (signedIn && (location == '/sign-in' || location == '/setup')) {
+      // Signed in: the login screen is no longer needed.
+      if (location == '/sign-in') {
         return '/';
       }
 
@@ -71,6 +84,20 @@ class _MyAppState extends State<MyApp> {
           GoRoute(
             path: '/',
             builder: (context, state) => const HomeScreen(),
+          ),
+          GoRoute(
+            path: '/members',
+            builder: (context, state) => const MembersScreen(),
+          ),
+          GoRoute(
+            path: '/members/:globalAuthUserId',
+            builder: (context, state) => MemberDetailScreen(
+              globalAuthUserId: state.pathParameters['globalAuthUserId']!,
+            ),
+          ),
+          GoRoute(
+            path: '/selbsteinlass',
+            builder: (context, state) => const SelbsteinlassScreen(),
           ),
           GoRoute(
             path: '/standort',
@@ -92,6 +119,28 @@ class _MyAppState extends State<MyApp> {
       ),
     ],
   );
+
+  @override
+  void initState() {
+    super.initState();
+    client.auth.authInfoListenable.addListener(_onAuthChanged);
+    // Handle a restored session from a previous app run.
+    _onAuthChanged();
+  }
+
+  @override
+  void dispose() {
+    client.auth.authInfoListenable.removeListener(_onAuthChanged);
+    super.dispose();
+  }
+
+  void _onAuthChanged() {
+    if (client.auth.isAuthenticated) {
+      profileState.load();
+    } else {
+      profileState.reset();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

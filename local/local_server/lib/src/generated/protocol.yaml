@@ -14,6 +14,10 @@ memberProfile:
   - save:
   - setUserImage:
   - removeUserImage:
+membersAdmin:
+  - listMembers:
+  - countMembers:
+  - getMember:
 siteSetup:
   - enterSetup:
   - connectionStatus:

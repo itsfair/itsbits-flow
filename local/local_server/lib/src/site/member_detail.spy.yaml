@@ -1,0 +1,20 @@
+### Full read-only detail of a local member (person mirror + membership
+### mirror). Editing happens globally only (sync rule).
+class: MemberDetail
+fields:
+  globalAuthUserId: UuidValue
+  email: String
+  firstName: String?
+  lastName: String?
+  birthday: DateTime?
+  imageUrl: String?
+  profileCreatedAt: DateTime
+
+  ### Whether the person has a local login (site admin / staff).
+  hasLocalLogin: bool
+
+  ### Membership mirror fields (null when not yet a synced member).
+  roleName: String?
+  active: bool?
+  endedAt: DateTime?
+  membershipCreatedAt: DateTime?
