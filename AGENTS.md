@@ -125,6 +125,12 @@ server's `docker-compose.yaml` (start with `serverpod start` or
 - Agent tooling: one `opencode.json` at the repo root registers **two**
   Serverpod MCP servers (`serverpod_global` → `global/global_server`,
   `serverpod_local` → `local/local_server`) plus the `dart` MCP.
+- Git hygiene: `.dart_tool/` (root AND nested workspaces) and
+  `devtools_options.yaml` are **ignored** (committed once as build
+  artifacts by accident; untracked since). On a fresh clone run
+  `dart pub get` (workspace root) — the toolchain regenerates all
+  `.dart_tool` state itself. Team/agent configs (`.vscode/launch.json`,
+  `tasks.json`, `opencode.json`) ARE tracked on purpose.
 
 ## General conventions
 
