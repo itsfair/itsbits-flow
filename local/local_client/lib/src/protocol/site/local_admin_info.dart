@@ -28,6 +28,7 @@ abstract class LocalAdminInfo
     this.siteCity,
     this.siteCountry,
     this.siteCompanyEmail,
+    this.siteImageUrl,
     this.adminEmail,
     this.adminFirstName,
     this.adminLastName,
@@ -46,6 +47,7 @@ abstract class LocalAdminInfo
     String? siteCity,
     String? siteCountry,
     String? siteCompanyEmail,
+    String? siteImageUrl,
     String? adminEmail,
     String? adminFirstName,
     String? adminLastName,
@@ -71,6 +73,7 @@ abstract class LocalAdminInfo
       siteCity: jsonSerialization['siteCity'] as String?,
       siteCountry: jsonSerialization['siteCountry'] as String?,
       siteCompanyEmail: jsonSerialization['siteCompanyEmail'] as String?,
+      siteImageUrl: jsonSerialization['siteImageUrl'] as String?,
       adminEmail: jsonSerialization['adminEmail'] as String?,
       adminFirstName: jsonSerialization['adminFirstName'] as String?,
       adminLastName: jsonSerialization['adminLastName'] as String?,
@@ -90,8 +93,8 @@ abstract class LocalAdminInfo
 
   DateTime? lastConnectedAt;
 
-  /// Site snapshot (fetched at enrollment; diverges if the site is
-  /// changed globally later — sync TODO).
+  /// Site snapshot (edited locally, pushed to the global instance —
+  /// edits require the live connection).
   int? siteId;
 
   String? siteName;
@@ -105,6 +108,8 @@ abstract class LocalAdminInfo
   String? siteCountry;
 
   String? siteCompanyEmail;
+
+  String? siteImageUrl;
 
   /// The admin's mirrored person data (join into the member_profile copy
   /// via `site_connections.adminAuthUserId`).
@@ -132,6 +137,7 @@ abstract class LocalAdminInfo
     String? siteCity,
     String? siteCountry,
     String? siteCompanyEmail,
+    String? siteImageUrl,
     String? adminEmail,
     String? adminFirstName,
     String? adminLastName,
@@ -152,6 +158,7 @@ abstract class LocalAdminInfo
       if (siteCity != null) 'siteCity': siteCity,
       if (siteCountry != null) 'siteCountry': siteCountry,
       if (siteCompanyEmail != null) 'siteCompanyEmail': siteCompanyEmail,
+      if (siteImageUrl != null) 'siteImageUrl': siteImageUrl,
       if (adminEmail != null) 'adminEmail': adminEmail,
       if (adminFirstName != null) 'adminFirstName': adminFirstName,
       if (adminLastName != null) 'adminLastName': adminLastName,
@@ -174,6 +181,7 @@ abstract class LocalAdminInfo
       if (siteCity != null) 'siteCity': siteCity,
       if (siteCountry != null) 'siteCountry': siteCountry,
       if (siteCompanyEmail != null) 'siteCompanyEmail': siteCompanyEmail,
+      if (siteImageUrl != null) 'siteImageUrl': siteImageUrl,
       if (adminEmail != null) 'adminEmail': adminEmail,
       if (adminFirstName != null) 'adminFirstName': adminFirstName,
       if (adminLastName != null) 'adminLastName': adminLastName,
@@ -202,6 +210,7 @@ class _LocalAdminInfoImpl extends LocalAdminInfo {
     String? siteCity,
     String? siteCountry,
     String? siteCompanyEmail,
+    String? siteImageUrl,
     String? adminEmail,
     String? adminFirstName,
     String? adminLastName,
@@ -218,6 +227,7 @@ class _LocalAdminInfoImpl extends LocalAdminInfo {
          siteCity: siteCity,
          siteCountry: siteCountry,
          siteCompanyEmail: siteCompanyEmail,
+         siteImageUrl: siteImageUrl,
          adminEmail: adminEmail,
          adminFirstName: adminFirstName,
          adminLastName: adminLastName,
@@ -240,6 +250,7 @@ class _LocalAdminInfoImpl extends LocalAdminInfo {
     Object? siteCity = _Undefined,
     Object? siteCountry = _Undefined,
     Object? siteCompanyEmail = _Undefined,
+    Object? siteImageUrl = _Undefined,
     Object? adminEmail = _Undefined,
     Object? adminFirstName = _Undefined,
     Object? adminLastName = _Undefined,
@@ -263,6 +274,7 @@ class _LocalAdminInfoImpl extends LocalAdminInfo {
       siteCompanyEmail: siteCompanyEmail is String?
           ? siteCompanyEmail
           : this.siteCompanyEmail,
+      siteImageUrl: siteImageUrl is String? ? siteImageUrl : this.siteImageUrl,
       adminEmail: adminEmail is String? ? adminEmail : this.adminEmail,
       adminFirstName: adminFirstName is String?
           ? adminFirstName

@@ -18,6 +18,10 @@ membersAdmin:
   - listMembers:
   - countMembers:
   - getMember:
+siteAdmin:
+  - updateSite:
+  - setSiteImage:
+  - removeSiteImage:
 siteSetup:
   - enterSetup:
   - connectionStatus:

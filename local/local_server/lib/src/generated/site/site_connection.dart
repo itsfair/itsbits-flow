@@ -26,6 +26,7 @@ abstract class SiteConnection
     this.siteCity,
     this.siteCountry,
     this.siteCompanyEmail,
+    this.siteImageUrl,
     this.adminAuthUserId,
     this.deviceSessionKey,
     DateTime? enrolledAt,
@@ -41,6 +42,7 @@ abstract class SiteConnection
     String? siteCity,
     String? siteCountry,
     String? siteCompanyEmail,
+    String? siteImageUrl,
     _is.UuidValue? adminAuthUserId,
     String? deviceSessionKey,
     DateTime? enrolledAt,
@@ -57,6 +59,7 @@ abstract class SiteConnection
       siteCity: jsonSerialization['siteCity'] as String?,
       siteCountry: jsonSerialization['siteCountry'] as String?,
       siteCompanyEmail: jsonSerialization['siteCompanyEmail'] as String?,
+      siteImageUrl: jsonSerialization['siteImageUrl'] as String?,
       adminAuthUserId: jsonSerialization['adminAuthUserId'] == null
           ? null
           : _is.UuidValueJsonExtension.fromJson(
@@ -99,6 +102,12 @@ abstract class SiteConnection
 
   String? siteCompanyEmail;
 
+  /// Public URL of the site image in the LOCAL RustFS (offline-capable
+  /// display; a mirror of the global object, pushed by the siteAdmin
+  /// endpoint: edits happen locally and are pushed to the global
+  /// instance first — see local AGENTS.md).
+  String? siteImageUrl;
+
   /// Admin person identity (pointer key into the member_profile copy;
   /// person data lives there). No person fields in this row.
   _is.UuidValue? adminAuthUserId;
@@ -127,6 +136,7 @@ abstract class SiteConnection
     String? siteCity,
     String? siteCountry,
     String? siteCompanyEmail,
+    String? siteImageUrl,
     _is.UuidValue? adminAuthUserId,
     String? deviceSessionKey,
     DateTime? enrolledAt,
@@ -144,6 +154,7 @@ abstract class SiteConnection
       if (siteCity != null) 'siteCity': siteCity,
       if (siteCountry != null) 'siteCountry': siteCountry,
       if (siteCompanyEmail != null) 'siteCompanyEmail': siteCompanyEmail,
+      if (siteImageUrl != null) 'siteImageUrl': siteImageUrl,
       if (adminAuthUserId != null) 'adminAuthUserId': adminAuthUserId?.toJson(),
       if (deviceSessionKey != null) 'deviceSessionKey': deviceSessionKey,
       'enrolledAt': enrolledAt.toJson(),
@@ -163,6 +174,7 @@ abstract class SiteConnection
       if (siteCity != null) 'siteCity': siteCity,
       if (siteCountry != null) 'siteCountry': siteCountry,
       if (siteCompanyEmail != null) 'siteCompanyEmail': siteCompanyEmail,
+      if (siteImageUrl != null) 'siteImageUrl': siteImageUrl,
       'enrolledAt': enrolledAt.toJson(),
     };
   }
@@ -208,6 +220,7 @@ class _SiteConnectionImpl extends SiteConnection {
     String? siteCity,
     String? siteCountry,
     String? siteCompanyEmail,
+    String? siteImageUrl,
     _is.UuidValue? adminAuthUserId,
     String? deviceSessionKey,
     DateTime? enrolledAt,
@@ -221,6 +234,7 @@ class _SiteConnectionImpl extends SiteConnection {
          siteCity: siteCity,
          siteCountry: siteCountry,
          siteCompanyEmail: siteCompanyEmail,
+         siteImageUrl: siteImageUrl,
          adminAuthUserId: adminAuthUserId,
          deviceSessionKey: deviceSessionKey,
          enrolledAt: enrolledAt,
@@ -240,6 +254,7 @@ class _SiteConnectionImpl extends SiteConnection {
     Object? siteCity = _Undefined,
     Object? siteCountry = _Undefined,
     Object? siteCompanyEmail = _Undefined,
+    Object? siteImageUrl = _Undefined,
     Object? adminAuthUserId = _Undefined,
     Object? deviceSessionKey = _Undefined,
     DateTime? enrolledAt,
@@ -256,6 +271,7 @@ class _SiteConnectionImpl extends SiteConnection {
       siteCompanyEmail: siteCompanyEmail is String?
           ? siteCompanyEmail
           : this.siteCompanyEmail,
+      siteImageUrl: siteImageUrl is String? ? siteImageUrl : this.siteImageUrl,
       adminAuthUserId: adminAuthUserId is _is.UuidValue?
           ? adminAuthUserId
           : this.adminAuthUserId,
@@ -308,6 +324,12 @@ class SiteConnectionUpdateTable extends _is.UpdateTable<SiteConnectionTable> {
   _is.ColumnValue<String, String> siteCompanyEmail(String? value) =>
       _is.ColumnValue(
         table.siteCompanyEmail,
+        value,
+      );
+
+  _is.ColumnValue<String, String> siteImageUrl(String? value) =>
+      _is.ColumnValue(
+        table.siteImageUrl,
         value,
       );
 
@@ -367,6 +389,10 @@ class SiteConnectionTable extends _is.Table<int?> {
       'siteCompanyEmail',
       this,
     );
+    siteImageUrl = _is.ColumnString(
+      'siteImageUrl',
+      this,
+    );
     adminAuthUserId = _is.ColumnUuid(
       'adminAuthUserId',
       this,
@@ -406,6 +432,12 @@ class SiteConnectionTable extends _is.Table<int?> {
 
   late final _is.ColumnString siteCompanyEmail;
 
+  /// Public URL of the site image in the LOCAL RustFS (offline-capable
+  /// display; a mirror of the global object, pushed by the siteAdmin
+  /// endpoint: edits happen locally and are pushed to the global
+  /// instance first — see local AGENTS.md).
+  late final _is.ColumnString siteImageUrl;
+
   /// Admin person identity (pointer key into the member_profile copy;
   /// person data lives there). No person fields in this row.
   late final _is.ColumnUuid adminAuthUserId;
@@ -429,6 +461,7 @@ class SiteConnectionTable extends _is.Table<int?> {
     siteCity,
     siteCountry,
     siteCompanyEmail,
+    siteImageUrl,
     adminAuthUserId,
     deviceSessionKey,
     enrolledAt,

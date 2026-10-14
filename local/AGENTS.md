@@ -45,6 +45,7 @@ DB name `local`. Details and full stack: root AGENTS.md.
 | `memberProfile` | Own person endpoints (mirror of global): `get`, `save`, `setUserImage`, `removeUserImage` — for locally logged-in persons (site admin/staff) |
 | `siteSetup` | `enterSetup({email, password, siteId?})`: verifies the **global credentials** of the site admin against the global instance (via the global client package), processes the transfer (member_profile copy + local `local-admin` login + image) — `adminInfo()`, `connectionStatus()` for the app connection chip |
 | `membersAdmin` | Local member directory (read-only, `local-admin` scope): `listMembers` (search/pagination), `countMembers`, `getMember({globalAuthUserId})` — member_profile mirror + `member_membership` mirror (role/active/endedAt) |
+| `siteAdmin` | Site-properties editing (local-owner rule, reversed vs. profiles; `local-admin` scope): `updateSite`, `setSiteImage`, `removeSiteImage` — strict `connected` gate (no queueing), global `siteDetails.push` runs FIRST (validated there), local snapshot update only after the global push succeeded (fail-closed) |
 | `siteSync` (pull side only, in `SiteSyncProcessor`) | Pulls pending member-data deliveries from the global `siteSync` endpoint on every connection event (initial `needsSiteSync` fire, stream pushes, pings as watchdog) and confirms them |
 
 ## Key design points
@@ -87,6 +88,14 @@ DB name `local`. Details and full stack: root AGENTS.md.
   `active=false`/`endedAt` — person data kept. Local membership mirror
   table: `member_membership` (one membership per person, role, active,
   endedAt).
+- **Site data is edited LOCALLY only** (reversed rule vs. member
+  profiles, which are global-only): the "Standort" editor (shared
+  `SiteDetailsEditorScreen`) saves through `siteAdmin`; the update is
+  pushed to the global instance first (device credential,
+  server-to-server) and applied to the `site_connections` snapshot on
+  success only. The site image lives at `site_images/<siteId>.jpg` on
+  BOTH RustFS buckets (global for end-user/admin display, local mirror
+  for offline-capable display; deterministic, overwrite).
 - Birthday as UTC-midnight date sentinel (no server-side
   re-normalization) — see root AGENTS.md.
 - **Admin app shell state machine**: the setup mask (`/setup`) is forced
@@ -106,10 +115,11 @@ DB name `local`. Details and full stack: root AGENTS.md.
   `SiteSyncProcessor`. Remaining: staff/admin role switch → local login
   (analyzed with the employees flow); roles/status reporting back to
   global via `site-device`-restricted endpoints.
-- **Protection layer**: FIRST part implemented — the `membersAdmin`
-  endpoint is enforced via the `local-admin` scope. Remaining: protect
-  the other member/employee admin areas the same way as they appear
-  (login flow already lives in the site admin app shell).
+- **Protection layer**: TWO endpoints enforced now — `membersAdmin` and
+  `siteAdmin` are scope-checked (`local-admin`); the shell hides
+  drawer/dropdown during setup states. Remaining: apply the same
+  enforcement to further member/employee admin endpoints as they are
+  added.
 - **Employees flow**: member verifies on site with global credentials →
   local login (same model as the admin setup).
 - **Password self-healing**: "same password globally + locally" — the

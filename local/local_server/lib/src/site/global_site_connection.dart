@@ -295,6 +295,23 @@ class GlobalSiteConnection {
     }
   }
 
+  // -- Sync client (shared by SiteSyncProcessor + siteAdmin push)
+
+  /// An authenticated global client for this instance's device session
+  /// (same wiring as the connection worker; safe to open repeatedly —
+  /// cheap; every caller uses it server-to-server, NOT via app sessions).
+  Future<gc.Client?> openSyncClient() async {
+    final row = await _loadRow();
+    if (row == null || row.deviceSessionKey == null) return null;
+
+    final client = gc.Client(row.globalApiUrl);
+    final storage = SiteConnectionAuthStorage();
+    final sessionManager = ClientAuthSessionManager(storage: storage);
+    client.authSessionManager = sessionManager;
+    await sessionManager.updateSignedInUser(await storage.get());
+    return client;
+  }
+
   // -- Worker
 
   Timer? _retryTimer;

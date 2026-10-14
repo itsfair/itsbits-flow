@@ -20,6 +20,8 @@ import 'package:local_client/src/protocol/site/member_profile.dart'
     as _iakvgpur;
 import 'package:local_client/src/protocol/site/member_summary.dart'
     as _i5ndcnpn;
+import 'package:local_client/src/protocol/site/site_connection.dart'
+    as _ijbx0283;
 import 'package:local_client/src/protocol/site/site_connection_info.dart'
     as _i0a8fvnn;
 import 'package:local_client/src/protocol/site/site_setup_result.dart'
@@ -379,6 +381,64 @@ class EndpointMembersAdmin extends _isc.EndpointRef {
   );
 }
 
+/// Local admin endpoint for editing THIS site's properties (name, address,
+/// contact) and its image. Editing happens LOCALLY only (mirror rule
+/// reversed versus member profiles) and — by design — requires the live
+/// connection to the global instance: the update is pushed FIRST to the
+/// global `siteDetails` endpoint (device credential, server-to-server) and
+/// only on success applied to the local snapshot. No queuing/offline mode.
+///
+/// Access is enforced declaratively via [requiredScopes] (`local-admin`).
+/// {@category Endpoint}
+class EndpointSiteAdmin extends _isc.EndpointRef {
+  EndpointSiteAdmin(_isc.EndpointCaller caller) : super(caller);
+
+  @override
+  String get name => 'siteAdmin';
+
+  /// Updates the site properties (fail-closed: any push failure leaves the
+  /// local snapshot untouched; validation happens on the global side —
+  /// one source of truth for the field rules).
+  _ida.Future<_ijbx0283.SiteConnection> updateSite({
+    required String name,
+    required String street,
+    required String zipCode,
+    required String city,
+    required String country,
+    required String companyEmail,
+  }) => caller.callServerEndpoint<_ijbx0283.SiteConnection>(
+    'siteAdmin',
+    'updateSite',
+    {
+      'name': name,
+      'street': street,
+      'zipCode': zipCode,
+      'city': city,
+      'country': country,
+      'companyEmail': companyEmail,
+    },
+  );
+
+  /// Uploads/overwrites the site image (JPEG, like the profile image).
+  /// The object is stored BOTH globally (end user + admin display) and
+  /// locally (offline-capable local display), deterministic path.
+  _ida.Future<_ijbx0283.SiteConnection> setSiteImage({
+    required _idt.ByteData image,
+  }) => caller.callServerEndpoint<_ijbx0283.SiteConnection>(
+    'siteAdmin',
+    'setSiteImage',
+    {'image': image},
+  );
+
+  /// Removes the site image on BOTH sides (global first, then local).
+  _ida.Future<_ijbx0283.SiteConnection> removeSiteImage() =>
+      caller.callServerEndpoint<_ijbx0283.SiteConnection>(
+        'siteAdmin',
+        'removeSiteImage',
+        {},
+      );
+}
+
 /// Local setup endpoint: connects this instance to its site's global
 /// instance by verifying with the **global credentials of the site admin**
 /// (the one chosen at site creation). Fills the local member_profile copy
@@ -474,6 +534,7 @@ class Client extends _isc.ServerpodClientShared {
     jwtRefresh = EndpointJwtRefresh(this);
     memberProfile = EndpointMemberProfile(this);
     membersAdmin = EndpointMembersAdmin(this);
+    siteAdmin = EndpointSiteAdmin(this);
     siteSetup = EndpointSiteSetup(this);
     modules = Modules(this);
   }
@@ -486,6 +547,8 @@ class Client extends _isc.ServerpodClientShared {
 
   late final EndpointMembersAdmin membersAdmin;
 
+  late final EndpointSiteAdmin siteAdmin;
+
   late final EndpointSiteSetup siteSetup;
 
   late final Modules modules;
@@ -496,6 +559,7 @@ class Client extends _isc.ServerpodClientShared {
     'jwtRefresh': jwtRefresh,
     'memberProfile': memberProfile,
     'membersAdmin': membersAdmin,
+    'siteAdmin': siteAdmin,
     'siteSetup': siteSetup,
   };
 

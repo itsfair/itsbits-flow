@@ -180,6 +180,8 @@ class TestEndpoints {
 
   late final _SiteConnectionEndpoint siteConnection;
 
+  late final _SiteDetailsEndpoint siteDetails;
+
   late final _SiteDirectoryEndpoint siteDirectory;
 
   late final _SiteEnrollmentEndpoint siteEnrollment;
@@ -213,6 +215,10 @@ class _InternalTestEndpoints extends TestEndpoints
       serializationManager,
     );
     siteConnection = _SiteConnectionEndpoint(
+      endpoints,
+      serializationManager,
+    );
+    siteDetails = _SiteDetailsEndpoint(
       endpoints,
       serializationManager,
     );
@@ -881,6 +887,64 @@ class _SiteConnectionEndpoint {
       _localTestStreamManager.outputStreamController,
     );
     return _localTestStreamManager.outputStreamController.stream;
+  }
+}
+
+class _SiteDetailsEndpoint {
+  _SiteDetailsEndpoint(
+    this._endpointDispatch,
+    this._serializationManager,
+  );
+
+  final _is.EndpointDispatch _endpointDispatch;
+
+  final _is.SerializationManager _serializationManager;
+
+  _ida.Future<void> push(
+    _ist.TestSessionBuilder sessionBuilder, {
+    required String name,
+    required String street,
+    required String zipCode,
+    required String city,
+    required String country,
+    required String companyEmail,
+    _idt.ByteData? image,
+    required bool removeImage,
+  }) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'siteDetails',
+            method: 'push',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'siteDetails',
+          methodName: 'push',
+          parameters: _ist.testObjectToJson({
+            'name': name,
+            'street': street,
+            'zipCode': zipCode,
+            'city': city,
+            'country': country,
+            'companyEmail': companyEmail,
+            'image': image,
+            'removeImage': removeImage,
+          }),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<void>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
   }
 }
 

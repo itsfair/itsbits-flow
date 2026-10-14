@@ -8,8 +8,8 @@ fields:
   connectionError: String?
   lastConnectedAt: DateTime?
 
-  ### Site snapshot (fetched at enrollment; diverges if the site is
-  ### changed globally later — sync TODO).
+  ### Site snapshot (edited locally, pushed to the global instance —
+  ### edits require the live connection).
   siteId: int?
   siteName: String?
   siteStreet: String?
@@ -17,6 +17,7 @@ fields:
   siteCity: String?
   siteCountry: String?
   siteCompanyEmail: String?
+  siteImageUrl: String?
 
   ### The admin's mirrored person data (join into the member_profile copy
   ### via `site_connections.adminAuthUserId`).

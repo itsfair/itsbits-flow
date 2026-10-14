@@ -22,6 +22,7 @@ import '../auth/email_idp_endpoint.dart' as _iuc1hd5t;
 import '../auth/jwt_refresh_endpoint.dart' as _inwq3ztq;
 import '../profile/member_profile_endpoint.dart' as _i9yekdp0;
 import '../sites/site_connection_endpoint.dart' as _iy15yji6;
+import '../sites/site_details_endpoint.dart' as _ipnkc2jo;
 import '../sites/site_directory_endpoint.dart' as _ic6n5bkb;
 import '../sites/site_enrollment_endpoint.dart' as _ii29ea4g;
 import '../sites/site_sync_endpoint.dart' as _iojr50j8;
@@ -59,6 +60,12 @@ class Endpoints extends _is.EndpointDispatch {
         ..initialize(
           server,
           'siteConnection',
+          null,
+        ),
+      'siteDetails': _ipnkc2jo.SiteDetailsEndpoint()
+        ..initialize(
+          server,
+          'siteDetails',
           null,
         ),
       'siteDirectory': _ic6n5bkb.SiteDirectoryEndpoint()
@@ -511,6 +518,74 @@ class Endpoints extends _is.EndpointDispatch {
                       .connect(
                         session,
                         streamParams['pings']!.cast<_i2wwgvmf.SitePing>(),
+                      ),
+        ),
+      },
+    );
+    connectors['siteDetails'] = _is.EndpointConnector(
+      name: 'siteDetails',
+      endpoint: endpoints['siteDetails']!,
+      methodConnectors: {
+        'push': _is.MethodConnector(
+          name: 'push',
+          params: {
+            'name': _is.ParameterDescription(
+              name: 'name',
+              type: _is.getType<String>(),
+              nullable: false,
+            ),
+            'street': _is.ParameterDescription(
+              name: 'street',
+              type: _is.getType<String>(),
+              nullable: false,
+            ),
+            'zipCode': _is.ParameterDescription(
+              name: 'zipCode',
+              type: _is.getType<String>(),
+              nullable: false,
+            ),
+            'city': _is.ParameterDescription(
+              name: 'city',
+              type: _is.getType<String>(),
+              nullable: false,
+            ),
+            'country': _is.ParameterDescription(
+              name: 'country',
+              type: _is.getType<String>(),
+              nullable: false,
+            ),
+            'companyEmail': _is.ParameterDescription(
+              name: 'companyEmail',
+              type: _is.getType<String>(),
+              nullable: false,
+            ),
+            'image': _is.ParameterDescription(
+              name: 'image',
+              type: _is.getType<_idt.ByteData?>(),
+              nullable: true,
+            ),
+            'removeImage': _is.ParameterDescription(
+              name: 'removeImage',
+              type: _is.getType<bool>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['siteDetails'] as _ipnkc2jo.SiteDetailsEndpoint)
+                      .push(
+                        session,
+                        name: params['name'],
+                        street: params['street'],
+                        zipCode: params['zipCode'],
+                        city: params['city'],
+                        country: params['country'],
+                        companyEmail: params['companyEmail'],
+                        image: params['image'],
+                        removeImage: params['removeImage'],
                       ),
         ),
       },

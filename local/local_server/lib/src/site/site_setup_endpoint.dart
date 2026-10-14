@@ -108,6 +108,7 @@ class SiteSetupEndpoint extends Endpoint {
       siteCity: site?.siteCity,
       siteCountry: site?.siteCountry,
       siteCompanyEmail: site?.siteCompanyEmail,
+      siteImageUrl: site?.siteImageUrl,
       adminEmail: adminProfile?.email,
       adminFirstName: adminProfile?.firstName,
       adminLastName: adminProfile?.lastName,

@@ -20,6 +20,7 @@ import '../auth/email_idp_endpoint.dart' as _iuc1hd5t;
 import '../auth/jwt_refresh_endpoint.dart' as _inwq3ztq;
 import '../site/member_profile_endpoint.dart' as _i0gpa131;
 import '../site/members_admin_endpoint.dart' as _i37hx4yi;
+import '../site/site_admin_endpoint.dart' as _it93jbo5;
 import '../site/site_setup_endpoint.dart' as _iq6hjzpz;
 
 class Endpoints extends _is.EndpointDispatch {
@@ -48,6 +49,12 @@ class Endpoints extends _is.EndpointDispatch {
         ..initialize(
           server,
           'membersAdmin',
+          null,
+        ),
+      'siteAdmin': _it93jbo5.SiteAdminEndpoint()
+        ..initialize(
+          server,
+          'siteAdmin',
           null,
         ),
       'siteSetup': _iq6hjzpz.SiteSetupEndpoint()
@@ -422,6 +429,90 @@ class Endpoints extends _is.EndpointDispatch {
                         session,
                         globalAuthUserId: params['globalAuthUserId'],
                       ),
+        ),
+      },
+    );
+    connectors['siteAdmin'] = _is.EndpointConnector(
+      name: 'siteAdmin',
+      endpoint: endpoints['siteAdmin']!,
+      methodConnectors: {
+        'updateSite': _is.MethodConnector(
+          name: 'updateSite',
+          params: {
+            'name': _is.ParameterDescription(
+              name: 'name',
+              type: _is.getType<String>(),
+              nullable: false,
+            ),
+            'street': _is.ParameterDescription(
+              name: 'street',
+              type: _is.getType<String>(),
+              nullable: false,
+            ),
+            'zipCode': _is.ParameterDescription(
+              name: 'zipCode',
+              type: _is.getType<String>(),
+              nullable: false,
+            ),
+            'city': _is.ParameterDescription(
+              name: 'city',
+              type: _is.getType<String>(),
+              nullable: false,
+            ),
+            'country': _is.ParameterDescription(
+              name: 'country',
+              type: _is.getType<String>(),
+              nullable: false,
+            ),
+            'companyEmail': _is.ParameterDescription(
+              name: 'companyEmail',
+              type: _is.getType<String>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['siteAdmin'] as _it93jbo5.SiteAdminEndpoint)
+                  .updateSite(
+                    session,
+                    name: params['name'],
+                    street: params['street'],
+                    zipCode: params['zipCode'],
+                    city: params['city'],
+                    country: params['country'],
+                    companyEmail: params['companyEmail'],
+                  ),
+        ),
+        'setSiteImage': _is.MethodConnector(
+          name: 'setSiteImage',
+          params: {
+            'image': _is.ParameterDescription(
+              name: 'image',
+              type: _is.getType<_idt.ByteData>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['siteAdmin'] as _it93jbo5.SiteAdminEndpoint)
+                  .setSiteImage(
+                    session,
+                    image: params['image'],
+                  ),
+        ),
+        'removeSiteImage': _is.MethodConnector(
+          name: 'removeSiteImage',
+          params: {},
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['siteAdmin'] as _it93jbo5.SiteAdminEndpoint)
+                  .removeSiteImage(session),
         ),
       },
     );

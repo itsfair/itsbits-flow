@@ -21,6 +21,12 @@ fields:
   siteCountry: String?
   siteCompanyEmail: String?
 
+  ### Public URL of the site image in the LOCAL RustFS (offline-capable
+  ### display; a mirror of the global object, pushed by the siteAdmin
+  ### endpoint: edits happen locally and are pushed to the global
+  ### instance first — see local AGENTS.md).
+  siteImageUrl: String?
+
   ### Admin person identity (pointer key into the member_profile copy;
   ### person data lives there). No person fields in this row.
   adminAuthUserId: UuidValue?, scope=serverOnly

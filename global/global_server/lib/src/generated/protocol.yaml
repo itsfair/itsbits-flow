@@ -21,6 +21,8 @@ memberProfile:
   - removeUserImage:
 siteConnection:
   - connect:
+siteDetails:
+  - push:
 siteDirectory:
   - listLatest:
   - listSites:

@@ -26,6 +26,7 @@ abstract class SiteConnection
     this.siteCity,
     this.siteCountry,
     this.siteCompanyEmail,
+    this.siteImageUrl,
     DateTime? enrolledAt,
   }) : enrolledAt = enrolledAt ?? DateTime.now();
 
@@ -39,6 +40,7 @@ abstract class SiteConnection
     String? siteCity,
     String? siteCountry,
     String? siteCompanyEmail,
+    String? siteImageUrl,
     DateTime? enrolledAt,
   }) = _SiteConnectionImpl;
 
@@ -53,6 +55,7 @@ abstract class SiteConnection
       siteCity: jsonSerialization['siteCity'] as String?,
       siteCountry: jsonSerialization['siteCountry'] as String?,
       siteCompanyEmail: jsonSerialization['siteCompanyEmail'] as String?,
+      siteImageUrl: jsonSerialization['siteImageUrl'] as String?,
       enrolledAt: jsonSerialization['enrolledAt'] == null
           ? null
           : _isc.DateTimeJsonExtension.fromJson(
@@ -89,6 +92,12 @@ abstract class SiteConnection
 
   String? siteCompanyEmail;
 
+  /// Public URL of the site image in the LOCAL RustFS (offline-capable
+  /// display; a mirror of the global object, pushed by the siteAdmin
+  /// endpoint: edits happen locally and are pushed to the global
+  /// instance first — see local AGENTS.md).
+  String? siteImageUrl;
+
   /// When the enrollment happened (may be a recovery).
   DateTime enrolledAt;
 
@@ -105,6 +114,7 @@ abstract class SiteConnection
     String? siteCity,
     String? siteCountry,
     String? siteCompanyEmail,
+    String? siteImageUrl,
     DateTime? enrolledAt,
   });
   @override
@@ -120,6 +130,7 @@ abstract class SiteConnection
       if (siteCity != null) 'siteCity': siteCity,
       if (siteCountry != null) 'siteCountry': siteCountry,
       if (siteCompanyEmail != null) 'siteCompanyEmail': siteCompanyEmail,
+      if (siteImageUrl != null) 'siteImageUrl': siteImageUrl,
       'enrolledAt': enrolledAt.toJson(),
     };
   }
@@ -137,6 +148,7 @@ abstract class SiteConnection
       if (siteCity != null) 'siteCity': siteCity,
       if (siteCountry != null) 'siteCountry': siteCountry,
       if (siteCompanyEmail != null) 'siteCompanyEmail': siteCompanyEmail,
+      if (siteImageUrl != null) 'siteImageUrl': siteImageUrl,
       'enrolledAt': enrolledAt.toJson(),
     };
   }
@@ -160,6 +172,7 @@ class _SiteConnectionImpl extends SiteConnection {
     String? siteCity,
     String? siteCountry,
     String? siteCompanyEmail,
+    String? siteImageUrl,
     DateTime? enrolledAt,
   }) : super._(
          id: id,
@@ -171,6 +184,7 @@ class _SiteConnectionImpl extends SiteConnection {
          siteCity: siteCity,
          siteCountry: siteCountry,
          siteCompanyEmail: siteCompanyEmail,
+         siteImageUrl: siteImageUrl,
          enrolledAt: enrolledAt,
        );
 
@@ -188,6 +202,7 @@ class _SiteConnectionImpl extends SiteConnection {
     Object? siteCity = _Undefined,
     Object? siteCountry = _Undefined,
     Object? siteCompanyEmail = _Undefined,
+    Object? siteImageUrl = _Undefined,
     DateTime? enrolledAt,
   }) {
     return SiteConnection(
@@ -202,6 +217,7 @@ class _SiteConnectionImpl extends SiteConnection {
       siteCompanyEmail: siteCompanyEmail is String?
           ? siteCompanyEmail
           : this.siteCompanyEmail,
+      siteImageUrl: siteImageUrl is String? ? siteImageUrl : this.siteImageUrl,
       enrolledAt: enrolledAt ?? this.enrolledAt,
     );
   }

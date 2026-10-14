@@ -2,6 +2,7 @@ import 'package:serverpod/serverpod.dart';
 
 import '../auth/scopes.dart';
 import '../generated/protocol.dart';
+import 'site_device_context.dart';
 import 'site_sync_queue.dart';
 
 /// Member-data sync pull endpoint for the local instances (`site-device`
@@ -19,7 +20,7 @@ class SiteSyncEndpoint extends Endpoint {
 
   /// Pending deliveries for this site's local instance (oldest first).
   Future<List<SiteSyncMember>> pullPending(final Session session) async {
-    final site = await _requireSite(session);
+    final site = await requireDeviceSite(session);
 
     final tasks = await SiteSyncTask.db.find(
       session,
@@ -83,7 +84,7 @@ class SiteSyncEndpoint extends Endpoint {
     final Session session, {
     required final List<int> taskIds,
   }) async {
-    final site = await _requireSite(session);
+    final site = await requireDeviceSite(session);
     if (taskIds.isEmpty) return;
     await SiteSyncTask.db.deleteWhere(
       session,
@@ -106,35 +107,5 @@ class SiteSyncEndpoint extends Endpoint {
       ),
       columns: (t) => [t.attempts, t.lastError],
     );
-  }
-
-  /// Resolves the site of this device session via the SAS session id.
-  Future<Site> _requireSite(final Session session) async {
-    final authInfo = session.authenticated;
-    final sessionId = authInfo?.authId;
-    if (authInfo == null || sessionId == null) {
-      throw SiteAdminException(message: 'Nicht authentifiziert.');
-    }
-
-    final deviceSession = await SiteDeviceSession.db.findFirstRow(
-      session,
-      where: (t) => t.serverSideSessionId.equals(
-        UuidValue.fromString(sessionId),
-      ),
-    );
-    if (deviceSession == null) {
-      throw SiteAdminException(
-        message: 'Device-Session unbekannt oder widerrufen.',
-      );
-    }
-
-    final site = await Site.db.findFirstRow(
-      session,
-      where: (t) => t.id.equals(deviceSession.siteId),
-    );
-    if (site == null) {
-      throw SiteAdminException(message: 'Site fehlt.');
-    }
-    return site;
   }
 }

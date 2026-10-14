@@ -22,6 +22,8 @@ import 'package:local_server/src/generated/site/member_profile.dart'
     as _i44z2qc2;
 import 'package:local_server/src/generated/site/member_summary.dart'
     as _in3590t5;
+import 'package:local_server/src/generated/site/site_connection.dart'
+    as _iacxv67e;
 import 'package:local_server/src/generated/site/site_connection_info.dart'
     as _imohagwc;
 import 'package:local_server/src/generated/site/site_setup_result.dart'
@@ -171,6 +173,8 @@ class TestEndpoints {
 
   late final _MembersAdminEndpoint membersAdmin;
 
+  late final _SiteAdminEndpoint siteAdmin;
+
   late final _SiteSetupEndpoint siteSetup;
 }
 
@@ -194,6 +198,10 @@ class _InternalTestEndpoints extends TestEndpoints
       serializationManager,
     );
     membersAdmin = _MembersAdminEndpoint(
+      endpoints,
+      serializationManager,
+    );
+    siteAdmin = _SiteAdminEndpoint(
       endpoints,
       serializationManager,
     );
@@ -765,6 +773,121 @@ class _MembersAdminEndpoint {
                   _localCallContext.arguments,
                 )
                 as _ida.Future<_i37j5gup.MemberDetail>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+}
+
+class _SiteAdminEndpoint {
+  _SiteAdminEndpoint(
+    this._endpointDispatch,
+    this._serializationManager,
+  );
+
+  final _is.EndpointDispatch _endpointDispatch;
+
+  final _is.SerializationManager _serializationManager;
+
+  _ida.Future<_iacxv67e.SiteConnection> updateSite(
+    _ist.TestSessionBuilder sessionBuilder, {
+    required String name,
+    required String street,
+    required String zipCode,
+    required String city,
+    required String country,
+    required String companyEmail,
+  }) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'siteAdmin',
+            method: 'updateSite',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'siteAdmin',
+          methodName: 'updateSite',
+          parameters: _ist.testObjectToJson({
+            'name': name,
+            'street': street,
+            'zipCode': zipCode,
+            'city': city,
+            'country': country,
+            'companyEmail': companyEmail,
+          }),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<_iacxv67e.SiteConnection>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _ida.Future<_iacxv67e.SiteConnection> setSiteImage(
+    _ist.TestSessionBuilder sessionBuilder, {
+    required _idt.ByteData image,
+  }) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'siteAdmin',
+            method: 'setSiteImage',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'siteAdmin',
+          methodName: 'setSiteImage',
+          parameters: _ist.testObjectToJson({'image': image}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<_iacxv67e.SiteConnection>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _ida.Future<_iacxv67e.SiteConnection> removeSiteImage(
+    _ist.TestSessionBuilder sessionBuilder,
+  ) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'siteAdmin',
+            method: 'removeSiteImage',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'siteAdmin',
+          methodName: 'removeSiteImage',
+          parameters: _ist.testObjectToJson({}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<_iacxv67e.SiteConnection>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();

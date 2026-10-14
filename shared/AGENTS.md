@@ -38,6 +38,7 @@ Client plain-fields (image URL, names, birthday) travel as
 | `lib/widgets/site_carousel.dart` | Horizontal "newest sites" section for home screens |
 | `lib/screens/site_list_screen.dart` | Full list: debounced search, pagination, grid of `SiteCard`s; optional host FAB |
 | `lib/screens/site_detail_body.dart` | Shared site detail display body (image/chip/address/contact) |
+| `lib/screens/site_details_editor.dart` | Site-properties editor (fields + JPEG image) + `SiteDetailsApi` (get/save/setSiteImage/removeSiteImage) — the local app's "Standort" page; connectivity gating is server-side |
 | `lib/screens/membership_terms_dialog.dart` | DSGVO consent dialog before subscribing (default German draft text; hosts may not override yet) |
 | `lib/shared_flags.dart` | `kProfileEditingEnabled` (package-level default; hosts overrule by not wiring editing) |
 

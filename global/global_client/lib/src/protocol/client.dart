@@ -455,6 +455,50 @@ class EndpointSiteConnection extends _isc.EndpointRef {
       );
 }
 
+/// Device-scoped site-details push (the LOCAL instance is the editor; the
+/// global row is the mirror). Called over the device credential while the
+/// local worker is connected — the local `siteAdmin` endpoint invokes it
+/// server-to-server, and it performs the whole update (fields + optional
+/// image) before the local side touches its own snapshot.
+///
+/// Image objects live at `site_images/<siteId>.jpg` (deterministic, one
+/// object per site, overwrite on change, JPEG-only like profile images).
+/// {@category Endpoint}
+class EndpointSiteDetails extends _isc.EndpointRef {
+  EndpointSiteDetails(_isc.EndpointCaller caller) : super(caller);
+
+  @override
+  String get name => 'siteDetails';
+
+  /// Pushes the full (validated) site field set; optional image transfer
+  /// (bytes upload or removal). Image handling is fail-fast: a failing
+  /// upload/replacement aborts the whole push, the row keeps its prior
+  /// state.
+  _ida.Future<void> push({
+    required String name,
+    required String street,
+    required String zipCode,
+    required String city,
+    required String country,
+    required String companyEmail,
+    _idt.ByteData? image,
+    required bool removeImage,
+  }) => caller.callServerEndpoint<void>(
+    'siteDetails',
+    'push',
+    {
+      'name': name,
+      'street': street,
+      'zipCode': zipCode,
+      'city': city,
+      'country': country,
+      'companyEmail': companyEmail,
+      'image': image,
+      'removeImage': removeImage,
+    },
+  );
+}
+
 /// End-user directory for sites ("Betriebe"): browseable WITHOUT login
 /// (`listLatest`, `list`, `count`, `getSite` — only fully registered sites
 /// are visible). Subscribing/unsubscribing requires a signed-in user whose
@@ -768,6 +812,7 @@ class Client extends _isc.ServerpodClientShared {
     jwtRefresh = EndpointJwtRefresh(this);
     memberProfile = EndpointMemberProfile(this);
     siteConnection = EndpointSiteConnection(this);
+    siteDetails = EndpointSiteDetails(this);
     siteDirectory = EndpointSiteDirectory(this);
     siteEnrollment = EndpointSiteEnrollment(this);
     siteSync = EndpointSiteSync(this);
@@ -784,6 +829,8 @@ class Client extends _isc.ServerpodClientShared {
   late final EndpointMemberProfile memberProfile;
 
   late final EndpointSiteConnection siteConnection;
+
+  late final EndpointSiteDetails siteDetails;
 
   late final EndpointSiteDirectory siteDirectory;
 
@@ -802,6 +849,7 @@ class Client extends _isc.ServerpodClientShared {
     'jwtRefresh': jwtRefresh,
     'memberProfile': memberProfile,
     'siteConnection': siteConnection,
+    'siteDetails': siteDetails,
     'siteDirectory': siteDirectory,
     'siteEnrollment': siteEnrollment,
     'siteSync': siteSync,

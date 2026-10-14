@@ -4,6 +4,7 @@ import 'package:serverpod_auth_idp_server/core.dart';
 import '../auth/scopes.dart';
 import '../generated/protocol.dart';
 import 'site_device_authentication.dart';
+import 'site_field_validation.dart';
 
 /// Admin endpoint for creating and viewing sites ("Betriebe").
 ///
@@ -33,12 +34,12 @@ class SitesAdminEndpoint extends Endpoint {
     required final String companyEmail,
     required final UuidValue firstAdminId,
   }) async {
-    final nameValue = _requireField(name, 'name');
-    final streetValue = _requireField(street, 'street');
-    final zipCodeValue = _requireField(zipCode, 'zipCode');
-    final cityValue = _requireField(city, 'city');
-    final countryValue = _requireField(country, 'country');
-    final emailValue = _requireValidEmail(companyEmail);
+    final nameValue = SiteFieldValidation.requireField(name, 'name');
+    final streetValue = SiteFieldValidation.requireField(street, 'street');
+    final zipCodeValue = SiteFieldValidation.requireField(zipCode, 'zipCode');
+    final cityValue = SiteFieldValidation.requireField(city, 'city');
+    final countryValue = SiteFieldValidation.requireField(country, 'country');
+    final emailValue = SiteFieldValidation.requireValidEmail(companyEmail);
 
     final firstAdmin = await AuthServices.instance.authUsers.get(
       session,
@@ -165,22 +166,6 @@ class SitesAdminEndpoint extends Endpoint {
   }
 
   // -- Private helpers
-
-  String _requireField(final String value, final String field) {
-    final trimmed = value.trim();
-    if (trimmed.isEmpty) {
-      throw SiteAdminException(message: '$field ist erforderlich.');
-    }
-    return trimmed;
-  }
-
-  String _requireValidEmail(final String input) {
-    final value = _requireField(input, 'companyEmail').toLowerCase();
-    if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(value)) {
-      throw SiteAdminException(message: 'companyEmail ist nicht gültig.');
-    }
-    return value;
-  }
 
   String _escapeLike(final String value) {
     return value

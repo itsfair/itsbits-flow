@@ -194,10 +194,13 @@ server's `docker-compose.yaml` (start with `serverpod start` or
     `connect()` — `License.nonprofit` (free, personal/nonprofit/edu) is
     used today; production use by a for-profit needs the paid
     `License.commercial` — decide before launch.
-11. **Site-image upload**: not yet implemented; planned to happen at the
-    LOCAL instance and be pushed to the global backend (reverse of the
-    current sync direction). Placeholder rendering already exists in all
-    UIs (`sites.imageUrl`).
+11. **Site-image upload**: DONE (this session) — implemented at the
+    LOCAL instance and pushed to the global backend (reversed sync
+    direction; strict "connected only" rule, no queueing): the "Standort"
+    editor (`shared/lib/screens/site_details_editor.dart` + local
+    `siteAdmin` endpoint) updates fields + image
+    (`site_images/<siteId>.jpg` on both buckets). The end-user app and
+    the global admin display render the image automatically.
 12. **SiteSyncNotifier scaling**: the real-time push registry is
     in-process (dev: single server instance); multi-instance production
     needs a message bus (Redis pub/sub).
@@ -207,6 +210,21 @@ server's `docker-compose.yaml` (start with `serverpod start` or
 14. **Site block/delete**: currently only `revokeSiteConnection`
     (forces re-setup). An explicit global admin "block" (queue-only, no
     re-setup) and "delete" (mark + drop queue rows) feature is planned.
+15. **Image cache-busting (OBSERVED in testing, fix pending)**:
+    image URLs are deterministic without a version — after an overwrite
+    the browser/Flutter `ImageCache` keeps serving the OLD picture
+    (profile AND site images; the storage bytes are replaced correctly).
+    Fix: append `?v=<epochMs>` on every image write
+    (`memberProfile.setUserImage` global, `siteDetails.push` image path,
+    local `siteAdmin.setSiteImage`) so each change yields a NEW URL.
+    Related/observed in the same manual test: the global `sites.imageUrl`
+    ended up NULL after a fields-only push although the object still
+    exists in both buckets — suspected deserialization/copyWith edge in
+    the `siteDetails.push` fields-only path (all 16 logged pushes returned
+    success). Fix: only touch `imageUrl` in the row update when an image
+    change is intended (avoid the explicit same-value write), verify with
+    integration tests for the push order (fields-only after image, image
+    after fields), investigate further if the test does not reproduce.
 
 Part-specific backlogs live in the workspace/instance AGENTS.md files
 (`global/AGENTS.md`, `local/AGENTS.md`, `doorinterface/AGENTS.md`).

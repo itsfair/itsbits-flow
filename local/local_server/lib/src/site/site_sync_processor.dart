@@ -4,7 +4,6 @@ import 'dart:typed_data';
 
 import 'package:global_client/global_client.dart' as gc;
 import 'package:serverpod/serverpod.dart';
-import 'package:serverpod_auth_core_client/serverpod_auth_core_client.dart';
 
 import '../generated/protocol.dart';
 import 'global_site_connection.dart';
@@ -74,20 +73,9 @@ class SiteSyncProcessor {
   }
 
   /// An authenticated global client for this instance's device session
-  /// (same wiring as the connection worker).
-  Future<gc.Client?> _openSyncClient() async {
-    final row = await Serverpod.instance.withSession(
-      (session) => SiteConnection.db.findFirstRow(session),
-    );
-    if (row == null || row.deviceSessionKey == null) return null;
-
-    final client = gc.Client(row.globalApiUrl);
-    final storage = SiteConnectionAuthStorage();
-    final sessionManager = ClientAuthSessionManager(storage: storage);
-    client.authSessionManager = sessionManager;
-    await sessionManager.updateSignedInUser(await storage.get());
-    return client;
-  }
+  /// (owned by the connection worker — same wiring).
+  Future<gc.Client?> _openSyncClient() =>
+      GlobalSiteConnection.instance.openSyncClient();
 
   // -- Per-member application
 

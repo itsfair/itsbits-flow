@@ -4,6 +4,7 @@ import 'package:serverpod/serverpod.dart';
 
 import '../auth/scopes.dart';
 import '../generated/protocol.dart';
+import 'site_device_context.dart';
 import 'site_sync_notifier.dart';
 
 /// Device connection endpoint for the local instance.
@@ -37,7 +38,7 @@ class SiteConnectionEndpoint extends Endpoint {
     final Session session,
     final Stream<SitePing> pings,
   ) async* {
-    final site = await _requireSite(session);
+    final site = await requireDeviceSite(session);
 
     await _touch(session, site);
 
@@ -94,37 +95,6 @@ class SiteConnectionEndpoint extends Endpoint {
   }
 
   // -- Private helpers
-
-  /// Resolves the site of this device session via the SAS session id.
-  Future<Site> _requireSite(final Session session) async {
-    final authInfo = session.authenticated;
-    final sessionId = authInfo?.authId;
-    if (authInfo == null || sessionId == null) {
-      throw SiteAdminException(message: 'Nicht authentifiziert.');
-    }
-
-    final deviceSession = await SiteDeviceSession.db.findFirstRow(
-      session,
-      where: (t) => t.serverSideSessionId.equals(
-        UuidValue.fromString(sessionId),
-      ),
-    );
-    if (deviceSession == null) {
-      throw SiteAdminException(
-        message:
-            'Device-Session unbekannt oder widerrufen — bitte neu einrichten.',
-      );
-    }
-
-    final site = await Site.db.findFirstRow(
-      session,
-      where: (t) => t.id.equals(deviceSession.siteId),
-    );
-    if (site == null) {
-      throw SiteAdminException(message: 'Site fehlt — bitte neu einrichten.');
-    }
-    return site;
-  }
 
   Future<void> _touch(final Session session, final Site site) async {
     await Site.db.updateRow(

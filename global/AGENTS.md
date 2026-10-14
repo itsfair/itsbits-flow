@@ -70,6 +70,7 @@ Declared under `serverpod: flutter_apps:` in `global_server/pubspec.yaml`:
 | `siteConnection` | Device connection method stream (`connect(Stream<SitePing>) → Stream<SiteEvent>`), scope `site-device`. Genuinely duplex: yields an initial `needsSiteSync` event at stream start plus spontaneous ones via the in-process `SiteSyncNotifier` (queue-triggered real-time push) |
 | `siteDirectory` | End-user site directory (`SitePublic`, no login for browsing): `listLatest` (carousel), `list`/`count` (search/pagination, registered-only), `getSite`. Authenticated: `myMembership`, `subscribe` (validations: site registered + currently connected + member_profile complete), `unsubscribe` (marker only, data kept) |
 | `siteSync` | Device-scoped member-data delivery (pull model, `site-device` scope): `pullPending` (assembles payloads from CURRENT global state; one per (site, profile)), `confirmProcessed` (deletes task rows) |
+| `siteDetails` | Device-scoped site-details push (local instance is the editor): validated field set + optional image bytes / removal (`site_images/<siteId>.jpg`, JPEG-only); the belt of the local-only editing rule |
 
 ## Key design points
 
