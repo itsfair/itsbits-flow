@@ -19,6 +19,7 @@ import 'package:serverpod_auth_idp_server/serverpod_auth_idp_server.dart'
 import '../auth/email_idp_endpoint.dart' as _iuc1hd5t;
 import '../auth/jwt_refresh_endpoint.dart' as _inwq3ztq;
 import '../door/door_device_admin_endpoint.dart' as _ij1q5man;
+import '../door/door_policy_admin_endpoint.dart' as _irbdv30i;
 import '../site/member_profile_endpoint.dart' as _i0gpa131;
 import '../site/members_admin_endpoint.dart' as _i37hx4yi;
 import '../site/site_admin_endpoint.dart' as _it93jbo5;
@@ -44,6 +45,12 @@ class Endpoints extends _is.EndpointDispatch {
         ..initialize(
           server,
           'doorDeviceAdmin',
+          null,
+        ),
+      'doorPolicyAdmin': _irbdv30i.DoorPolicyAdminEndpoint()
+        ..initialize(
+          server,
+          'doorPolicyAdmin',
           null,
         ),
       'memberProfile': _i0gpa131.MemberProfileEndpoint()
@@ -477,6 +484,339 @@ class Endpoints extends _is.EndpointDispatch {
                       .pushConfig(
                         session,
                         id: params['id'],
+                      ),
+        ),
+      },
+    );
+    connectors['doorPolicyAdmin'] = _is.EndpointConnector(
+      name: 'doorPolicyAdmin',
+      endpoint: endpoints['doorPolicyAdmin']!,
+      methodConnectors: {
+        'listPolicies': _is.MethodConnector(
+          name: 'listPolicies',
+          params: {},
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['doorPolicyAdmin']
+                          as _irbdv30i.DoorPolicyAdminEndpoint)
+                      .listPolicies(session),
+        ),
+        'getPolicy': _is.MethodConnector(
+          name: 'getPolicy',
+          params: {
+            'id': _is.ParameterDescription(
+              name: 'id',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['doorPolicyAdmin']
+                          as _irbdv30i.DoorPolicyAdminEndpoint)
+                      .getPolicy(
+                        session,
+                        id: params['id'],
+                      ),
+        ),
+        'createPolicy': _is.MethodConnector(
+          name: 'createPolicy',
+          params: {
+            'name': _is.ParameterDescription(
+              name: 'name',
+              type: _is.getType<String>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['doorPolicyAdmin']
+                          as _irbdv30i.DoorPolicyAdminEndpoint)
+                      .createPolicy(
+                        session,
+                        name: params['name'],
+                      ),
+        ),
+        'updatePolicy': _is.MethodConnector(
+          name: 'updatePolicy',
+          params: {
+            'id': _is.ParameterDescription(
+              name: 'id',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+            'name': _is.ParameterDescription(
+              name: 'name',
+              type: _is.getType<String>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['doorPolicyAdmin']
+                          as _irbdv30i.DoorPolicyAdminEndpoint)
+                      .updatePolicy(
+                        session,
+                        id: params['id'],
+                        name: params['name'],
+                      ),
+        ),
+        'removePolicy': _is.MethodConnector(
+          name: 'removePolicy',
+          params: {
+            'id': _is.ParameterDescription(
+              name: 'id',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['doorPolicyAdmin']
+                          as _irbdv30i.DoorPolicyAdminEndpoint)
+                      .removePolicy(
+                        session,
+                        id: params['id'],
+                      ),
+        ),
+        'addRule': _is.MethodConnector(
+          name: 'addRule',
+          params: {
+            'policyId': _is.ParameterDescription(
+              name: 'policyId',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+            'deviceId': _is.ParameterDescription(
+              name: 'deviceId',
+              type: _is.getType<int?>(),
+              nullable: true,
+            ),
+            'weekdays': _is.ParameterDescription(
+              name: 'weekdays',
+              type: _is.getType<List<int>>(),
+              nullable: false,
+            ),
+            'startMinute': _is.ParameterDescription(
+              name: 'startMinute',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+            'endMinute': _is.ParameterDescription(
+              name: 'endMinute',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['doorPolicyAdmin']
+                          as _irbdv30i.DoorPolicyAdminEndpoint)
+                      .addRule(
+                        session,
+                        policyId: params['policyId'],
+                        deviceId: params['deviceId'],
+                        weekdays: params['weekdays'],
+                        startMinute: params['startMinute'],
+                        endMinute: params['endMinute'],
+                      ),
+        ),
+        'updateRule': _is.MethodConnector(
+          name: 'updateRule',
+          params: {
+            'ruleId': _is.ParameterDescription(
+              name: 'ruleId',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+            'deviceId': _is.ParameterDescription(
+              name: 'deviceId',
+              type: _is.getType<int?>(),
+              nullable: true,
+            ),
+            'weekday': _is.ParameterDescription(
+              name: 'weekday',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+            'startMinute': _is.ParameterDescription(
+              name: 'startMinute',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+            'endMinute': _is.ParameterDescription(
+              name: 'endMinute',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['doorPolicyAdmin']
+                          as _irbdv30i.DoorPolicyAdminEndpoint)
+                      .updateRule(
+                        session,
+                        ruleId: params['ruleId'],
+                        deviceId: params['deviceId'],
+                        weekday: params['weekday'],
+                        startMinute: params['startMinute'],
+                        endMinute: params['endMinute'],
+                      ),
+        ),
+        'removeRule': _is.MethodConnector(
+          name: 'removeRule',
+          params: {
+            'ruleId': _is.ParameterDescription(
+              name: 'ruleId',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['doorPolicyAdmin']
+                          as _irbdv30i.DoorPolicyAdminEndpoint)
+                      .removeRule(
+                        session,
+                        ruleId: params['ruleId'],
+                      ),
+        ),
+        'addMemberAssignment': _is.MethodConnector(
+          name: 'addMemberAssignment',
+          params: {
+            'policyId': _is.ParameterDescription(
+              name: 'policyId',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+            'globalAuthUserId': _is.ParameterDescription(
+              name: 'globalAuthUserId',
+              type: _is.getType<_is.UuidValue>(),
+              nullable: false,
+            ),
+            'validFrom': _is.ParameterDescription(
+              name: 'validFrom',
+              type: _is.getType<DateTime?>(),
+              nullable: true,
+            ),
+            'validUntil': _is.ParameterDescription(
+              name: 'validUntil',
+              type: _is.getType<DateTime?>(),
+              nullable: true,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['doorPolicyAdmin']
+                          as _irbdv30i.DoorPolicyAdminEndpoint)
+                      .addMemberAssignment(
+                        session,
+                        policyId: params['policyId'],
+                        globalAuthUserId: params['globalAuthUserId'],
+                        validFrom: params['validFrom'],
+                        validUntil: params['validUntil'],
+                      ),
+        ),
+        'updateMemberAssignment': _is.MethodConnector(
+          name: 'updateMemberAssignment',
+          params: {
+            'assignmentId': _is.ParameterDescription(
+              name: 'assignmentId',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+            'validFrom': _is.ParameterDescription(
+              name: 'validFrom',
+              type: _is.getType<DateTime>(),
+              nullable: false,
+            ),
+            'validUntil': _is.ParameterDescription(
+              name: 'validUntil',
+              type: _is.getType<DateTime?>(),
+              nullable: true,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['doorPolicyAdmin']
+                          as _irbdv30i.DoorPolicyAdminEndpoint)
+                      .updateMemberAssignment(
+                        session,
+                        assignmentId: params['assignmentId'],
+                        validFrom: params['validFrom'],
+                        validUntil: params['validUntil'],
+                      ),
+        ),
+        'removeMemberAssignment': _is.MethodConnector(
+          name: 'removeMemberAssignment',
+          params: {
+            'assignmentId': _is.ParameterDescription(
+              name: 'assignmentId',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['doorPolicyAdmin']
+                          as _irbdv30i.DoorPolicyAdminEndpoint)
+                      .removeMemberAssignment(
+                        session,
+                        assignmentId: params['assignmentId'],
+                      ),
+        ),
+        'listPoliciesFor': _is.MethodConnector(
+          name: 'listPoliciesFor',
+          params: {
+            'globalAuthUserId': _is.ParameterDescription(
+              name: 'globalAuthUserId',
+              type: _is.getType<_is.UuidValue>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['doorPolicyAdmin']
+                          as _irbdv30i.DoorPolicyAdminEndpoint)
+                      .listPoliciesFor(
+                        session,
+                        globalAuthUserId: params['globalAuthUserId'],
                       ),
         ),
       },

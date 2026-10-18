@@ -6,18 +6,17 @@ import 'package:itsbits_shared/widgets/door_device_dialog.dart';
 import '../client.dart';
 import '../door_device_api.dart';
 
-/// "Selbsteinlass" — the LAN registry of this site's doorinterface
-/// devices (ESP32). Cards list name + address; tapping opens the detail
-/// screen (connection test, NUKI actions, edit/remove). Devices are added
-/// by hand for now (MVP: LAN-only, no pairing machinery).
-class SelbsteinlassScreen extends StatefulWidget {
-  const SelbsteinlassScreen({super.key});
+/// "Schlösser" — the LAN registry of this site's doorinterface devices
+/// (ESP32). Cards list name + address; tapping opens the detail screen
+/// (connection test, NUKI actions, edit/remove).
+class LocksScreen extends StatefulWidget {
+  const LocksScreen({super.key});
 
   @override
-  State<SelbsteinlassScreen> createState() => _SelbsteinlassScreenState();
+  State<LocksScreen> createState() => _LocksScreenState();
 }
 
-class _SelbsteinlassScreenState extends State<SelbsteinlassScreen> {
+class _LocksScreenState extends State<LocksScreen> {
   late final DoorDeviceApi _api = LocalDoorDeviceApi(client);
 
   List<DoorDeviceData> _devices = [];
@@ -67,7 +66,7 @@ class _SelbsteinlassScreenState extends State<SelbsteinlassScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Selbsteinlass')),
+      appBar: AppBar(title: const Text('Schlösser')),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'add-device-fab',
         icon: const Icon(Icons.add),
@@ -124,7 +123,8 @@ class _SelbsteinlassScreenState extends State<SelbsteinlassScreen> {
                         leading: const Icon(Icons.door_sliding_outlined),
                         title: Text(device.name),
                         subtitle: Text(device.address),
-                        onTap: () => context.go('/selbsteinlass/${device.id}'),
+                        onTap: () =>
+                            context.go('/self-entry/locks/${device.id}'),
                       ),
                     ),
                 ],

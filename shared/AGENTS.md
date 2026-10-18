@@ -39,6 +39,10 @@ Client plain-fields (image URL, names, birthday) travel as
 | `lib/screens/site_list_screen.dart` | Full list: debounced search, pagination, grid of `SiteCard`s; optional host FAB |
 | `lib/screens/site_detail_body.dart` | Shared site detail display body (image/chip/address/contact) |
 | `lib/screens/site_details_editor.dart` | Site-properties editor (fields + JPEG image) + `SiteDetailsApi` (get/save/setSiteImage/removeSiteImage) — the local app's "Standort" page; connectivity gating is server-side |
+| `lib/door_code.dart` | Rolling door codes (TOTP-style, 30 s steps): shared HMAC computation/verification used by the end-user app (compute) and the local server (verify) — door-bound (`normalizeDeviceMac` in the HMAC input), single-source-of-truth algorithm |
+| `lib/door_device_directory.dart` | `DoorDeviceData`/`DoorDeviceStatusData`/`DoorDevicePushData`, `DoorDeviceApi` (injected backend contract for the local door-device admin) |
+| `lib/widgets/door_device_status_card.dart` | Connection-test/status card for one doorinterface (ESP status probe result) |
+| `lib/widgets/door_device_dialog.dart` | Add/edit dialog for door devices (name + LAN address) |
 | `lib/screens/membership_terms_dialog.dart` | DSGVO consent dialog before subscribing (default German draft text; hosts may not override yet) |
 | `lib/shared_flags.dart` | `kProfileEditingEnabled` (package-level default; hosts overrule by not wiring editing) |
 

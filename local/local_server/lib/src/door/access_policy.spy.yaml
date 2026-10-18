@@ -1,0 +1,12 @@
+### One access policy ("Zugangsberechtigung"): a named BUNDLE of
+### door/weekday/time rules plus member assignments. Deny-by-default:
+### without an active assignment a member cannot open any door.
+class: AccessPolicy
+table: access_policies
+fields:
+
+  ### Display name (e.g. "Kurs Yoga Mo 17-19" or "Hausmeister").
+  name: String
+
+  ### When the policy was created.
+  createdAt: DateTime, defaultModel=now

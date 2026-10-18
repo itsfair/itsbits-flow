@@ -19,6 +19,16 @@ import 'package:local_server/src/generated/door/door_device_push_result.dart'
     as _iuqjge9g;
 import 'package:local_server/src/generated/door/door_device_status.dart'
     as _ih9ntfg4;
+import 'package:local_server/src/generated/door/door_policy_detail.dart'
+    as _i5039ypk;
+import 'package:local_server/src/generated/door/door_policy_member_data.dart'
+    as _i53rz8gx;
+import 'package:local_server/src/generated/door/door_policy_rule_data.dart'
+    as _inp2jghf;
+import 'package:local_server/src/generated/door/door_policy_summary.dart'
+    as _idr1nvqp;
+import 'package:local_server/src/generated/door/member_policy_assignment_data.dart'
+    as _i3rc2cni;
 import 'package:local_server/src/generated/site/local_admin_info.dart'
     as _iuevfklr;
 import 'package:local_server/src/generated/site/member_detail.dart'
@@ -176,6 +186,8 @@ class TestEndpoints {
 
   late final _DoorDeviceAdminEndpoint doorDeviceAdmin;
 
+  late final _DoorPolicyAdminEndpoint doorPolicyAdmin;
+
   late final _MemberProfileEndpoint memberProfile;
 
   late final _MembersAdminEndpoint membersAdmin;
@@ -201,6 +213,10 @@ class _InternalTestEndpoints extends TestEndpoints
       serializationManager,
     );
     doorDeviceAdmin = _DoorDeviceAdminEndpoint(
+      endpoints,
+      serializationManager,
+    );
+    doorPolicyAdmin = _DoorPolicyAdminEndpoint(
       endpoints,
       serializationManager,
     );
@@ -832,6 +848,428 @@ class _DoorDeviceAdminEndpoint {
                   _localCallContext.arguments,
                 )
                 as _ida.Future<_iuqjge9g.DoorDevicePushResult>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+}
+
+class _DoorPolicyAdminEndpoint {
+  _DoorPolicyAdminEndpoint(
+    this._endpointDispatch,
+    this._serializationManager,
+  );
+
+  final _is.EndpointDispatch _endpointDispatch;
+
+  final _is.SerializationManager _serializationManager;
+
+  _ida.Future<List<_idr1nvqp.DoorPolicySummary>> listPolicies(
+    _ist.TestSessionBuilder sessionBuilder,
+  ) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'doorPolicyAdmin',
+            method: 'listPolicies',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'doorPolicyAdmin',
+          methodName: 'listPolicies',
+          parameters: _ist.testObjectToJson({}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<List<_idr1nvqp.DoorPolicySummary>>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _ida.Future<_i5039ypk.DoorPolicyDetail> getPolicy(
+    _ist.TestSessionBuilder sessionBuilder, {
+    required int id,
+  }) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'doorPolicyAdmin',
+            method: 'getPolicy',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'doorPolicyAdmin',
+          methodName: 'getPolicy',
+          parameters: _ist.testObjectToJson({'id': id}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<_i5039ypk.DoorPolicyDetail>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _ida.Future<_idr1nvqp.DoorPolicySummary> createPolicy(
+    _ist.TestSessionBuilder sessionBuilder, {
+    required String name,
+  }) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'doorPolicyAdmin',
+            method: 'createPolicy',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'doorPolicyAdmin',
+          methodName: 'createPolicy',
+          parameters: _ist.testObjectToJson({'name': name}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<_idr1nvqp.DoorPolicySummary>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _ida.Future<_idr1nvqp.DoorPolicySummary> updatePolicy(
+    _ist.TestSessionBuilder sessionBuilder, {
+    required int id,
+    required String name,
+  }) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'doorPolicyAdmin',
+            method: 'updatePolicy',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'doorPolicyAdmin',
+          methodName: 'updatePolicy',
+          parameters: _ist.testObjectToJson({
+            'id': id,
+            'name': name,
+          }),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<_idr1nvqp.DoorPolicySummary>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _ida.Future<void> removePolicy(
+    _ist.TestSessionBuilder sessionBuilder, {
+    required int id,
+  }) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'doorPolicyAdmin',
+            method: 'removePolicy',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'doorPolicyAdmin',
+          methodName: 'removePolicy',
+          parameters: _ist.testObjectToJson({'id': id}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<void>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _ida.Future<List<_inp2jghf.DoorPolicyRuleData>> addRule(
+    _ist.TestSessionBuilder sessionBuilder, {
+    required int policyId,
+    required int? deviceId,
+    required List<int> weekdays,
+    required int startMinute,
+    required int endMinute,
+  }) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'doorPolicyAdmin',
+            method: 'addRule',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'doorPolicyAdmin',
+          methodName: 'addRule',
+          parameters: _ist.testObjectToJson({
+            'policyId': policyId,
+            'deviceId': deviceId,
+            'weekdays': weekdays,
+            'startMinute': startMinute,
+            'endMinute': endMinute,
+          }),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<List<_inp2jghf.DoorPolicyRuleData>>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _ida.Future<_inp2jghf.DoorPolicyRuleData> updateRule(
+    _ist.TestSessionBuilder sessionBuilder, {
+    required int ruleId,
+    required int? deviceId,
+    required int weekday,
+    required int startMinute,
+    required int endMinute,
+  }) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'doorPolicyAdmin',
+            method: 'updateRule',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'doorPolicyAdmin',
+          methodName: 'updateRule',
+          parameters: _ist.testObjectToJson({
+            'ruleId': ruleId,
+            'deviceId': deviceId,
+            'weekday': weekday,
+            'startMinute': startMinute,
+            'endMinute': endMinute,
+          }),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<_inp2jghf.DoorPolicyRuleData>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _ida.Future<void> removeRule(
+    _ist.TestSessionBuilder sessionBuilder, {
+    required int ruleId,
+  }) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'doorPolicyAdmin',
+            method: 'removeRule',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'doorPolicyAdmin',
+          methodName: 'removeRule',
+          parameters: _ist.testObjectToJson({'ruleId': ruleId}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<void>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _ida.Future<_i53rz8gx.DoorPolicyMemberData> addMemberAssignment(
+    _ist.TestSessionBuilder sessionBuilder, {
+    required int policyId,
+    required _is.UuidValue globalAuthUserId,
+    DateTime? validFrom,
+    DateTime? validUntil,
+  }) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'doorPolicyAdmin',
+            method: 'addMemberAssignment',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'doorPolicyAdmin',
+          methodName: 'addMemberAssignment',
+          parameters: _ist.testObjectToJson({
+            'policyId': policyId,
+            'globalAuthUserId': globalAuthUserId,
+            'validFrom': validFrom,
+            'validUntil': validUntil,
+          }),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<_i53rz8gx.DoorPolicyMemberData>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _ida.Future<_i53rz8gx.DoorPolicyMemberData> updateMemberAssignment(
+    _ist.TestSessionBuilder sessionBuilder, {
+    required int assignmentId,
+    required DateTime validFrom,
+    required DateTime? validUntil,
+  }) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'doorPolicyAdmin',
+            method: 'updateMemberAssignment',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'doorPolicyAdmin',
+          methodName: 'updateMemberAssignment',
+          parameters: _ist.testObjectToJson({
+            'assignmentId': assignmentId,
+            'validFrom': validFrom,
+            'validUntil': validUntil,
+          }),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<_i53rz8gx.DoorPolicyMemberData>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _ida.Future<void> removeMemberAssignment(
+    _ist.TestSessionBuilder sessionBuilder, {
+    required int assignmentId,
+  }) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'doorPolicyAdmin',
+            method: 'removeMemberAssignment',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'doorPolicyAdmin',
+          methodName: 'removeMemberAssignment',
+          parameters: _ist.testObjectToJson({'assignmentId': assignmentId}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<void>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _ida.Future<List<_i3rc2cni.MemberPolicyAssignmentData>> listPoliciesFor(
+    _ist.TestSessionBuilder sessionBuilder, {
+    required _is.UuidValue globalAuthUserId,
+  }) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'doorPolicyAdmin',
+            method: 'listPoliciesFor',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'doorPolicyAdmin',
+          methodName: 'listPoliciesFor',
+          parameters: _ist.testObjectToJson({
+            'globalAuthUserId': globalAuthUserId,
+          }),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<List<_i3rc2cni.MemberPolicyAssignmentData>>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();

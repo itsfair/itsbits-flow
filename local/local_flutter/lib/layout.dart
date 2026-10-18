@@ -29,6 +29,7 @@ class _LayoutState extends State<Layout> {
   String? _error;
   Timer? _pollTimer;
   bool _isSignedIn = false;
+  bool _selfEntryExpanded = false;
 
   @override
   void initState() {
@@ -150,10 +151,14 @@ class _LayoutState extends State<Layout> {
                         title: const Text('Members'),
                         onTap: () => _goTo('/members'),
                       ),
-                      ListTile(
-                        leading: const Icon(Icons.lock_open),
-                        title: const Text('Selbsteinlass'),
-                        onTap: () => _goTo('/selbsteinlass'),
+                      _SelfEntrySection(
+                        expanded: _selfEntryExpanded,
+                        onToggle: (expanded) =>
+                            setState(() => _selfEntryExpanded = expanded),
+                        onNavigate: _goTo,
+                        activeLocation: GoRouterState.of(
+                          context,
+                        ).matchedLocation,
                       ),
                       ListTile(
                         leading: const Icon(Icons.location_city),
@@ -258,6 +263,118 @@ class _SetupReasonBanner extends StatelessWidget {
         ),
         Expanded(child: child),
       ],
+    );
+  }
+}
+
+/// Drawer section "Selbsteinlass" as an expandable group: tapping the
+/// HEADER navigates to /self-entry (Check-ins overview) and expands the
+/// section; the arrow only toggles. Expanded automatically while any
+/// /self-entry* route is active (deep links / reloads).
+class _SelfEntrySection extends StatefulWidget {
+  final bool expanded;
+  final ValueChanged<bool> onToggle;
+  final void Function(String location) onNavigate;
+  final String activeLocation;
+
+  const _SelfEntrySection({
+    required this.expanded,
+    required this.onToggle,
+    required this.onNavigate,
+    required this.activeLocation,
+  });
+
+  @override
+  State<_SelfEntrySection> createState() => _SelfEntrySectionState();
+}
+
+class _SelfEntrySectionState extends State<_SelfEntrySection> {
+  bool get _isActive => widget.activeLocation.startsWith('/self-entry');
+
+  @override
+  Widget build(BuildContext context) {
+    final expanded = widget.expanded || _isActive;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ListTile(
+          leading: const Icon(Icons.door_sliding_outlined),
+          title: const Text('Selbsteinlass'),
+          trailing: IconButton(
+            tooltip: expanded ? 'Einklappen' : 'Ausklappen',
+            icon: AnimatedRotation(
+              turns: expanded ? 0.5 : 0,
+              duration: const Duration(milliseconds: 150),
+              child: const Icon(Icons.expand_more),
+            ),
+            onPressed: () => widget.onToggle(!expanded),
+          ),
+          onTap: () {
+            if (!expanded) widget.onToggle(true);
+            widget.onNavigate('/self-entry');
+          },
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 150),
+          curve: Curves.easeInOut,
+          alignment: Alignment.topCenter,
+          child: expanded
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _subTile(
+                      context,
+                      icon: Icons.fact_check_outlined,
+                      title: 'Check-ins',
+                      location: '/self-entry',
+                    ),
+                    _subTile(
+                      context,
+                      icon: Icons.lock_outline,
+                      title: 'Schlösser',
+                      location: '/self-entry/locks',
+                    ),
+                    _subTile(
+                      context,
+                      icon: Icons.policy_outlined,
+                      title: 'Zugangsberechtigung',
+                      location: '/self-entry/policies',
+                    ),
+                  ],
+                )
+              : const SizedBox(width: double.infinity),
+        ),
+      ],
+    );
+  }
+
+  Widget _subTile(
+    final BuildContext context, {
+    required final IconData icon,
+    required final String title,
+    required final String location,
+  }) {
+    final selected =
+        widget.activeLocation == location ||
+        (location == '/self-entry' &&
+            widget.activeLocation.startsWith('/self-entry/'));
+    return Padding(
+      padding: const EdgeInsets.only(left: 16),
+      child: ListTile(
+        dense: true,
+        leading: Icon(icon, size: 20),
+        title: Text(
+          title,
+          style: selected
+              ? TextStyle(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                )
+              : null,
+        ),
+        onTap: () => widget.onNavigate(location),
+      ),
     );
   }
 }

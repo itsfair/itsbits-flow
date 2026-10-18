@@ -47,6 +47,7 @@ DB name `local`. Details and full stack: root AGENTS.md.
 | `membersAdmin` | Local member directory (read-only, `local-admin` scope): `listMembers` (search/pagination), `countMembers`, `getMember({globalAuthUserId})` — member_profile mirror + `member_membership` mirror (role/active/endedAt) |
 | `doorDeviceAdmin` | LAN registry of this site's doorinterface (ESP32) devices (`local-admin` scope): `listDevices`, `addDevice` (+ automatic backend-config push), `updateDevice`, `removeDevice`, `pushConfig` (serverUrl from `localApiUrl` password key + site ID → ESP `/api/backend/config`, ACK stores the device MAC), `testDevice` (`GET /api/status` probe), `unlockNuki`/`lockNuki`/`openNuki` (fixed ESP paths). The HTTP calls to the ESP run SERVER-side (plain HTTP into the LAN, MVP; device auth/TLS = backlog) — no generic proxying |
 | `POST /api/door/verify` (web route, `src/web/routes/door_verify_route.dart`) | REST route for the ESPs (plain HTTP, no device auth in the MVP): one call per BLE request `{userKey, code, siteId, deviceMac}` → `{ok, code, message}` with uniform result codes (`OK` / `ACCESS_DENIED` / `RATE_LIMITED` / `CRED_INVALID` / `SERVER_ERROR`) — no information leak about which sub-check failed |
+| `doorPolicyAdmin` (`src/door/door_policy_admin_endpoint.dart`) | Access-policy admin (`local-admin` scope): `listPolicies`, `getPolicy`, `createPolicy`/`updatePolicy`/`removePolicy`, `addRule` (weekday multi-select → N rules)/`updateRule`/`removeRule`, `addMemberAssignment` (per-USER validity period, by `globalAuthUserId`)/`updateMemberAssignment`/`removeMemberAssignment`, `listPoliciesFor` |
 | `siteAdmin` | Site-properties editing (local-owner rule, reversed vs. profiles; `local-admin` scope): `updateSite`, `setSiteImage`, `removeSiteImage` — strict `connected` gate (no queueing), global `siteDetails.push` runs FIRST (validated there), local snapshot update only after the global push succeeded (fail-closed) |
 | `siteSync` (pull side only, in `SiteSyncProcessor`) | Pulls pending member-data deliveries from the global `siteSync` endpoint on every connection event (initial `needsSiteSync` fire, stream pushes, pings as watchdog) and confirms them |
 
@@ -118,6 +119,20 @@ DB name `local`. Details and full stack: root AGENTS.md.
   statistics; the basis for the later per-(door, member) time windows).
   The member sync carries the per-(person, site) secrets
   (`SiteSyncMember.doorCodeSecret` → `member_profile.doorCodeSecret`).
+- **Access policies (deny-by-default)**: WITHOUT an active assignment
+  nobody may open any door (also the site admin). `access_policies`
+  (name only) + `access_policy_rules` (door `DoorDevice?` null=all
+  doors, weekday 0=Mo..6=So, `startMinute`/`endMinute` minutes of
+  SERVER-LOCAL time; end exclusive, 1440 = midnight end; NO overnight
+  wrap — an overnight window is two rules) + `access_policy_members`
+  (assignment with per-USER validity `validFrom`/`validUntil?`, unique
+  policy+user). Verifier resolves the door by normalized MAC
+  (`door_devices.mac`, stored normalized at config push) and
+  OR-combines all assignments; grants/denials are logged with the
+  reason (`policy <id>` / `no active policy assignment` / `outside
+  policy window` / `unknown device`). Uniform `ACCESS_DENIED` to the
+  device. Future courses plug in as additional policy sources (the
+  member-link table is the seam).
 - Birthday as UTC-midnight date sentinel (no server-side
   re-normalization) — see root AGENTS.md.
 - **Door devices MVP** (`src/door/`, table `door_devices`, one row per

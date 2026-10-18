@@ -203,6 +203,16 @@ server's `docker-compose.yaml` (start with `serverpod start` or
 10. **flutter_blue_plus license**: RESOLVED (this session) — the
     end-user app switched to `bluetooth_low_energy` (Apache-2.0, no
     license gate); flutter_blue_plus is fully removed.
+11. **Access policies / time windows**: DONE (this session, local
+    instance): deny-by-default policy layer (`access_policies` +
+    `access_policy_rules` door×weekday×minute-window + 
+    `access_policy_members` per-user validity), enforced in
+    `DoorAccessVerifier`, admin UI under the drawer section
+    "Selbsteinlass" (`/self-entry/policies`, routes all English:
+    `/self-entry` = Check-ins overview placeholder, `/self-entry/locks`,
+    `/self-entry/policies`). Next step: COURSES (local ERP feature) —
+    course enrollment creates/links policy assignments so participants
+    gain door windows; the `access_policy_members` table is the seam.
 11. **Site-image upload**: DONE (this session) — implemented at the
     LOCAL instance and pushed to the global backend (reversed sync
     direction; strict "connected only" rule, no queueing): the "Standort"

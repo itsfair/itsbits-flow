@@ -1,0 +1,28 @@
+### Assignment of one member to one access policy — with the validity
+### period PER USER (the policy itself carries no time period). Several
+### assignments (= several policies) OR-combine.
+class: AccessPolicyMember
+table: access_policy_members
+fields:
+
+  ### The policy being assigned.
+  policy: AccessPolicy?, relation(onDelete=Cascade)
+
+  ### The assigned person (mirror row).
+  memberProfile: MemberProfile?, relation(onDelete=Cascade)
+
+  ### Denormalized exchange id — the verifier looks up by this (no join),
+  ### same pattern as member_membership.
+  globalAuthUserId: UuidValue
+
+  ### Assignment validity start (local time; default now).
+  validFrom: DateTime, defaultModel=now
+
+  ### Assignment validity end (null = unlimited).
+  validUntil: DateTime?
+indexes:
+  access_policy_members_user_idx:
+    fields: globalAuthUserId
+  access_policy_members_policy_user_unique_idx:
+    fields: policyId, globalAuthUserId
+    unique: true

@@ -18,6 +18,16 @@ import 'package:local_client/src/protocol/door/door_device_push_result.dart'
     as _i4kgn637;
 import 'package:local_client/src/protocol/door/door_device_status.dart'
     as _ite4y8tc;
+import 'package:local_client/src/protocol/door/door_policy_detail.dart'
+    as _iy30icaz;
+import 'package:local_client/src/protocol/door/door_policy_member_data.dart'
+    as _ida48xcw;
+import 'package:local_client/src/protocol/door/door_policy_rule_data.dart'
+    as _iwojdmzr;
+import 'package:local_client/src/protocol/door/door_policy_summary.dart'
+    as _im48e7m8;
+import 'package:local_client/src/protocol/door/member_policy_assignment_data.dart'
+    as _iswvz4vf;
 import 'package:local_client/src/protocol/site/local_admin_info.dart'
     as _iwwog9lz;
 import 'package:local_client/src/protocol/site/member_detail.dart' as _ietksnoz;
@@ -379,6 +389,173 @@ class EndpointDoorDeviceAdmin extends _isc.EndpointRef {
       );
 }
 
+/// Admin endpoint for the access policies ("Zugangsberechtigung").
+/// Deny-by-default: a member may open a door ONLY while an active
+/// assignment (with per-user validity period) points to a policy that
+/// carries a rule granting this door on this weekday inside its minute
+/// window. The verifier (`DoorAccessVerifier`) enforces this at every
+/// request.
+///
+/// Value ranges: weekday 0=Monday..6=Sunday, startMinute 0-1439,
+/// endMinute 1-1440 (exclusive; 1440 = midnight end). Overnight windows
+/// are expressed as two rules (no wrap semantics).
+///
+/// Access is enforced declaratively via [requiredScopes] (`local-admin`),
+/// same as membersAdmin/siteAdmin/doorDeviceAdmin.
+/// {@category Endpoint}
+class EndpointDoorPolicyAdmin extends _isc.EndpointRef {
+  EndpointDoorPolicyAdmin(_isc.EndpointCaller caller) : super(caller);
+
+  @override
+  String get name => 'doorPolicyAdmin';
+
+  /// All policies, newest first (with resolved rule/member counts).
+  _ida.Future<List<_im48e7m8.DoorPolicySummary>> listPolicies() =>
+      caller.callServerEndpoint<List<_im48e7m8.DoorPolicySummary>>(
+        'doorPolicyAdmin',
+        'listPolicies',
+        {},
+      );
+
+  /// One policy in full detail (rules with door names + assignments with
+  /// person display fields).
+  _ida.Future<_iy30icaz.DoorPolicyDetail> getPolicy({required int id}) =>
+      caller.callServerEndpoint<_iy30icaz.DoorPolicyDetail>(
+        'doorPolicyAdmin',
+        'getPolicy',
+        {'id': id},
+      );
+
+  /// Creates a policy (name only — rules/members are added in the
+  /// editor afterwards).
+  _ida.Future<_im48e7m8.DoorPolicySummary> createPolicy({
+    required String name,
+  }) => caller.callServerEndpoint<_im48e7m8.DoorPolicySummary>(
+    'doorPolicyAdmin',
+    'createPolicy',
+    {'name': name},
+  );
+
+  /// Renames a policy.
+  _ida.Future<_im48e7m8.DoorPolicySummary> updatePolicy({
+    required int id,
+    required String name,
+  }) => caller.callServerEndpoint<_im48e7m8.DoorPolicySummary>(
+    'doorPolicyAdmin',
+    'updatePolicy',
+    {
+      'id': id,
+      'name': name,
+    },
+  );
+
+  /// Removes the policy (cascade deletes rules + assignments).
+  _ida.Future<void> removePolicy({required int id}) =>
+      caller.callServerEndpoint<void>(
+        'doorPolicyAdmin',
+        'removePolicy',
+        {'id': id},
+      );
+
+  /// Adds one rule per weekday ([weekdays] multi-select in the UI).
+  _ida.Future<List<_iwojdmzr.DoorPolicyRuleData>> addRule({
+    required int policyId,
+    required int? deviceId,
+    required List<int> weekdays,
+    required int startMinute,
+    required int endMinute,
+  }) => caller.callServerEndpoint<List<_iwojdmzr.DoorPolicyRuleData>>(
+    'doorPolicyAdmin',
+    'addRule',
+    {
+      'policyId': policyId,
+      'deviceId': deviceId,
+      'weekdays': weekdays,
+      'startMinute': startMinute,
+      'endMinute': endMinute,
+    },
+  );
+
+  /// Updates one rule (door/weekday/window).
+  _ida.Future<_iwojdmzr.DoorPolicyRuleData> updateRule({
+    required int ruleId,
+    required int? deviceId,
+    required int weekday,
+    required int startMinute,
+    required int endMinute,
+  }) => caller.callServerEndpoint<_iwojdmzr.DoorPolicyRuleData>(
+    'doorPolicyAdmin',
+    'updateRule',
+    {
+      'ruleId': ruleId,
+      'deviceId': deviceId,
+      'weekday': weekday,
+      'startMinute': startMinute,
+      'endMinute': endMinute,
+    },
+  );
+
+  /// Removes one rule.
+  _ida.Future<void> removeRule({required int ruleId}) =>
+      caller.callServerEndpoint<void>(
+        'doorPolicyAdmin',
+        'removeRule',
+        {'ruleId': ruleId},
+      );
+
+  /// Assigns a member to a policy with a per-user validity period (the
+  /// member is resolved by its exchange id — the UI works with the same
+  /// id everywhere).
+  _ida.Future<_ida48xcw.DoorPolicyMemberData> addMemberAssignment({
+    required int policyId,
+    required _isc.UuidValue globalAuthUserId,
+    DateTime? validFrom,
+    DateTime? validUntil,
+  }) => caller.callServerEndpoint<_ida48xcw.DoorPolicyMemberData>(
+    'doorPolicyAdmin',
+    'addMemberAssignment',
+    {
+      'policyId': policyId,
+      'globalAuthUserId': globalAuthUserId,
+      'validFrom': validFrom,
+      'validUntil': validUntil,
+    },
+  );
+
+  /// Updates the validity period of one assignment.
+  _ida.Future<_ida48xcw.DoorPolicyMemberData> updateMemberAssignment({
+    required int assignmentId,
+    required DateTime validFrom,
+    required DateTime? validUntil,
+  }) => caller.callServerEndpoint<_ida48xcw.DoorPolicyMemberData>(
+    'doorPolicyAdmin',
+    'updateMemberAssignment',
+    {
+      'assignmentId': assignmentId,
+      'validFrom': validFrom,
+      'validUntil': validUntil,
+    },
+  );
+
+  /// Removes one assignment.
+  _ida.Future<void> removeMemberAssignment({required int assignmentId}) =>
+      caller.callServerEndpoint<void>(
+        'doorPolicyAdmin',
+        'removeMemberAssignment',
+        {'assignmentId': assignmentId},
+      );
+
+  /// The member's policy assignments (member-detail section): policy
+  /// names + per-user periods.
+  _ida.Future<List<_iswvz4vf.MemberPolicyAssignmentData>> listPoliciesFor({
+    required _isc.UuidValue globalAuthUserId,
+  }) => caller.callServerEndpoint<List<_iswvz4vf.MemberPolicyAssignmentData>>(
+    'doorPolicyAdmin',
+    'listPoliciesFor',
+    {'globalAuthUserId': globalAuthUserId},
+  );
+}
+
 /// Own person/profile endpoints of the local instance — mirror of the
 /// global `memberProfile` endpoint (same model shape, see AGENTS.md).
 ///
@@ -652,6 +829,7 @@ class Client extends _isc.ServerpodClientShared {
     emailIdp = EndpointEmailIdp(this);
     jwtRefresh = EndpointJwtRefresh(this);
     doorDeviceAdmin = EndpointDoorDeviceAdmin(this);
+    doorPolicyAdmin = EndpointDoorPolicyAdmin(this);
     memberProfile = EndpointMemberProfile(this);
     membersAdmin = EndpointMembersAdmin(this);
     siteAdmin = EndpointSiteAdmin(this);
@@ -664,6 +842,8 @@ class Client extends _isc.ServerpodClientShared {
   late final EndpointJwtRefresh jwtRefresh;
 
   late final EndpointDoorDeviceAdmin doorDeviceAdmin;
+
+  late final EndpointDoorPolicyAdmin doorPolicyAdmin;
 
   late final EndpointMemberProfile memberProfile;
 
@@ -680,6 +860,7 @@ class Client extends _isc.ServerpodClientShared {
     'emailIdp': emailIdp,
     'jwtRefresh': jwtRefresh,
     'doorDeviceAdmin': doorDeviceAdmin,
+    'doorPolicyAdmin': doorPolicyAdmin,
     'memberProfile': memberProfile,
     'membersAdmin': membersAdmin,
     'siteAdmin': siteAdmin,

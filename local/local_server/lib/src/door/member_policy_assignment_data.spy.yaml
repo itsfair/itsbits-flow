@@ -1,0 +1,9 @@
+### One member's policy assignment (member-detail view): the policy name
+### plus the per-user validity period.
+class: MemberPolicyAssignmentData
+fields:
+  assignmentId: int
+  policyId: int
+  policyName: String
+  validFrom: DateTime
+  validUntil: DateTime?

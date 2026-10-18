@@ -5,12 +5,15 @@ import 'package:serverpod_auth_idp_flutter/serverpod_auth_idp_flutter.dart';
 import 'client.dart';
 import 'layout.dart';
 
-import 'screens/home.dart';
+import 'screens/checkins.dart';
 import 'screens/door_device_detail.dart';
+import 'screens/home.dart';
+import 'screens/locks.dart';
 import 'screens/member_detail.dart';
 import 'screens/members.dart';
+import 'screens/policies.dart';
+import 'screens/policy_detail.dart';
 import 'screens/profile.dart';
-import 'screens/selbsteinlass.dart';
 import 'screens/site_setup.dart';
 import 'screens/sign_in.dart';
 import 'screens/standort.dart';
@@ -100,13 +103,27 @@ class _MyAppState extends State<MyApp> {
             ),
           ),
           GoRoute(
-            path: '/selbsteinlass',
-            builder: (context, state) => const SelbsteinlassScreen(),
+            path: '/self-entry',
+            builder: (context, state) => const CheckinsScreen(),
           ),
           GoRoute(
-            path: '/selbsteinlass/:deviceId',
+            path: '/self-entry/locks',
+            builder: (context, state) => const LocksScreen(),
+          ),
+          GoRoute(
+            path: '/self-entry/locks/:deviceId',
             builder: (context, state) => DoorDeviceDetailScreen(
               deviceId: int.parse(state.pathParameters['deviceId']!),
+            ),
+          ),
+          GoRoute(
+            path: '/self-entry/policies',
+            builder: (context, state) => const PoliciesScreen(),
+          ),
+          GoRoute(
+            path: '/self-entry/policies/:policyId',
+            builder: (context, state) => PolicyDetailScreen(
+              policyId: int.parse(state.pathParameters['policyId']!),
             ),
           ),
           GoRoute(

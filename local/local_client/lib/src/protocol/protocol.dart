@@ -12,6 +12,12 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'package:local_client/src/protocol/door/door_device.dart' as _izp9nmgv;
+import 'package:local_client/src/protocol/door/door_policy_rule_data.dart'
+    as _iwojdmzr;
+import 'package:local_client/src/protocol/door/door_policy_summary.dart'
+    as _im48e7m8;
+import 'package:local_client/src/protocol/door/member_policy_assignment_data.dart'
+    as _iswvz4vf;
 import 'package:local_client/src/protocol/site/member_summary.dart'
     as _i5ndcnpn;
 import 'package:serverpod_auth_core_client/serverpod_auth_core_client.dart'
@@ -19,6 +25,9 @@ import 'package:serverpod_auth_core_client/serverpod_auth_core_client.dart'
 import 'package:serverpod_auth_idp_client/serverpod_auth_idp_client.dart'
     as _iaic;
 import 'package:serverpod_client/serverpod_client.dart' as _isc;
+import 'door/access_policy.dart' as _iyo2ksr9;
+import 'door/access_policy_member.dart' as _i8ui35gp;
+import 'door/access_policy_rule.dart' as _ifutk4wd;
 import 'door/door_access_consumed.dart' as _itva5m08;
 import 'door/door_access_log.dart' as _if5sm73w;
 import 'door/door_access_result.dart' as _imylpxds;
@@ -26,6 +35,11 @@ import 'door/door_device.dart' as _iwj06at4;
 import 'door/door_device_exception.dart' as _ie1804l2;
 import 'door/door_device_push_result.dart' as _i6xa9yhs;
 import 'door/door_device_status.dart' as _idztj6dr;
+import 'door/door_policy_detail.dart' as _i88m2ve9;
+import 'door/door_policy_member_data.dart' as _ifbo0khc;
+import 'door/door_policy_rule_data.dart' as _i80j1go4;
+import 'door/door_policy_summary.dart' as _ihr7ucho;
+import 'door/member_policy_assignment_data.dart' as _i4v4a6vw;
 import 'site/local_admin_info.dart' as _isettk53;
 import 'site/member_detail.dart' as _ibduyanx;
 import 'site/member_membership.dart' as _i7xewumy;
@@ -38,6 +52,9 @@ import 'site/site_connection_info.dart' as _i9oolunz;
 import 'site/site_connection_state.dart' as _ifrxdjdr;
 import 'site/site_setup_exception.dart' as _imfczqeb;
 import 'site/site_setup_result.dart' as _in5mc098;
+export 'door/access_policy.dart';
+export 'door/access_policy_member.dart';
+export 'door/access_policy_rule.dart';
 export 'door/door_access_consumed.dart';
 export 'door/door_access_log.dart';
 export 'door/door_access_result.dart';
@@ -45,6 +62,11 @@ export 'door/door_device.dart';
 export 'door/door_device_exception.dart';
 export 'door/door_device_push_result.dart';
 export 'door/door_device_status.dart';
+export 'door/door_policy_detail.dart';
+export 'door/door_policy_member_data.dart';
+export 'door/door_policy_rule_data.dart';
+export 'door/door_policy_summary.dart';
+export 'door/member_policy_assignment_data.dart';
 export 'site/local_admin_info.dart';
 export 'site/member_detail.dart';
 export 'site/member_membership.dart';
@@ -93,6 +115,15 @@ class Protocol extends _isc.SerializationManager {
       }
     }
 
+    if (t == _iyo2ksr9.AccessPolicy) {
+      return _iyo2ksr9.AccessPolicy.fromJson(data) as T;
+    }
+    if (t == _i8ui35gp.AccessPolicyMember) {
+      return _i8ui35gp.AccessPolicyMember.fromJson(data) as T;
+    }
+    if (t == _ifutk4wd.AccessPolicyRule) {
+      return _ifutk4wd.AccessPolicyRule.fromJson(data) as T;
+    }
     if (t == _itva5m08.DoorAccessConsumed) {
       return _itva5m08.DoorAccessConsumed.fromJson(data) as T;
     }
@@ -113,6 +144,21 @@ class Protocol extends _isc.SerializationManager {
     }
     if (t == _idztj6dr.DoorDeviceStatus) {
       return _idztj6dr.DoorDeviceStatus.fromJson(data) as T;
+    }
+    if (t == _i88m2ve9.DoorPolicyDetail) {
+      return _i88m2ve9.DoorPolicyDetail.fromJson(data) as T;
+    }
+    if (t == _ifbo0khc.DoorPolicyMemberData) {
+      return _ifbo0khc.DoorPolicyMemberData.fromJson(data) as T;
+    }
+    if (t == _i80j1go4.DoorPolicyRuleData) {
+      return _i80j1go4.DoorPolicyRuleData.fromJson(data) as T;
+    }
+    if (t == _ihr7ucho.DoorPolicySummary) {
+      return _ihr7ucho.DoorPolicySummary.fromJson(data) as T;
+    }
+    if (t == _i4v4a6vw.MemberPolicyAssignmentData) {
+      return _i4v4a6vw.MemberPolicyAssignmentData.fromJson(data) as T;
     }
     if (t == _isettk53.LocalAdminInfo) {
       return _isettk53.LocalAdminInfo.fromJson(data) as T;
@@ -150,6 +196,17 @@ class Protocol extends _isc.SerializationManager {
     if (t == _in5mc098.SiteSetupResult) {
       return _in5mc098.SiteSetupResult.fromJson(data) as T;
     }
+    if (t == _isc.getType<_iyo2ksr9.AccessPolicy?>()) {
+      return (data != null ? _iyo2ksr9.AccessPolicy.fromJson(data) : null) as T;
+    }
+    if (t == _isc.getType<_i8ui35gp.AccessPolicyMember?>()) {
+      return (data != null ? _i8ui35gp.AccessPolicyMember.fromJson(data) : null)
+          as T;
+    }
+    if (t == _isc.getType<_ifutk4wd.AccessPolicyRule?>()) {
+      return (data != null ? _ifutk4wd.AccessPolicyRule.fromJson(data) : null)
+          as T;
+    }
     if (t == _isc.getType<_itva5m08.DoorAccessConsumed?>()) {
       return (data != null ? _itva5m08.DoorAccessConsumed.fromJson(data) : null)
           as T;
@@ -179,6 +236,30 @@ class Protocol extends _isc.SerializationManager {
     }
     if (t == _isc.getType<_idztj6dr.DoorDeviceStatus?>()) {
       return (data != null ? _idztj6dr.DoorDeviceStatus.fromJson(data) : null)
+          as T;
+    }
+    if (t == _isc.getType<_i88m2ve9.DoorPolicyDetail?>()) {
+      return (data != null ? _i88m2ve9.DoorPolicyDetail.fromJson(data) : null)
+          as T;
+    }
+    if (t == _isc.getType<_ifbo0khc.DoorPolicyMemberData?>()) {
+      return (data != null
+              ? _ifbo0khc.DoorPolicyMemberData.fromJson(data)
+              : null)
+          as T;
+    }
+    if (t == _isc.getType<_i80j1go4.DoorPolicyRuleData?>()) {
+      return (data != null ? _i80j1go4.DoorPolicyRuleData.fromJson(data) : null)
+          as T;
+    }
+    if (t == _isc.getType<_ihr7ucho.DoorPolicySummary?>()) {
+      return (data != null ? _ihr7ucho.DoorPolicySummary.fromJson(data) : null)
+          as T;
+    }
+    if (t == _isc.getType<_i4v4a6vw.MemberPolicyAssignmentData?>()) {
+      return (data != null
+              ? _i4v4a6vw.MemberPolicyAssignmentData.fromJson(data)
+              : null)
           as T;
     }
     if (t == _isc.getType<_isettk53.LocalAdminInfo?>()) {
@@ -229,6 +310,18 @@ class Protocol extends _isc.SerializationManager {
       return (data != null ? _in5mc098.SiteSetupResult.fromJson(data) : null)
           as T;
     }
+    if (t == List<_i80j1go4.DoorPolicyRuleData>) {
+      return (data as List)
+              .map((e) => deserialize<_i80j1go4.DoorPolicyRuleData>(e))
+              .toList()
+          as T;
+    }
+    if (t == List<_ifbo0khc.DoorPolicyMemberData>) {
+      return (data as List)
+              .map((e) => deserialize<_ifbo0khc.DoorPolicyMemberData>(e))
+              .toList()
+          as T;
+    }
     if (t == List<_iin2gxgd.SiteCandidateLocal>) {
       return (data as List)
               .map((e) => deserialize<_iin2gxgd.SiteCandidateLocal>(e))
@@ -238,6 +331,27 @@ class Protocol extends _isc.SerializationManager {
     if (t == List<_izp9nmgv.DoorDevice>) {
       return (data as List)
               .map((e) => deserialize<_izp9nmgv.DoorDevice>(e))
+              .toList()
+          as T;
+    }
+    if (t == List<_im48e7m8.DoorPolicySummary>) {
+      return (data as List)
+              .map((e) => deserialize<_im48e7m8.DoorPolicySummary>(e))
+              .toList()
+          as T;
+    }
+    if (t == List<_iwojdmzr.DoorPolicyRuleData>) {
+      return (data as List)
+              .map((e) => deserialize<_iwojdmzr.DoorPolicyRuleData>(e))
+              .toList()
+          as T;
+    }
+    if (t == List<int>) {
+      return (data as List).map((e) => deserialize<int>(e)).toList() as T;
+    }
+    if (t == List<_iswvz4vf.MemberPolicyAssignmentData>) {
+      return (data as List)
+              .map((e) => deserialize<_iswvz4vf.MemberPolicyAssignmentData>(e))
               .toList()
           as T;
     }
@@ -258,6 +372,9 @@ class Protocol extends _isc.SerializationManager {
 
   static String? getClassNameForType(Type type) {
     return switch (type) {
+      _iyo2ksr9.AccessPolicy => 'AccessPolicy',
+      _i8ui35gp.AccessPolicyMember => 'AccessPolicyMember',
+      _ifutk4wd.AccessPolicyRule => 'AccessPolicyRule',
       _itva5m08.DoorAccessConsumed => 'DoorAccessConsumed',
       _if5sm73w.DoorAccessLog => 'DoorAccessLog',
       _imylpxds.DoorAccessResult => 'DoorAccessResult',
@@ -265,6 +382,11 @@ class Protocol extends _isc.SerializationManager {
       _ie1804l2.DoorDeviceException => 'DoorDeviceException',
       _i6xa9yhs.DoorDevicePushResult => 'DoorDevicePushResult',
       _idztj6dr.DoorDeviceStatus => 'DoorDeviceStatus',
+      _i88m2ve9.DoorPolicyDetail => 'DoorPolicyDetail',
+      _ifbo0khc.DoorPolicyMemberData => 'DoorPolicyMemberData',
+      _i80j1go4.DoorPolicyRuleData => 'DoorPolicyRuleData',
+      _ihr7ucho.DoorPolicySummary => 'DoorPolicySummary',
+      _i4v4a6vw.MemberPolicyAssignmentData => 'MemberPolicyAssignmentData',
       _isettk53.LocalAdminInfo => 'LocalAdminInfo',
       _ibduyanx.MemberDetail => 'MemberDetail',
       _i7xewumy.MemberMembership => 'MemberMembership',
@@ -291,6 +413,12 @@ class Protocol extends _isc.SerializationManager {
     }
 
     switch (data) {
+      case _iyo2ksr9.AccessPolicy():
+        return 'AccessPolicy';
+      case _i8ui35gp.AccessPolicyMember():
+        return 'AccessPolicyMember';
+      case _ifutk4wd.AccessPolicyRule():
+        return 'AccessPolicyRule';
       case _itva5m08.DoorAccessConsumed():
         return 'DoorAccessConsumed';
       case _if5sm73w.DoorAccessLog():
@@ -305,6 +433,16 @@ class Protocol extends _isc.SerializationManager {
         return 'DoorDevicePushResult';
       case _idztj6dr.DoorDeviceStatus():
         return 'DoorDeviceStatus';
+      case _i88m2ve9.DoorPolicyDetail():
+        return 'DoorPolicyDetail';
+      case _ifbo0khc.DoorPolicyMemberData():
+        return 'DoorPolicyMemberData';
+      case _i80j1go4.DoorPolicyRuleData():
+        return 'DoorPolicyRuleData';
+      case _ihr7ucho.DoorPolicySummary():
+        return 'DoorPolicySummary';
+      case _i4v4a6vw.MemberPolicyAssignmentData():
+        return 'MemberPolicyAssignmentData';
       case _isettk53.LocalAdminInfo():
         return 'LocalAdminInfo';
       case _ibduyanx.MemberDetail():
@@ -351,6 +489,15 @@ class Protocol extends _isc.SerializationManager {
     if (dataClassName is! String) {
       return super.deserializeByClassName(data);
     }
+    if (dataClassName == 'AccessPolicy') {
+      return deserialize<_iyo2ksr9.AccessPolicy>(data['data']);
+    }
+    if (dataClassName == 'AccessPolicyMember') {
+      return deserialize<_i8ui35gp.AccessPolicyMember>(data['data']);
+    }
+    if (dataClassName == 'AccessPolicyRule') {
+      return deserialize<_ifutk4wd.AccessPolicyRule>(data['data']);
+    }
     if (dataClassName == 'DoorAccessConsumed') {
       return deserialize<_itva5m08.DoorAccessConsumed>(data['data']);
     }
@@ -371,6 +518,21 @@ class Protocol extends _isc.SerializationManager {
     }
     if (dataClassName == 'DoorDeviceStatus') {
       return deserialize<_idztj6dr.DoorDeviceStatus>(data['data']);
+    }
+    if (dataClassName == 'DoorPolicyDetail') {
+      return deserialize<_i88m2ve9.DoorPolicyDetail>(data['data']);
+    }
+    if (dataClassName == 'DoorPolicyMemberData') {
+      return deserialize<_ifbo0khc.DoorPolicyMemberData>(data['data']);
+    }
+    if (dataClassName == 'DoorPolicyRuleData') {
+      return deserialize<_i80j1go4.DoorPolicyRuleData>(data['data']);
+    }
+    if (dataClassName == 'DoorPolicySummary') {
+      return deserialize<_ihr7ucho.DoorPolicySummary>(data['data']);
+    }
+    if (dataClassName == 'MemberPolicyAssignmentData') {
+      return deserialize<_i4v4a6vw.MemberPolicyAssignmentData>(data['data']);
     }
     if (dataClassName == 'LocalAdminInfo') {
       return deserialize<_isettk53.LocalAdminInfo>(data['data']);

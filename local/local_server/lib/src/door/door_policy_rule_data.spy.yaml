@@ -1,0 +1,10 @@
+### One rule of a policy as seen by the admin UI (door display name
+### resolved; null device = all doors).
+class: DoorPolicyRuleData
+fields:
+  id: int
+  deviceId: int?
+  deviceName: String?
+  weekday: int
+  startMinute: int
+  endMinute: int

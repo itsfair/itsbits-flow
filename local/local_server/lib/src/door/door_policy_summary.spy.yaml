@@ -1,0 +1,8 @@
+### Compact policy row for lists (rules/members counts resolved).
+class: DoorPolicySummary
+fields:
+  id: int
+  name: String
+  ruleCount: int
+  memberCount: int
+  createdAt: DateTime

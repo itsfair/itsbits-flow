@@ -1,0 +1,26 @@
+### One rule of an access policy: which door may be opened on which
+### weekday in which minute window (SERVER-LOCAL time = site time).
+### endMinute is exclusive; 1440 encodes "midnight end" (24:00).
+### Overnight windows are expressed as TWO rules (Mo 22:00-23:59 + Di
+### 00:00-04:00) — no wrap semantics.
+class: AccessPolicyRule
+table: access_policy_rules
+fields:
+
+  ### The policy this rule belongs to.
+  policy: AccessPolicy?, relation(onDelete=Cascade)
+
+  ### The door device this rule grants (null = ALL registered doors).
+  device: DoorDevice?, relation(optional, onDelete=Cascade)
+
+  ### 0 = Monday … 6 = Sunday (server-local weekday).
+  weekday: int
+
+  ### Window start, minutes since local midnight (0-1439).
+  startMinute: int
+
+  ### Window end, EXCLUSIVE minutes (1-1440; 1440 = midnight end).
+  endMinute: int
+indexes:
+  access_policy_rules_policy_idx:
+    fields: policyId

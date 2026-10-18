@@ -1,0 +1,8 @@
+### Full policy detail for the admin editor (rules + member assignments).
+class: DoorPolicyDetail
+fields:
+  id: int
+  name: String
+  createdAt: DateTime
+  rules: List<DoorPolicyRuleData>
+  members: List<DoorPolicyMemberData>

@@ -206,7 +206,7 @@ class _DoorDeviceDetailScreenState extends State<DoorDeviceDetailScreen> {
     try {
       await _api.removeDevice(id: widget.deviceId);
       if (!mounted) return;
-      context.go('/selbsteinlass');
+      context.go('/self-entry/locks');
     } on ServerpodClientException catch (e) {
       messenger.showSnackBar(
         SnackBar(content: Text('Entfernen fehlgeschlagen: $e')),

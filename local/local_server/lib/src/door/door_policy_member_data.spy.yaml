@@ -1,0 +1,11 @@
+### One member assignment on a policy as seen by the admin UI (person
+### display fields resolved).
+class: DoorPolicyMemberData
+fields:
+  id: int
+  globalAuthUserId: UuidValue
+  email: String
+  firstName: String?
+  lastName: String?
+  validFrom: DateTime
+  validUntil: DateTime?

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:itsbits_shared/door_code.dart' as door_code;
 import 'package:serverpod/serverpod.dart';
 
 import '../generated/protocol.dart';
@@ -181,7 +182,11 @@ class DoorDeviceAdminEndpoint extends Endpoint {
     try {
       final json = jsonDecode(result.body);
       if (json is Map<String, dynamic>) {
-        mac = json['mac'] is String ? json['mac'] as String : null;
+        // Store the MAC in canonical form (the verifier resolves the
+        // policy device by it).
+        mac = json['mac'] is String
+            ? door_code.normalizeDeviceMac(json['mac'] as String)
+            : null;
         hostname = json['hostname'] is String
             ? json['hostname'] as String
             : null;
