@@ -5,6 +5,7 @@ import '../generated/protocol.dart';
 import '../profile/member_profile_checks.dart';
 import 'site_connection_status.dart';
 import 'site_sync_queue.dart';
+import 'door_code_secrets.dart';
 import 'sites_admin_endpoint.dart';
 
 /// End-user directory for sites ("Betriebe"): browseable WITHOUT login
@@ -127,12 +128,21 @@ class SiteDirectoryEndpoint extends Endpoint {
     if (membership == null) {
       membership = await SiteMembership.db.insertRow(
         session,
-        SiteMembership(siteId: siteId, profileId: profile.id!),
+        SiteMembership(
+          siteId: siteId,
+          profileId: profile.id!,
+          doorCodeSecret: generateDoorCodeSecret(),
+        ),
       );
     } else if (!membership.active) {
+      // Reactivation ROTATES the secret (old app-side copies die with it).
       membership = await SiteMembership.db.updateRow(
         session,
-        membership.copyWith(active: true, endedAt: null),
+        membership.copyWith(
+          active: true,
+          endedAt: null,
+          doorCodeSecret: generateDoorCodeSecret(),
+        ),
       );
     } else {
       throw _error('Du bist bereits Mitglied bei dieser Site.');

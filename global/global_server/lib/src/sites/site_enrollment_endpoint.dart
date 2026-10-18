@@ -3,6 +3,7 @@ import 'package:serverpod_auth_idp_server/core.dart';
 import 'package:serverpod_auth_idp_server/providers/email.dart';
 
 import '../generated/protocol.dart';
+import 'door_code_secrets.dart';
 import 'site_device_authentication.dart';
 
 /// Public endpoint for the local instance enrollment.
@@ -143,6 +144,18 @@ class SiteEnrollmentEndpoint extends Endpoint {
       );
     }
 
+    // Door secret for the admin — lazy generation for legacy memberships
+    // (fail-fast: without it the local bootstrap would be incomplete and
+    // the admin could never verify door codes).
+    var adminDoorCodeSecret = membership.doorCodeSecret;
+    if (adminDoorCodeSecret == null) {
+      final updated = await SiteMembership.db.updateRow(
+        session,
+        membership.copyWith(doorCodeSecret: generateDoorCodeSecret()),
+      );
+      adminDoorCodeSecret = updated.doorCodeSecret;
+    }
+
     return SiteEnrollmentInfo(
       candidates: const [],
       transfer: SiteTransferInfo(
@@ -161,6 +174,7 @@ class SiteEnrollmentEndpoint extends Endpoint {
         adminLastName: memberProfile.lastName,
         adminBirthday: memberProfile.birthday,
         adminImageUrl: memberProfile.imageUrl,
+        adminDoorCodeSecret: adminDoorCodeSecret,
         deviceSessionKey: issued.sessionKey,
       ),
     );

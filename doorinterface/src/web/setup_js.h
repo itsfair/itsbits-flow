@@ -4,15 +4,15 @@
 const char SETUP_JS[] PROGMEM = R"JS(
 const $ = id => document.getElementById(id);
 
-(async () => {
-  try { const r = await fetch('/api/hostname'); const h = await r.json(); if (h.hostname) $('hostInput').value = h.hostname; } catch(e){}
+async function refreshQr() {
   try {
-    const r = await fetch('/api/ble/info'); const b = await r.json();
+    const r = await fetch('/api/ble/info');
+    const b = await r.json();
     if (b.qrContent) {
       $('qrContent').value = b.qrContent;
       $('qrCopy').onclick = async () => {
         try {
-          await navigator.clipboard.writeText(b.qrContent);
+          await navigator.clipboard.writeText($('qrContent').value);
           $('qrCopyStatus').textContent = 'In die Zwischenablage kopiert.';
         } catch (e) {
           $('qrCopyStatus').textContent = 'Kopieren fehlgeschlagen - bitte manuell auswaehlen.';
@@ -20,7 +20,39 @@ const $ = id => document.getElementById(id);
       };
     }
   } catch(e){}
+}
+
+(async () => {
+  try { const r = await fetch('/api/hostname'); const h = await r.json(); if (h.hostname) $('hostInput').value = h.hostname; } catch(e){}
+  try {
+    const r = await fetch('/api/backend/config');
+    const b = await r.json();
+    $('backendUrl').value = b.url || '';
+    if (b.siteId) $('backendSiteId').value = b.siteId;
+    if (b.configured) $('backendStatus').textContent = 'Konfiguriert (Site-ID ' + b.siteId + ').';
+  } catch(e){}
+  refreshQr();
 })();
+
+$('backendForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const url = $('backendUrl').value.trim();
+  const siteId = $('backendSiteId').value.trim();
+  if (!url || !siteId) { $('backendStatus').textContent = 'Bitte URL und Site-ID angeben.'; return; }
+  $('backendBtn').disabled = true;
+  $('backendStatus').textContent = 'speichere ...';
+  try {
+    const r = await fetch('/api/backend/config', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:'url='+encodeURIComponent(url)+'&siteId='+encodeURIComponent(siteId) });
+    const s = await r.json();
+    if (r.ok && s.ok) {
+      $('backendStatus').textContent = 'Gespeichert. MAC: ' + (s.mac || '?');
+      refreshQr();
+    } else {
+      $('backendStatus').textContent = 'Fehler: ' + (s.error || r.status);
+    }
+  } catch(err) { $('backendStatus').textContent = 'Fehler'; }
+  $('backendBtn').disabled = false;
+};
 
 $('hostForm').onsubmit = async (e) => {
   e.preventDefault();

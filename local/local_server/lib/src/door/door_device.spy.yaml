@@ -1,0 +1,29 @@
+### One doorinterface (ESP32) in the site's LAN, registered by the local
+### admin. MVP: LAN-only, manually managed — the address is entered by
+### hand (IP or hostname incl. local network domain, optional port); the
+### server calls the device's HTTP API from here.
+class: DoorDevice
+table: door_devices
+fields:
+
+  ### Display name of the device (e.g. "Hauseingang"); free text.
+  name: String
+
+  ### Address as entered by the admin: `192.168.1.50`, `door-1a2b.local`,
+  ### optionally `host:port` (leading scheme is stripped).
+  address: String
+
+  ### The device's BLE MAC (reported in the config-push ACK) — used to
+  ### attribute access-log entries to a registered device.
+  mac: String?
+
+  ### When the backend config (serverUrl + siteId) was last pushed to the
+  ### device successfully (null = not yet configured).
+  configuredAt: DateTime?
+
+  ### When the device row was created.
+  createdAt: DateTime, defaultModel=now
+indexes:
+  door_devices_address_unique_idx:
+    fields: address
+    unique: true

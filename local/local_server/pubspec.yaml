@@ -15,6 +15,8 @@ dependencies:
   serverpod_cloud_storage_rustfs: 1.1.0-rc.1
   global_client:
     path: ../../global/global_client
+  itsbits_shared:
+    path: ../../shared
   serverpod_auth_core_client: 4.0.3
 
 dev_dependencies:

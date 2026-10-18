@@ -2,6 +2,7 @@ import 'package:serverpod/serverpod.dart';
 
 import '../auth/scopes.dart';
 import '../generated/protocol.dart';
+import 'door_code_secrets.dart';
 import 'site_device_context.dart';
 import 'site_sync_queue.dart';
 
@@ -49,7 +50,7 @@ class SiteSyncEndpoint extends Endpoint {
         await _failTask(session, task, 'member_profile fehlt.');
         continue;
       }
-      final membership = membershipsByProfile[task.profileId];
+      var membership = membershipsByProfile[task.profileId];
       if (membership == null) {
         await _failTask(
           session,
@@ -57,6 +58,17 @@ class SiteSyncEndpoint extends Endpoint {
           'SiteMembership fehlt (unexpectly removed).',
         );
         continue;
+      }
+      // Self-healing backfill: legacy memberships without a door secret
+      // get one at pull time (active memberships only — inactive ones
+      // can never verify, so their secret stays null).
+      var doorCodeSecret = membership.doorCodeSecret;
+      if (doorCodeSecret == null && membership.active) {
+        membership = await SiteMembership.db.updateRow(
+          session,
+          membership.copyWith(doorCodeSecret: generateDoorCodeSecret()),
+        );
+        doorCodeSecret = membership.doorCodeSecret;
       }
       result.add(
         SiteSyncMember(
@@ -71,6 +83,7 @@ class SiteSyncEndpoint extends Endpoint {
           roleName: membership.role.name,
           active: membership.active,
           endedAt: membership.endedAt,
+          doorCodeSecret: doorCodeSecret,
           membershipCreatedAt: membership.createdAt,
         ),
       );

@@ -5,8 +5,9 @@ import 'package:serverpod_auth_idp_flutter/serverpod_auth_idp_flutter.dart';
 
 import 'client.dart';
 import 'layout.dart';
+import 'ble/ble_constants.dart';
 
-import 'screens/ble_test.dart';
+import 'screens/door_open.dart';
 import 'screens/home.dart';
 import 'screens/membership.dart';
 import 'screens/qr_reader.dart';
@@ -95,12 +96,14 @@ class _MyAppState extends State<MyApp> {
         ],
       ),
       GoRoute(
-        path: '/ble-test',
+        path: '/door-open',
         builder: (context, state) {
-          final extra = state.extra as Map<String, dynamic>?;
-          return BleTestScreen(
-            remoteId: extra?['remoteId'] as String,
-            token: extra?['token'] as String?,
+          final parsed = state.extra;
+          if (parsed is ParsedQr) {
+            return DoorOpenScreen(parsed: parsed);
+          }
+          return const DoorOpenScreen(
+            parsed: ParsedQr(remoteId: '00:00:00:00:00:00'),
           );
         },
       ),

@@ -11,6 +11,7 @@
 // ignore_for_file: dead_code, unnecessary_type_check
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
+import 'package:local_client/src/protocol/door/door_device.dart' as _izp9nmgv;
 import 'package:local_client/src/protocol/site/member_summary.dart'
     as _i5ndcnpn;
 import 'package:serverpod_auth_core_client/serverpod_auth_core_client.dart'
@@ -18,6 +19,13 @@ import 'package:serverpod_auth_core_client/serverpod_auth_core_client.dart'
 import 'package:serverpod_auth_idp_client/serverpod_auth_idp_client.dart'
     as _iaic;
 import 'package:serverpod_client/serverpod_client.dart' as _isc;
+import 'door/door_access_consumed.dart' as _itva5m08;
+import 'door/door_access_log.dart' as _if5sm73w;
+import 'door/door_access_result.dart' as _imylpxds;
+import 'door/door_device.dart' as _iwj06at4;
+import 'door/door_device_exception.dart' as _ie1804l2;
+import 'door/door_device_push_result.dart' as _i6xa9yhs;
+import 'door/door_device_status.dart' as _idztj6dr;
 import 'site/local_admin_info.dart' as _isettk53;
 import 'site/member_detail.dart' as _ibduyanx;
 import 'site/member_membership.dart' as _i7xewumy;
@@ -30,6 +38,13 @@ import 'site/site_connection_info.dart' as _i9oolunz;
 import 'site/site_connection_state.dart' as _ifrxdjdr;
 import 'site/site_setup_exception.dart' as _imfczqeb;
 import 'site/site_setup_result.dart' as _in5mc098;
+export 'door/door_access_consumed.dart';
+export 'door/door_access_log.dart';
+export 'door/door_access_result.dart';
+export 'door/door_device.dart';
+export 'door/door_device_exception.dart';
+export 'door/door_device_push_result.dart';
+export 'door/door_device_status.dart';
 export 'site/local_admin_info.dart';
 export 'site/member_detail.dart';
 export 'site/member_membership.dart';
@@ -78,6 +93,27 @@ class Protocol extends _isc.SerializationManager {
       }
     }
 
+    if (t == _itva5m08.DoorAccessConsumed) {
+      return _itva5m08.DoorAccessConsumed.fromJson(data) as T;
+    }
+    if (t == _if5sm73w.DoorAccessLog) {
+      return _if5sm73w.DoorAccessLog.fromJson(data) as T;
+    }
+    if (t == _imylpxds.DoorAccessResult) {
+      return _imylpxds.DoorAccessResult.fromJson(data) as T;
+    }
+    if (t == _iwj06at4.DoorDevice) {
+      return _iwj06at4.DoorDevice.fromJson(data) as T;
+    }
+    if (t == _ie1804l2.DoorDeviceException) {
+      return _ie1804l2.DoorDeviceException.fromJson(data) as T;
+    }
+    if (t == _i6xa9yhs.DoorDevicePushResult) {
+      return _i6xa9yhs.DoorDevicePushResult.fromJson(data) as T;
+    }
+    if (t == _idztj6dr.DoorDeviceStatus) {
+      return _idztj6dr.DoorDeviceStatus.fromJson(data) as T;
+    }
     if (t == _isettk53.LocalAdminInfo) {
       return _isettk53.LocalAdminInfo.fromJson(data) as T;
     }
@@ -113,6 +149,37 @@ class Protocol extends _isc.SerializationManager {
     }
     if (t == _in5mc098.SiteSetupResult) {
       return _in5mc098.SiteSetupResult.fromJson(data) as T;
+    }
+    if (t == _isc.getType<_itva5m08.DoorAccessConsumed?>()) {
+      return (data != null ? _itva5m08.DoorAccessConsumed.fromJson(data) : null)
+          as T;
+    }
+    if (t == _isc.getType<_if5sm73w.DoorAccessLog?>()) {
+      return (data != null ? _if5sm73w.DoorAccessLog.fromJson(data) : null)
+          as T;
+    }
+    if (t == _isc.getType<_imylpxds.DoorAccessResult?>()) {
+      return (data != null ? _imylpxds.DoorAccessResult.fromJson(data) : null)
+          as T;
+    }
+    if (t == _isc.getType<_iwj06at4.DoorDevice?>()) {
+      return (data != null ? _iwj06at4.DoorDevice.fromJson(data) : null) as T;
+    }
+    if (t == _isc.getType<_ie1804l2.DoorDeviceException?>()) {
+      return (data != null
+              ? _ie1804l2.DoorDeviceException.fromJson(data)
+              : null)
+          as T;
+    }
+    if (t == _isc.getType<_i6xa9yhs.DoorDevicePushResult?>()) {
+      return (data != null
+              ? _i6xa9yhs.DoorDevicePushResult.fromJson(data)
+              : null)
+          as T;
+    }
+    if (t == _isc.getType<_idztj6dr.DoorDeviceStatus?>()) {
+      return (data != null ? _idztj6dr.DoorDeviceStatus.fromJson(data) : null)
+          as T;
     }
     if (t == _isc.getType<_isettk53.LocalAdminInfo?>()) {
       return (data != null ? _isettk53.LocalAdminInfo.fromJson(data) : null)
@@ -168,6 +235,12 @@ class Protocol extends _isc.SerializationManager {
               .toList()
           as T;
     }
+    if (t == List<_izp9nmgv.DoorDevice>) {
+      return (data as List)
+              .map((e) => deserialize<_izp9nmgv.DoorDevice>(e))
+              .toList()
+          as T;
+    }
     if (t == List<_i5ndcnpn.MemberSummary>) {
       return (data as List)
               .map((e) => deserialize<_i5ndcnpn.MemberSummary>(e))
@@ -185,6 +258,13 @@ class Protocol extends _isc.SerializationManager {
 
   static String? getClassNameForType(Type type) {
     return switch (type) {
+      _itva5m08.DoorAccessConsumed => 'DoorAccessConsumed',
+      _if5sm73w.DoorAccessLog => 'DoorAccessLog',
+      _imylpxds.DoorAccessResult => 'DoorAccessResult',
+      _iwj06at4.DoorDevice => 'DoorDevice',
+      _ie1804l2.DoorDeviceException => 'DoorDeviceException',
+      _i6xa9yhs.DoorDevicePushResult => 'DoorDevicePushResult',
+      _idztj6dr.DoorDeviceStatus => 'DoorDeviceStatus',
       _isettk53.LocalAdminInfo => 'LocalAdminInfo',
       _ibduyanx.MemberDetail => 'MemberDetail',
       _i7xewumy.MemberMembership => 'MemberMembership',
@@ -211,6 +291,20 @@ class Protocol extends _isc.SerializationManager {
     }
 
     switch (data) {
+      case _itva5m08.DoorAccessConsumed():
+        return 'DoorAccessConsumed';
+      case _if5sm73w.DoorAccessLog():
+        return 'DoorAccessLog';
+      case _imylpxds.DoorAccessResult():
+        return 'DoorAccessResult';
+      case _iwj06at4.DoorDevice():
+        return 'DoorDevice';
+      case _ie1804l2.DoorDeviceException():
+        return 'DoorDeviceException';
+      case _i6xa9yhs.DoorDevicePushResult():
+        return 'DoorDevicePushResult';
+      case _idztj6dr.DoorDeviceStatus():
+        return 'DoorDeviceStatus';
       case _isettk53.LocalAdminInfo():
         return 'LocalAdminInfo';
       case _ibduyanx.MemberDetail():
@@ -256,6 +350,27 @@ class Protocol extends _isc.SerializationManager {
     var dataClassName = data['className'];
     if (dataClassName is! String) {
       return super.deserializeByClassName(data);
+    }
+    if (dataClassName == 'DoorAccessConsumed') {
+      return deserialize<_itva5m08.DoorAccessConsumed>(data['data']);
+    }
+    if (dataClassName == 'DoorAccessLog') {
+      return deserialize<_if5sm73w.DoorAccessLog>(data['data']);
+    }
+    if (dataClassName == 'DoorAccessResult') {
+      return deserialize<_imylpxds.DoorAccessResult>(data['data']);
+    }
+    if (dataClassName == 'DoorDevice') {
+      return deserialize<_iwj06at4.DoorDevice>(data['data']);
+    }
+    if (dataClassName == 'DoorDeviceException') {
+      return deserialize<_ie1804l2.DoorDeviceException>(data['data']);
+    }
+    if (dataClassName == 'DoorDevicePushResult') {
+      return deserialize<_i6xa9yhs.DoorDevicePushResult>(data['data']);
+    }
+    if (dataClassName == 'DoorDeviceStatus') {
+      return deserialize<_idztj6dr.DoorDeviceStatus>(data['data']);
     }
     if (dataClassName == 'LocalAdminInfo') {
       return deserialize<_isettk53.LocalAdminInfo>(data['data']);

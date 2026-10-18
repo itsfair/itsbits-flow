@@ -31,6 +31,7 @@ abstract class SiteSyncMember
     required this.roleName,
     required this.active,
     this.endedAt,
+    this.doorCodeSecret,
     this.membershipCreatedAt,
   });
 
@@ -46,6 +47,7 @@ abstract class SiteSyncMember
     required String roleName,
     required bool active,
     DateTime? endedAt,
+    String? doorCodeSecret,
     DateTime? membershipCreatedAt,
   }) = _SiteSyncMemberImpl;
 
@@ -68,6 +70,7 @@ abstract class SiteSyncMember
       endedAt: jsonSerialization['endedAt'] == null
           ? null
           : _is.DateTimeJsonExtension.fromJson(jsonSerialization['endedAt']),
+      doorCodeSecret: jsonSerialization['doorCodeSecret'] as String?,
       membershipCreatedAt: jsonSerialization['membershipCreatedAt'] == null
           ? null
           : _is.DateTimeJsonExtension.fromJson(
@@ -107,6 +110,11 @@ abstract class SiteSyncMember
   /// Deactivation marker of the membership (null while active).
   DateTime? endedAt;
 
+  /// Per-(person, site) TOTP secret for door access (null for inactive
+  /// memberships) — the local instance stores it on the mirror row and
+  /// verifies the app-computed codes against it offline.
+  String? doorCodeSecret;
+
   /// When the membership was created.
   DateTime? membershipCreatedAt;
 
@@ -125,6 +133,7 @@ abstract class SiteSyncMember
     String? roleName,
     bool? active,
     DateTime? endedAt,
+    String? doorCodeSecret,
     DateTime? membershipCreatedAt,
   });
   @override
@@ -142,6 +151,7 @@ abstract class SiteSyncMember
       'roleName': roleName,
       'active': active,
       if (endedAt != null) 'endedAt': endedAt?.toJson(),
+      if (doorCodeSecret != null) 'doorCodeSecret': doorCodeSecret,
       if (membershipCreatedAt != null)
         'membershipCreatedAt': membershipCreatedAt?.toJson(),
     };
@@ -162,6 +172,7 @@ abstract class SiteSyncMember
       'roleName': roleName,
       'active': active,
       if (endedAt != null) 'endedAt': endedAt?.toJson(),
+      if (doorCodeSecret != null) 'doorCodeSecret': doorCodeSecret,
       if (membershipCreatedAt != null)
         'membershipCreatedAt': membershipCreatedAt?.toJson(),
     };
@@ -188,6 +199,7 @@ class _SiteSyncMemberImpl extends SiteSyncMember {
     required String roleName,
     required bool active,
     DateTime? endedAt,
+    String? doorCodeSecret,
     DateTime? membershipCreatedAt,
   }) : super._(
          taskId: taskId,
@@ -201,6 +213,7 @@ class _SiteSyncMemberImpl extends SiteSyncMember {
          roleName: roleName,
          active: active,
          endedAt: endedAt,
+         doorCodeSecret: doorCodeSecret,
          membershipCreatedAt: membershipCreatedAt,
        );
 
@@ -220,6 +233,7 @@ class _SiteSyncMemberImpl extends SiteSyncMember {
     String? roleName,
     bool? active,
     Object? endedAt = _Undefined,
+    Object? doorCodeSecret = _Undefined,
     Object? membershipCreatedAt = _Undefined,
   }) {
     return SiteSyncMember(
@@ -234,6 +248,9 @@ class _SiteSyncMemberImpl extends SiteSyncMember {
       roleName: roleName ?? this.roleName,
       active: active ?? this.active,
       endedAt: endedAt is DateTime? ? endedAt : this.endedAt,
+      doorCodeSecret: doorCodeSecret is String?
+          ? doorCodeSecret
+          : this.doorCodeSecret,
       membershipCreatedAt: membershipCreatedAt is DateTime?
           ? membershipCreatedAt
           : this.membershipCreatedAt,

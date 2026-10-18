@@ -114,6 +114,7 @@ class SiteSyncProcessor {
                 firstName: member.firstName,
                 lastName: member.lastName,
                 birthday: member.birthday,
+                doorCodeSecret: member.doorCodeSecret,
               ),
               transaction: transaction,
             );
@@ -125,6 +126,7 @@ class SiteSyncProcessor {
             firstName: member.firstName,
             lastName: member.lastName,
             birthday: member.birthday,
+            doorCodeSecret: member.doorCodeSecret,
           ),
           transaction: transaction,
         );

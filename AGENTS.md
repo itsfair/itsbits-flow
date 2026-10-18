@@ -182,18 +182,27 @@ server's `docker-compose.yaml` (start with `serverpod start` or
    transfer instead of raw capability URLs; enforce HTTPS for all
    transfers in production; rotate S3 credentials before production;
    encryption at rest for the local `site_connections` row.
-8. **ESP32 ↔ backend protocol**: ESP as WS client (recommended for
-   multiple ESPs) vs. WS server on ESP; authentication of the backend
-   against the ESP (API token); secure transport (TLS / mutual auth).
+8. **ESP32 ↔ backend protocol**: DECIDED + implemented (this session):
+   the ESP is a plain HTTP client on demand — one `POST /api/door/verify`
+   per BLE request against the local web server (custom REST route, no
+   Serverpod protocol), config pushed from the local registry
+   (`doorDeviceAdmin.pushConfig` on add + manual re-push). Rolling door
+   codes: per-(person, site) TOTP secret (global issues at
+   subscribe/reactivate, travels via member sync, cached in the
+   end-user app's secure storage) → app computes the code OFFLINE
+   (HMAC over time step 30 s + door MAC), local verifies offline
+   (±1 step, single-use per (user, step), per-user rate limit,
+   `door_access_logs` audit). Remaining hardening (one package): device
+   auth/token, TLS or HMAC challenge, ESP web interface auth, BLE GATT
+   encryption.
 9. **Disable registration in the platform admin app**: DONE — the
    admin apps use the shared login-only sign-in screen
    (`shared/lib/screens/sign_in_screen.dart`, no sign-up affordances);
    end-user registration stays in the end-user app's full
    `SignInWidget`.
-10. **flutter_blue_plus license**: the BLE stack requires a `License` at
-    `connect()` — `License.nonprofit` (free, personal/nonprofit/edu) is
-    used today; production use by a for-profit needs the paid
-    `License.commercial` — decide before launch.
+10. **flutter_blue_plus license**: RESOLVED (this session) — the
+    end-user app switched to `bluetooth_low_energy` (Apache-2.0, no
+    license gate); flutter_blue_plus is fully removed.
 11. **Site-image upload**: DONE (this session) — implemented at the
     LOCAL instance and pushed to the global backend (reversed sync
     direction; strict "connected only" rule, no queueing): the "Standort"

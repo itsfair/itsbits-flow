@@ -20,6 +20,8 @@ import 'package:global_server/src/generated/admin/user_admin_summary.dart'
     as _i6s0j5k6;
 import 'package:global_server/src/generated/profile/member_profile.dart'
     as _ih6gitpx;
+import 'package:global_server/src/generated/sites/my_door_secret_info.dart'
+    as _in7ixv8a;
 import 'package:global_server/src/generated/sites/my_membership_info.dart'
     as _iup1l3le;
 import 'package:global_server/src/generated/sites/site.dart' as _inl2gdz9;
@@ -178,6 +180,8 @@ class TestEndpoints {
 
   late final _MemberProfileEndpoint memberProfile;
 
+  late final _DoorAccessEndpoint doorAccess;
+
   late final _SiteConnectionEndpoint siteConnection;
 
   late final _SiteDetailsEndpoint siteDetails;
@@ -211,6 +215,10 @@ class _InternalTestEndpoints extends TestEndpoints
       serializationManager,
     );
     memberProfile = _MemberProfileEndpoint(
+      endpoints,
+      serializationManager,
+    );
+    doorAccess = _DoorAccessEndpoint(
       endpoints,
       serializationManager,
     );
@@ -839,6 +847,48 @@ class _MemberProfileEndpoint {
                   _localCallContext.arguments,
                 )
                 as _ida.Future<_ih6gitpx.MemberProfile>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+}
+
+class _DoorAccessEndpoint {
+  _DoorAccessEndpoint(
+    this._endpointDispatch,
+    this._serializationManager,
+  );
+
+  final _is.EndpointDispatch _endpointDispatch;
+
+  final _is.SerializationManager _serializationManager;
+
+  _ida.Future<_in7ixv8a.MyDoorSecretInfo> getMySiteSecret(
+    _ist.TestSessionBuilder sessionBuilder, {
+    required int siteId,
+  }) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'doorAccess',
+            method: 'getMySiteSecret',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'doorAccess',
+          methodName: 'getMySiteSecret',
+          parameters: _ist.testObjectToJson({'siteId': siteId}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<_in7ixv8a.MyDoorSecretInfo>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();

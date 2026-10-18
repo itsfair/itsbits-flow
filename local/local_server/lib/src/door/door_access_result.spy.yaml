@@ -1,0 +1,20 @@
+### Outcome of one door-access verification attempt (access log result).
+enum: DoorAccessResult
+values:
+
+  ### Code valid, membership active, not replayed — the door opens.
+  - granted
+
+  ### Well-formed request, but the credential check failed (unknown user,
+  ### inactive membership, wrong/expired code, replay). Uniform denial —
+  ### no information leak about WHICH check failed.
+  - denied
+
+  ### Too many denied attempts for this user in a short window.
+  - rateLimited
+
+  ### Malformed request (missing/invalid fields) — not even verifiable.
+  - invalid
+
+  ### Infrastructure failure (site not set up, database error, ...).
+  - error

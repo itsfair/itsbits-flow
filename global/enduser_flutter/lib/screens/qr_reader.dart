@@ -46,13 +46,7 @@ class _QRReaderState extends State<QRReader> {
             });
             return;
           }
-          context.go(
-            '/ble-test',
-            extra: {
-              'remoteId': parsed.remoteId,
-              if (parsed.token != null) 'token': parsed.token,
-            },
-          );
+          context.go('/door-open', extra: parsed);
         },
       ),
     );

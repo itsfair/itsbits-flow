@@ -19,6 +19,8 @@ memberProfile:
   - save:
   - setUserImage:
   - removeUserImage:
+doorAccess:
+  - getMySiteSecret:
 siteConnection:
   - connect:
 siteDetails:

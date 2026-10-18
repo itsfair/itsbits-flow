@@ -1,0 +1,32 @@
+### Result of probing one doorinterface's HTTP API (server-side call to
+### `GET http://<address>/api/status`). The raw response fields are parsed
+### losslessly (null when the ESP returned no such field or no status
+### could be obtained).
+class: DoorDeviceStatus
+fields:
+
+  ### True when the HTTP call answered with a valid JSON body.
+  ok: bool
+
+  ### Error description when the call failed (LAN host not reachable,
+  ### response not JSON, ...) — null on success.
+  error: String?
+
+  ### Display fields the ESP dashboard also shows (server.reachable /
+  ### host.reachable / no connection).
+  wifiSsid: String?
+  wifiRssi: int?
+  wifiIp: String?
+
+  ### Lock area of the ESP status JSON.
+  locksAvailable: bool?
+  locksPaired: bool?
+  locksPairing: bool?
+  locksCount: int?
+  locksLockState: String?
+  locksBatteryPct: int?
+  locksBatteryCritical: bool?
+  locksRssi: int?
+
+  ### ESP firmware version.
+  firmwareVersion: String?

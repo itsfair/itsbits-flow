@@ -24,6 +24,12 @@ fields:
   ### viewing). Null while the membership is active.
   endedAt: DateTime?
 
+  ### Per-(person, site) TOTP secret for door access: the end-user app
+  ### computes the rolling code from it (HMAC over time step + door MAC),
+  ### the local instance verifies offline. Generated when the membership
+  ### is created/reactivated (and lazily on sync pull for legacy rows).
+  doorCodeSecret: String?, scope=serverOnly
+
   ### When the membership was created.
   createdAt: DateTime, defaultModel=now
 indexes:

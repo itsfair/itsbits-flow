@@ -9,6 +9,16 @@ emailIdp:
   - hasAccount:
 jwtRefresh:
   - refreshAccessToken:
+doorDeviceAdmin:
+  - listDevices:
+  - addDevice:
+  - updateDevice:
+  - removeDevice:
+  - testDevice:
+  - unlockNuki:
+  - lockNuki:
+  - openNuki:
+  - pushConfig:
 memberProfile:
   - get:
   - save:

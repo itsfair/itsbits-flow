@@ -1,0 +1,18 @@
+### Result of pushing the backend config (serverUrl + siteId) to a
+### doorinterface: the ESP answers with its identity when it accepted
+### and stored the configuration.
+class: DoorDevicePushResult
+fields:
+
+  ### True when the device confirmed the configuration.
+  ok: bool
+
+  ### Error description when the device could not be reached or rejected
+  ### the config.
+  error: String?
+
+  ### BLE MAC reported by the device (stored on the registry row).
+  mac: String?
+
+  ### Hostname reported by the device.
+  hostname: String?

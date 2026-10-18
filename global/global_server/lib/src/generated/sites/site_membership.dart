@@ -34,6 +34,7 @@ abstract class SiteMembership
     _icyjzuro.SiteRole? role,
     bool? active,
     this.endedAt,
+    this.doorCodeSecret,
     DateTime? createdAt,
   }) : role = role ?? _icyjzuro.SiteRole.member,
        active = active ?? true,
@@ -48,6 +49,7 @@ abstract class SiteMembership
     _icyjzuro.SiteRole? role,
     bool? active,
     DateTime? endedAt,
+    String? doorCodeSecret,
     DateTime? createdAt,
   }) = _SiteMembershipImpl;
 
@@ -75,6 +77,7 @@ abstract class SiteMembership
       endedAt: jsonSerialization['endedAt'] == null
           ? null
           : _is.DateTimeJsonExtension.fromJson(jsonSerialization['endedAt']),
+      doorCodeSecret: jsonSerialization['doorCodeSecret'] as String?,
       createdAt: jsonSerialization['createdAt'] == null
           ? null
           : _is.DateTimeJsonExtension.fromJson(jsonSerialization['createdAt']),
@@ -108,6 +111,12 @@ abstract class SiteMembership
   /// viewing). Null while the membership is active.
   DateTime? endedAt;
 
+  /// Per-(person, site) TOTP secret for door access: the end-user app
+  /// computes the rolling code from it (HMAC over time step + door MAC),
+  /// the local instance verifies offline. Generated when the membership
+  /// is created/reactivated (and lazily on sync pull for legacy rows).
+  String? doorCodeSecret;
+
   /// When the membership was created.
   DateTime createdAt;
 
@@ -126,6 +135,7 @@ abstract class SiteMembership
     _icyjzuro.SiteRole? role,
     bool? active,
     DateTime? endedAt,
+    String? doorCodeSecret,
     DateTime? createdAt,
   });
   @override
@@ -140,6 +150,7 @@ abstract class SiteMembership
       'role': role.toJson(),
       'active': active,
       if (endedAt != null) 'endedAt': endedAt?.toJson(),
+      if (doorCodeSecret != null) 'doorCodeSecret': doorCodeSecret,
       'createdAt': createdAt.toJson(),
     };
   }
@@ -206,6 +217,7 @@ class _SiteMembershipImpl extends SiteMembership {
     _icyjzuro.SiteRole? role,
     bool? active,
     DateTime? endedAt,
+    String? doorCodeSecret,
     DateTime? createdAt,
   }) : super._(
          id: id,
@@ -216,6 +228,7 @@ class _SiteMembershipImpl extends SiteMembership {
          role: role,
          active: active,
          endedAt: endedAt,
+         doorCodeSecret: doorCodeSecret,
          createdAt: createdAt,
        );
 
@@ -232,6 +245,7 @@ class _SiteMembershipImpl extends SiteMembership {
     _icyjzuro.SiteRole? role,
     bool? active,
     Object? endedAt = _Undefined,
+    Object? doorCodeSecret = _Undefined,
     DateTime? createdAt,
   }) {
     return SiteMembership(
@@ -245,6 +259,9 @@ class _SiteMembershipImpl extends SiteMembership {
       role: role ?? this.role,
       active: active ?? this.active,
       endedAt: endedAt is DateTime? ? endedAt : this.endedAt,
+      doorCodeSecret: doorCodeSecret is String?
+          ? doorCodeSecret
+          : this.doorCodeSecret,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -281,6 +298,12 @@ class SiteMembershipUpdateTable extends _is.UpdateTable<SiteMembershipTable> {
         value,
       );
 
+  _is.ColumnValue<String, String> doorCodeSecret(String? value) =>
+      _is.ColumnValue(
+        table.doorCodeSecret,
+        value,
+      );
+
   _is.ColumnValue<DateTime, DateTime> createdAt(DateTime value) =>
       _is.ColumnValue(
         table.createdAt,
@@ -313,6 +336,10 @@ class SiteMembershipTable extends _is.Table<int?> {
       'endedAt',
       this,
     );
+    doorCodeSecret = _is.ColumnString(
+      'doorCodeSecret',
+      this,
+    );
     createdAt = _is.ColumnDateTime(
       'createdAt',
       this,
@@ -340,6 +367,12 @@ class SiteMembershipTable extends _is.Table<int?> {
   /// Deactivation marker (membership ended; the row is kept for later
   /// viewing). Null while the membership is active.
   late final _is.ColumnDateTime endedAt;
+
+  /// Per-(person, site) TOTP secret for door access: the end-user app
+  /// computes the rolling code from it (HMAC over time step + door MAC),
+  /// the local instance verifies offline. Generated when the membership
+  /// is created/reactivated (and lazily on sync pull for legacy rows).
+  late final _is.ColumnString doorCodeSecret;
 
   /// When the membership was created.
   late final _is.ColumnDateTime createdAt;
@@ -378,6 +411,7 @@ class SiteMembershipTable extends _is.Table<int?> {
     role,
     active,
     endedAt,
+    doorCodeSecret,
     createdAt,
   ];
 

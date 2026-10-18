@@ -4,6 +4,7 @@ import 'package:itsbits_shared/screens/site_detail_body.dart';
 import 'package:itsbits_shared/site_directory.dart';
 
 import '../client.dart';
+import '../door_secret_store.dart';
 
 /// The end user's membership at a site: the site snapshot plus their own
 /// membership data and an access-token section (BLE door access arrives in
@@ -96,16 +97,22 @@ class _MembershipScreenState extends State<MembershipScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Card(
+                Card(
                   child: ListTile(
-                    leading: Icon(Icons.lock_outline),
-                    title: Text('Zugangsberechtigung'),
+                    leading: const Icon(Icons.door_sliding_outlined),
+                    title: const Text('Türöffnung'),
                     subtitle: Text(
-                      'Türöffnung am Standort. Deine Zugangsdaten liegen '
-                      'bereits an der Site vor (Einrichtung folgt mit dem '
-                      'BLE-Zutritt in einem späteren Schritt).',
+                      membership?.active ?? false
+                          ? 'Scanne den QR-Code am Türgerät, um die Tür zu '
+                                'öffnen. Danach läuft alles offline über die '
+                                'Standort-Instanz.'
+                          : 'Du bist hier nicht (mehr) aktiv angemeldet — '
+                                'kein Türzugang.',
                     ),
-                    trailing: Icon(Icons.hourglass_bottom, size: 20),
+                    trailing: const Icon(Icons.qr_code_scanner),
+                    onTap: (membership?.active ?? false)
+                        ? () => context.go('/qr-reader')
+                        : null,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -147,6 +154,8 @@ class _MembershipScreenState extends State<MembershipScreen> {
     setState(() => _busy = true);
     try {
       await siteDirectoryApi.unsubscribe(widget.siteId);
+      // Drop the cached door secret — reactivation rotates it anyway.
+      await doorSecretStore.forgetSite(widget.siteId);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

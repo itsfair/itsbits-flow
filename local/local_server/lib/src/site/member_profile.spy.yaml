@@ -32,6 +32,11 @@ fields:
   ### been transferred/copied).
   imageUrl: String?
 
+  ### Per-(person, site) TOTP secret for door access (mirrored from the
+  ### global SiteMembership via the member sync). The verify route checks
+  ### the app-computed rolling codes against it — offline.
+  doorCodeSecret: String?, scope=serverOnly
+
   ### When the row was created.
   createdAt: DateTime, defaultModel=now
 indexes:

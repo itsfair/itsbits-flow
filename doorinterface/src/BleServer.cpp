@@ -1,5 +1,6 @@
 #include "BleServer.h"
 #include "NukiManager.h"
+#include "BackendClient.h"
 
 #define SERVICE_UUID        "5f6d4f5a-0001-0001-8000-00805f9b34fb"
 #define CHAR_REQUEST_UUID   "5f6d4f5a-0002-0001-8000-00805f9b34fb"
@@ -37,17 +38,19 @@ public:
         String payload = String(val.c_str());
         Serial.printf("[BLE] RX (%d bytes): %s\n", (int)val.size(), payload.c_str());
 
-        String action     = extractField(payload, "action");
-        String credential = extractField(payload, "credential");
-        String deviceId   = extractField(payload, "deviceId");
-        Serial.printf("[BLE] parsed: action=%s credential=%s deviceId=%s\n",
-            action.c_str(), credential.c_str(), deviceId.c_str());
-        _owner->queueRequest(action, deviceId);
+        String action   = extractField(payload, "action");
+        String userId   = extractField(payload, "userId");
+        String code     = extractField(payload, "code");
+        String deviceId = extractField(payload, "deviceId");
+        Serial.printf("[BLE] parsed: action=%s userId=%s code=%s deviceId=%s\n",
+            action.c_str(), userId.c_str(), code.c_str(), deviceId.c_str());
+        _owner->queueRequest(action, userId, code, deviceId);
     }
 };
 
-void BleServer::begin(const String& deviceName, NukiManager* nuki) {
+void BleServer::begin(const String& deviceName, NukiManager* nuki, BackendClient* backend) {
     _nuki = nuki;
+    _backend = backend;
     Serial.println("[BLE] init server");
     NimBLEDevice::init(deviceName.c_str());
     NimBLEDevice::setMTU(128);
@@ -80,32 +83,77 @@ String BleServer::getAddress() {
 void BleServer::loop() {
     if (_pendingAction.isEmpty()) return;
     String action = _pendingAction;
+    String userId = _pendingUserId;
+    String code = _pendingCode;
     _pendingAction = "";
+    _pendingUserId = "";
+    _pendingCode = "";
     _pendingDeviceId = "";
 
     bool success = false;
-    String code, message;
-    if (action == "open") {
-        success = openDoor(code, message);
-    } else if (action == "test") {
-        success = openDoor(code, message);
-        code = "TEST_OK";
-        if (success) message = "Test ok, " + message;
-    } else {
-        success = false; code = "UNKNOWN_ACTION"; message = "Aktion unbekannt";
-    }
+    String respCode, message;
+    handleRequest(action, userId, code, success, respCode, message);
 
     String resp = "{\"success\":";
     resp += success ? "true" : "false";
-    resp += ",\"code\":\"" + code + "\"";
+    resp += ",\"code\":\"" + respCode + "\"";
     resp += ",\"message\":\"" + message + "\"";
     resp += "}";
     Serial.printf("[BLE] TX: %s\n", resp.c_str());
     sendResponse(resp);
 }
 
-void BleServer::queueRequest(const String& action, const String& deviceId) {
+/// Real credential flow: every verification goes through the local
+/// backend (door-bound TOTP, single-use). A granted 'open' consumes the
+/// code and unlatches; 'test' verifies without a door action. The
+/// NOT_PAIRED check runs BEFORE verification so a failed open does not
+/// waste the user's single-use code.
+void BleServer::handleRequest(const String& action, const String& userId, const String& code, bool& success, String& codeOut, String& messageOut) {
+    if (action != "open" && action != "test") {
+        success = false; codeOut = "UNKNOWN_ACTION"; messageOut = "Aktion unbekannt";
+        return;
+    }
+    if (!_backend || !_backend->isConfigured()) {
+        success = false; codeOut = "DEVICE_UNCONFIGURED"; messageOut = "Backend nicht konfiguriert";
+        return;
+    }
+    if (action == "open" && (!_nuki || !_nuki->isPaired())) {
+        success = false; codeOut = "NOT_PAIRED"; messageOut = "Kein Schloss gepaart";
+        return;
+    }
+    if (userId.isEmpty() || code.isEmpty()) {
+        success = false; codeOut = "CRED_INVALID"; messageOut = "Zugangsdaten unvollstaendig";
+        return;
+    }
+
+    BackendClient::VerifyResult v = _backend->verify(userId, code, getAddress());
+    if (!v.httpOk) {
+        success = false; codeOut = "BACKEND_UNREACHABLE";
+        messageOut = v.message.isEmpty() ? String("Backend nicht erreichbar") : v.message;
+        return;
+    }
+    if (!v.ok) {
+        success = false;
+        codeOut = v.code.isEmpty() ? String("ACCESS_DENIED") : v.code;
+        messageOut = v.message.isEmpty() ? String("Zugang verweigert") : v.message;
+        return;
+    }
+
+    if (action == "test") {
+        success = true; codeOut = "TEST_OK"; messageOut = "Zugang gueltig (Test ohne Tueraktion)";
+        return;
+    }
+    if (_nuki->unlatch()) {
+        success = true; codeOut = "OK"; messageOut = "Tuer geoeffnet";
+        return;
+    }
+    success = false; codeOut = "LOCK_FAILED"; messageOut = "Oeffnen fehlgeschlagen";
+}
+
+void BleServer::queueRequest(const String& action, const String& userId, const String& code, const String& deviceId) {
     _pendingAction = action;
+    _pendingUserId = userId;
+    _pendingCode = code;
     _pendingDeviceId = deviceId;
 }
 
@@ -115,17 +163,4 @@ void BleServer::sendResponse(const String& resp) {
         responseChar->setValue(std::string(resp.c_str()));
         responseChar->notify();
     }
-}
-
-bool BleServer::openDoor(String& code, String& message) {
-    if (!_nuki || !_nuki->isPaired()) {
-        code = "NOT_PAIRED"; message = "Kein Schloss gepaart";
-        return false;
-    }
-    if (_nuki->unlatch()) {
-        code = "OK"; message = "Tuer geoeffnet";
-        return true;
-    }
-    code = "LOCK_FAILED"; message = "Oeffnen fehlgeschlagen";
-    return false;
 }

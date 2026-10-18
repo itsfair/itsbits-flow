@@ -13,6 +13,11 @@
 import 'dart:async' as _ida;
 import 'dart:typed_data' as _idt;
 import 'package:http/http.dart' as _i85jenna;
+import 'package:local_client/src/protocol/door/door_device.dart' as _izp9nmgv;
+import 'package:local_client/src/protocol/door/door_device_push_result.dart'
+    as _i4kgn637;
+import 'package:local_client/src/protocol/door/door_device_status.dart'
+    as _ite4y8tc;
 import 'package:local_client/src/protocol/site/local_admin_info.dart'
     as _iwwog9lz;
 import 'package:local_client/src/protocol/site/member_detail.dart' as _ietksnoz;
@@ -257,6 +262,120 @@ class EndpointJwtRefresh extends _iacc.EndpointRefreshJwtTokens {
         'refreshAccessToken',
         {'refreshToken': refreshToken},
         authenticated: false,
+      );
+}
+
+/// Admin endpoint for the site's doorinterface devices (ESP32) — the LAN
+/// registry of `Selbsteinlass`: add devices by address (IP or local
+/// hostname), test the connection via the ESP's `/api/status`, and
+/// trigger the NUKI lock/unlock/open actions. The HTTP calls to the ESP
+/// happen on the SERVER side (LAN authority stays with the instance,
+/// avoids browser CORS).
+///
+/// MVP security stance: plain HTTP into the local network (the ESP's web
+/// interface as unauthenticated as its dashboard); device
+/// authentication/TLS is a known security backlog item. The NUKI unlock/
+/// lock/open routes are fixed backend-side paths — no generic proxying.
+///
+/// Access is enforced declaratively via [requiredScopes] (`local-admin`
+/// scope of the site admin's local login), same as membersAdmin/siteAdmin.
+/// {@category Endpoint}
+class EndpointDoorDeviceAdmin extends _isc.EndpointRef {
+  EndpointDoorDeviceAdmin(_isc.EndpointCaller caller) : super(caller);
+
+  @override
+  String get name => 'doorDeviceAdmin';
+
+  /// All registered devices, newest first.
+  _ida.Future<List<_izp9nmgv.DoorDevice>> listDevices() =>
+      caller.callServerEndpoint<List<_izp9nmgv.DoorDevice>>(
+        'doorDeviceAdmin',
+        'listDevices',
+        {},
+      );
+
+  /// Registers a new device ("Gerät hinzufügen") and IMMEDIATELY pushes
+  /// the backend config (serverUrl + siteId) to it — best effort: a
+  /// failed push never blocks the registration (re-push via
+  /// [pushConfig] later).
+  _ida.Future<_izp9nmgv.DoorDevice> addDevice({
+    required String name,
+    required String address,
+  }) => caller.callServerEndpoint<_izp9nmgv.DoorDevice>(
+    'doorDeviceAdmin',
+    'addDevice',
+    {
+      'name': name,
+      'address': address,
+    },
+  );
+
+  /// Updates the display name and/or the address.
+  _ida.Future<_izp9nmgv.DoorDevice> updateDevice({
+    required int id,
+    String? name,
+    String? address,
+  }) => caller.callServerEndpoint<_izp9nmgv.DoorDevice>(
+    'doorDeviceAdmin',
+    'updateDevice',
+    {
+      'id': id,
+      'name': name,
+      'address': address,
+    },
+  );
+
+  /// Removes the registry entry (the ESP itself is untouched).
+  _ida.Future<void> removeDevice({required int id}) =>
+      caller.callServerEndpoint<void>(
+        'doorDeviceAdmin',
+        'removeDevice',
+        {'id': id},
+      );
+
+  /// Probes `GET http://<address>/api/status` and parses the ESP JSON
+  /// losslessly (server-side call, timeout 5 s).
+  _ida.Future<_ite4y8tc.DoorDeviceStatus> testDevice({required int id}) =>
+      caller.callServerEndpoint<_ite4y8tc.DoorDeviceStatus>(
+        'doorDeviceAdmin',
+        'testDevice',
+        {'id': id},
+      );
+
+  /// `POST /api/nuki/unlock` on the device (NUKI entriegeln).
+  _ida.Future<_ite4y8tc.DoorDeviceStatus> unlockNuki({required int id}) =>
+      caller.callServerEndpoint<_ite4y8tc.DoorDeviceStatus>(
+        'doorDeviceAdmin',
+        'unlockNuki',
+        {'id': id},
+      );
+
+  /// `POST /api/nuki/lock` on the device (NUKI verriegeln).
+  _ida.Future<_ite4y8tc.DoorDeviceStatus> lockNuki({required int id}) =>
+      caller.callServerEndpoint<_ite4y8tc.DoorDeviceStatus>(
+        'doorDeviceAdmin',
+        'lockNuki',
+        {'id': id},
+      );
+
+  /// `POST /api/nuki/open` on the device (NUKI entsichern / unlatch).
+  _ida.Future<_ite4y8tc.DoorDeviceStatus> openNuki({required int id}) =>
+      caller.callServerEndpoint<_ite4y8tc.DoorDeviceStatus>(
+        'doorDeviceAdmin',
+        'openNuki',
+        {'id': id},
+      );
+
+  /// Pushes the backend config (server URL from the `localApiUrl`
+  /// password key + this instance's site ID) to the device
+  /// (`POST http://<address>/api/backend/config`). The device ACKs with
+  /// its identity; the MAC is stored on the registry row and
+  /// `configuredAt` marks a successful push.
+  _ida.Future<_i4kgn637.DoorDevicePushResult> pushConfig({required int id}) =>
+      caller.callServerEndpoint<_i4kgn637.DoorDevicePushResult>(
+        'doorDeviceAdmin',
+        'pushConfig',
+        {'id': id},
       );
 }
 
@@ -532,6 +651,7 @@ class Client extends _isc.ServerpodClientShared {
        ) {
     emailIdp = EndpointEmailIdp(this);
     jwtRefresh = EndpointJwtRefresh(this);
+    doorDeviceAdmin = EndpointDoorDeviceAdmin(this);
     memberProfile = EndpointMemberProfile(this);
     membersAdmin = EndpointMembersAdmin(this);
     siteAdmin = EndpointSiteAdmin(this);
@@ -542,6 +662,8 @@ class Client extends _isc.ServerpodClientShared {
   late final EndpointEmailIdp emailIdp;
 
   late final EndpointJwtRefresh jwtRefresh;
+
+  late final EndpointDoorDeviceAdmin doorDeviceAdmin;
 
   late final EndpointMemberProfile memberProfile;
 
@@ -557,6 +679,7 @@ class Client extends _isc.ServerpodClientShared {
   Map<String, _isc.EndpointRef> get endpointRefLookup => {
     'emailIdp': emailIdp,
     'jwtRefresh': jwtRefresh,
+    'doorDeviceAdmin': doorDeviceAdmin,
     'memberProfile': memberProfile,
     'membersAdmin': membersAdmin,
     'siteAdmin': siteAdmin,

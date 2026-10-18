@@ -3,6 +3,7 @@
 #include "WebInterface.h"
 #include "NukiManager.h"
 #include "BleServer.h"
+#include "BackendClient.h"
 #include "Updater.h"
 #include "config.h"
 
@@ -10,6 +11,7 @@ WifiManager wifi;
 WebInterface web;
 NukiManager nuki;
 BleServer ble;
+BackendClient backend;
 Updater updater;
 bool bleStarted = false;
 bool nukiStarted = false;
@@ -18,13 +20,14 @@ bool webStarted = false;
 void setup() {
     Serial.begin(115200);
     Serial.println("Starting...");
+    backend.begin();
     wifi.begin();
 }
 
 void loop() {
     wifi.loop();
     if (!bleStarted && wifi.isConnected() && !wifi.isApActive()) {
-        ble.begin(wifi.getHostname(), &nuki);
+        ble.begin(wifi.getHostname(), &nuki, &backend);
         bleStarted = true;
     }
     if (!nukiStarted && bleStarted) {
@@ -33,7 +36,7 @@ void loop() {
     }
     if (nukiStarted) nuki.loop();
     if (!webStarted && bleStarted) {
-        web.begin(wifi, nuki, ble, updater);
+        web.begin(wifi, nuki, ble, backend, updater);
         webStarted = true;
     }
     if (webStarted) web.loop();

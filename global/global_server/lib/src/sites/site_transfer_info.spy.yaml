@@ -50,6 +50,13 @@ fields:
   ### presigned URL instead of the raw/eternal object URL.
   adminImageUrl: String?
 
+  ### Per-(person, site) TOTP door secret of the site admin — generated
+  ### here if the membership has none yet. The local instance stores it on
+  ### the admin's member_profile copy so the admin can verify door codes
+  ### offline like every other member (ongoing updates travel via the
+  ### member sync).
+  adminDoorCodeSecret: String?
+
   ### The SAS session key for the device connection. Store securely; there
   ### is no rotation (write once) and the key cannot be recovered.
   deviceSessionKey: String

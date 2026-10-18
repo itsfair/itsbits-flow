@@ -178,13 +178,14 @@ class GlobalSiteConnection {
     return row;
   }
 
-  /// Fresh-setup processing only (recovery keeps local data as-is):
+  /// Fresh-setup processing (recovery tops up only the door fields):
   /// 1. fail-fast: image bytes are downloaded FIRST (server-to-server from
   ///    the global instance) — if this fails, nothing is created at all
   ///    (no half-created persons; see AGENTS.md).
   /// 2. one DB transaction: local AuthUser (`local-admin` scope) + email
   ///    login with the same password the admin just verified with + local
-  ///    `member_profile` copy (globalAuthUserId noted, auth link set).
+  ///    `member_profile` copy (globalAuthUserId noted, auth link set,
+  ///    door secret from the transfer) + the membership mirror.
   /// 3. image upload into the local RustFS at the same deterministic path
   ///    (`member_images/<globalAuthUserId>.jpg`, overwrite semantics) and
   ///    `imageUrl` set on the profile copy.
@@ -198,6 +199,25 @@ class GlobalSiteConnection {
       where: (t) => t.globalAuthUserId.equals(transfer.adminAuthUserId),
     );
     if (existing != null) {
+      // Recovery with preserved local data: person and login stay as-is;
+      // only the door fields are topped up idempotently (the transfer
+      // always carries the current secret).
+      await session.db.transaction((final transaction) async {
+        var profile = existing;
+        if (transfer.adminDoorCodeSecret != null) {
+          profile = await MemberProfile.db.updateRow(
+            session,
+            profile.copyWith(doorCodeSecret: transfer.adminDoorCodeSecret),
+            transaction: transaction,
+          );
+        }
+        await _ensureAdminMembershipMirror(
+          session,
+          profile.id!,
+          transfer,
+          transaction,
+        );
+      });
       return;
     }
 
@@ -244,8 +264,19 @@ class GlobalSiteConnection {
           firstName: transfer.adminFirstName,
           lastName: transfer.adminLastName,
           birthday: transfer.adminBirthday,
+          doorCodeSecret: transfer.adminDoorCodeSecret,
         ),
         transaction: transaction,
+      );
+
+      // Membership mirror (the verifier's active-check basis): the
+      // transfer only originates from an ACTIVE siteAdmin membership, so
+      // the mirror is deterministic.
+      await _ensureAdminMembershipMirror(
+        session,
+        memberProfile.id!,
+        transfer,
+        transaction,
       );
 
       // image upload (storage is not transaction-aware; upload before the
@@ -269,6 +300,45 @@ class GlobalSiteConnection {
         );
       }
     });
+  }
+
+  /// Creates or refreshes the admin's local membership mirror (role
+  /// siteAdmin, active) — deterministic from the transfer, which only
+  /// originates from an active siteAdmin membership.
+  Future<void> _ensureAdminMembershipMirror(
+    final Session session,
+    final int memberProfileId,
+    final gc.SiteTransferInfo transfer,
+    final Transaction transaction,
+  ) async {
+    final existing = await MemberMembership.db.findFirstRow(
+      session,
+      where: (t) => t.globalAuthUserId.equals(transfer.adminAuthUserId),
+      transaction: transaction,
+    );
+    if (existing != null) {
+      await MemberMembership.db.updateRow(
+        session,
+        existing.copyWith(
+          role: MemberRole.siteAdmin,
+          active: true,
+          endedAt: null,
+        ),
+        transaction: transaction,
+      );
+      return;
+    }
+    await MemberMembership.db.insertRow(
+      session,
+      MemberMembership(
+        memberProfileId: memberProfileId,
+        globalAuthUserId: transfer.adminAuthUserId,
+        role: MemberRole.siteAdmin,
+        active: true,
+        createdAt: DateTime.now(),
+      ),
+      transaction: transaction,
+    );
   }
 
   /// Deterministic image object path (parity: same value as the global

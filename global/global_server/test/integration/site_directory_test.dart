@@ -67,44 +67,48 @@ void main() {
           ),
         );
 
-    test('when browsing anonymously only registered sites are listed',
-        () async {
-      final session = sessionBuilder.build();
-      await createSite(session, lastSeenAt: DateTime.now());
-      await createSite(session, status: SiteSetupStatus.pendingSetup);
+    test(
+      'when browsing anonymously only registered sites are listed',
+      () async {
+        final session = sessionBuilder.build();
+        await createSite(session, lastSeenAt: DateTime.now());
+        await createSite(session, status: SiteSetupStatus.pendingSetup);
 
-      final listed = await endpoints.siteDirectory.listSites(
-        sessionBuilder,
-        offset: 0,
-        limit: 50,
-      );
-      final latest = await endpoints.siteDirectory.listLatest(
-        sessionBuilder,
-        limit: 5,
-      );
-      final total = await endpoints.siteDirectory.countSites(sessionBuilder);
-
-      expect(listed, hasLength(1));
-      expect(latest, hasLength(1));
-      expect(total, 1);
-    });
-
-    test('when querying getSite for a pendingSetup site it is not found',
-        () async {
-      final session = sessionBuilder.build();
-      final pending = await createSite(
-        session,
-        status: SiteSetupStatus.pendingSetup,
-      );
-
-      await expectLater(
-        () => endpoints.siteDirectory.getSite(
+        final listed = await endpoints.siteDirectory.listSites(
           sessionBuilder,
-          siteId: pending.id!,
-        ),
-        throwsA(isA<SiteAdminException>()),
-      );
-    });
+          offset: 0,
+          limit: 50,
+        );
+        final latest = await endpoints.siteDirectory.listLatest(
+          sessionBuilder,
+          limit: 5,
+        );
+        final total = await endpoints.siteDirectory.countSites(sessionBuilder);
+
+        expect(listed, hasLength(1));
+        expect(latest, hasLength(1));
+        expect(total, 1);
+      },
+    );
+
+    test(
+      'when querying getSite for a pendingSetup site it is not found',
+      () async {
+        final session = sessionBuilder.build();
+        final pending = await createSite(
+          session,
+          status: SiteSetupStatus.pendingSetup,
+        );
+
+        await expectLater(
+          () => endpoints.siteDirectory.getSite(
+            sessionBuilder,
+            siteId: pending.id!,
+          ),
+          throwsA(isA<SiteAdminException>()),
+        );
+      },
+    );
 
     test('when subscribing without login it fails', () async {
       final session = sessionBuilder.build();
@@ -133,24 +137,28 @@ void main() {
       );
     });
 
-    test('when subscribing with an incomplete profile it is rejected',
-        () async {
-      final session = sessionBuilder.build();
-      final site = await createSite(session, lastSeenAt: DateTime.now());
-      final (authUserId, _) =
-          await createProfile(session, firstName: null, lastName: null);
-
-      await expectLater(
-        () => endpoints.siteDirectory.subscribe(
-          authenticated(authUserId),
-          siteId: site.id!,
-        ),
-        throwsA(isA<SiteAdminException>()),
-      );
-    });
-
     test(
-        'when subscribing a complete user it creates the membership and '
+      'when subscribing with an incomplete profile it is rejected',
+      () async {
+        final session = sessionBuilder.build();
+        final site = await createSite(session, lastSeenAt: DateTime.now());
+        final (authUserId, _) = await createProfile(
+          session,
+          firstName: null,
+          lastName: null,
+        );
+
+        await expectLater(
+          () => endpoints.siteDirectory.subscribe(
+            authenticated(authUserId),
+            siteId: site.id!,
+          ),
+          throwsA(isA<SiteAdminException>()),
+        );
+      },
+    );
+
+    test('when subscribing a complete user it creates the membership and '
         'enqueues the delivery exactly once', () async {
       final session = sessionBuilder.build();
       final site = await createSite(session, lastSeenAt: DateTime.now());
@@ -179,36 +187,37 @@ void main() {
       );
     });
 
-    test('when saving the profile twice the queue collapses to one row',
-        () async {
-      final session = sessionBuilder.build();
-      final site = await createSite(session, lastSeenAt: DateTime.now());
-      final (authUserId, profile) = await createProfile(session);
-      final authed = authenticated(authUserId);
-
-      // The queue only follows sites with an ACTIVE membership.
-      await endpoints.siteDirectory.subscribe(authed, siteId: site.id!);
-      await endpoints.memberProfile.save(
-        authed,
-        firstName: 'Alex',
-        lastName: 'Muster-Zwo',
-        birthday: DateTime.utc(1985, 7, 1),
-      );
-      await endpoints.memberProfile.save(
-        authed,
-        firstName: 'Alex',
-        lastName: 'Muster-Drei',
-        birthday: DateTime.utc(1985, 7, 1),
-      );
-
-      final tasks = await SiteSyncTask.db.find(session);
-      expect(tasks, hasLength(1));
-      expect(tasks.single.siteId, site.id);
-      expect(tasks.single.profileId, profile.id);
-    });
-
     test(
-        'when unsubscribing the membership is deactivated and marked '
+      'when saving the profile twice the queue collapses to one row',
+      () async {
+        final session = sessionBuilder.build();
+        final site = await createSite(session, lastSeenAt: DateTime.now());
+        final (authUserId, profile) = await createProfile(session);
+        final authed = authenticated(authUserId);
+
+        // The queue only follows sites with an ACTIVE membership.
+        await endpoints.siteDirectory.subscribe(authed, siteId: site.id!);
+        await endpoints.memberProfile.save(
+          authed,
+          firstName: 'Alex',
+          lastName: 'Muster-Zwo',
+          birthday: DateTime.utc(1985, 7, 1),
+        );
+        await endpoints.memberProfile.save(
+          authed,
+          firstName: 'Alex',
+          lastName: 'Muster-Drei',
+          birthday: DateTime.utc(1985, 7, 1),
+        );
+
+        final tasks = await SiteSyncTask.db.find(session);
+        expect(tasks, hasLength(1));
+        expect(tasks.single.siteId, site.id);
+        expect(tasks.single.profileId, profile.id);
+      },
+    );
+
+    test('when unsubscribing the membership is deactivated and marked '
         '(not deleted)', () async {
       final session = sessionBuilder.build();
       final site = await createSite(session, lastSeenAt: DateTime.now());
@@ -223,8 +232,7 @@ void main() {
       expect(membershipRow.endedAt, isNotNull);
     });
 
-    test(
-        'when a device session pulls pending tasks it receives the current '
+    test('when a device session pulls pending tasks it receives the current '
         'state and the tasks are deleted after confirming', () async {
       final session = sessionBuilder.build();
       final site = await createSite(session, lastSeenAt: DateTime.now());
@@ -235,7 +243,9 @@ void main() {
       );
 
       // Fake device session pointing at the site (SAS auth simulation).
-      final deviceSessionId = UuidValue.fromString('a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d');
+      final deviceSessionId = UuidValue.fromString(
+        'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+      );
       await SiteDeviceSession.db.insertRow(
         session,
         SiteDeviceSession(
@@ -264,12 +274,13 @@ void main() {
       expect(await SiteSyncTask.db.find(session), isEmpty);
     });
 
-    test(
-        'when a device session has no pending tasks pullPending returns '
+    test('when a device session has no pending tasks pullPending returns '
         'empty', () async {
       final session = sessionBuilder.build();
       final site = await createSite(session, lastSeenAt: DateTime.now());
-      final deviceSessionId = UuidValue.fromString('a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d');
+      final deviceSessionId = UuidValue.fromString(
+        'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+      );
       await SiteDeviceSession.db.insertRow(
         session,
         SiteDeviceSession(

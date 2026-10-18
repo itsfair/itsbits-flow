@@ -3,6 +3,7 @@
 #include "NukiManager.h"
 #include "BleServer.h"
 #include "Updater.h"
+#include "BackendClient.h"
 #include "web/main_html.h"
 #include "web/main_css.h"
 #include "web/main_js.h"
@@ -13,10 +14,11 @@
 #include "web/qr_js.h"
 #include "config.h"
 
-void WebInterface::begin(WifiManager& wifi, NukiManager& nuki, BleServer& ble, Updater& updater) {
+void WebInterface::begin(WifiManager& wifi, NukiManager& nuki, BleServer& ble, BackendClient& backend, Updater& updater) {
     _wifi = &wifi;
     _nuki = &nuki;
     _ble = &ble;
+    _backend = &backend;
     _updater = &updater;
     String hostname = _wifi->getHostname();
     if (MDNS.begin(hostname.c_str())) MDNS.addService("http", "tcp", 80);
@@ -30,6 +32,8 @@ void WebInterface::begin(WifiManager& wifi, NukiManager& nuki, BleServer& ble, U
     _server.on("/qr.js",        HTTP_GET,  [this](){ handleQrJs();        });
     _server.on("/api/status",   HTTP_GET,  [this](){ handleStatus();      });
     _server.on("/api/ble/info", HTTP_GET,  [this](){ handleBleInfo();     });
+    _server.on("/api/backend/config", HTTP_GET,  [this](){ handleBackendGet();  });
+    _server.on("/api/backend/config", HTTP_POST, [this](){ handleBackendPost(); });
     _server.on("/api/hostname", HTTP_GET,  [this](){ handleHostnameGet(); });
     _server.on("/api/hostname", HTTP_POST, [this](){ handleHostnamePost();});
     _server.on("/api/nuki/pair",   HTTP_POST, [this](){ handleNukiPair();   });
@@ -120,6 +124,17 @@ void WebInterface::handleUpdateProgress() {
 void WebInterface::handleNotFound() {
     _server.send(404, "text/plain", "Not found");
 }
+/// The single source of the QR content: `doorinterface|<BLE_MAC>|<siteId>`
+/// (siteId empty while the backend is unconfigured). Format contract with
+/// the end-user app: docs/ble_interface.md.
+String WebInterface::qrContent() const {
+    String qr = "doorinterface|" + _ble->getAddress() + "|";
+    if (_backend && _backend->isConfigured()) {
+        qr += String(_backend->getSiteId());
+    }
+    return qr;
+}
+
 void WebInterface::handleStatus() {
     bool connected = WiFi.status() == WL_CONNECTED;
     String json = "{";
@@ -148,7 +163,7 @@ void WebInterface::handleStatus() {
     json += ",\"ble\":{\"available\":" + String(_ble ? "true" : "false");
     json += ",\"mac\":\"" + mac + "\"";
     json += ",\"hostname\":\"" + hostname + "\"";
-    json += ",\"qrContent\":\"doorinterface|" + mac + "|\"";
+    json += ",\"qrContent\":\"" + qrContent() + "\"";
     json += "}";
     json += "}";
     _server.sendHeader("Cache-Control", "no-store");
@@ -157,11 +172,34 @@ void WebInterface::handleStatus() {
 void WebInterface::handleBleInfo() {
     String mac = _ble ? _ble->getAddress() : String("");
     String hostname = _wifi ? _wifi->getHostname() : String("");
-    String qr = "doorinterface|" + mac + "|";
     String json = "{";
     json += "\"mac\":\"" + mac + "\"";
     json += ",\"hostname\":\"" + hostname + "\"";
-    json += ",\"qrContent\":\"" + qr + "\"";
+    json += ",\"qrContent\":\"" + qrContent() + "\"";
+    json += "}";
+    _server.sendHeader("Cache-Control", "no-store");
+    _server.send(200, "application/json", json);
+}
+void WebInterface::handleBackendGet() {
+    String json = "{";
+    json += "\"url\":\"" + (_backend ? _backend->getUrl() : String("")) + "\"";
+    json += ",\"siteId\":" + String(_backend ? _backend->getSiteId() : 0);
+    json += ",\"configured\":" + String(_backend && _backend->isConfigured() ? "true" : "false");
+    json += "}";
+    _server.sendHeader("Cache-Control", "no-store");
+    _server.send(200, "application/json", json);
+}
+void WebInterface::handleBackendPost() {
+    String url = _server.arg("url");
+    String siteId = _server.arg("siteId");
+    String error;
+    if (!_backend || !_backend->setConfig(url, siteId, error)) {
+        _server.send(400, "application/json", "{\"ok\":false,\"error\":\"" + error + "\"}");
+        return;
+    }
+    String json = "{\"ok\":true";
+    json += ",\"mac\":\"" + _ble->getAddress() + "\"";
+    json += ",\"hostname\":\"" + _wifi->getHostname() + "\"";
     json += "}";
     _server.sendHeader("Cache-Control", "no-store");
     _server.send(200, "application/json", json);

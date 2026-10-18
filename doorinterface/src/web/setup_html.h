@@ -29,6 +29,20 @@ const char SETUP_HTML[] PROGMEM = R"HTML(
       <div id="nukiStatus"></div>
       <div id="nukiPinSection"></div>
     </section>
+    <section class="card" id="backend">
+      <h2>Backend-Anbindung</h2>
+      <p class="muted">Adresse der lokalen Instanz (Webserver, z. B. http://192.168.1.109:8182) und die Site-ID. Beides wird normalerweise automatisch vom lokalen Server gesetzt ("Konfiguration senden" in der Standort-Verwaltung) — hier nur zur manuellen Korrektur.</p>
+      <form id="backendForm">
+        <label>Server-URL
+          <input type="text" id="backendUrl" placeholder="http://192.168.1.109:8182">
+        </label>
+        <label>Site-ID
+          <input type="number" id="backendSiteId" min="1" inputmode="numeric">
+        </label>
+        <button type="submit" id="backendBtn">Speichern</button>
+      </form>
+      <div id="backendStatus"></div>
+    </section>
     <section class="card" id="about">
       <h2>Zugriffsschutz</h2>
       <p class="muted">Login/Auth folgt in einem späteren Schritt.</p>

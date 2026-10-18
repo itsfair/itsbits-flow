@@ -34,5 +34,10 @@ fields:
   ### Deactivation marker of the membership (null while active).
   endedAt: DateTime?
 
+  ### Per-(person, site) TOTP secret for door access (null for inactive
+  ### memberships) — the local instance stores it on the mirror row and
+  ### verifies the app-computed codes against it offline.
+  doorCodeSecret: String?
+
   ### When the membership was created.
   membershipCreatedAt: DateTime?

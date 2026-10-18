@@ -8,6 +8,7 @@ import 'src/cache_busting.dart';
 import 'src/generated/serverpod.dart';
 import 'src/site/global_site_connection.dart';
 import 'src/web/routes/app_config_route.dart';
+import 'src/web/routes/door_verify_route.dart';
 
 /// The starting point of the Serverpod server.
 void run(List<String> args) async {
@@ -50,6 +51,11 @@ void run(List<String> args) async {
     AppConfigRoute(apiConfig: pod.config.apiServer),
     '/assets/assets/config.json',
   );
+
+  // Door-access verification route for the doorinterfaces (plain HTTP
+  // from the LAN, no device auth in the MVP). MUST be registered before
+  // the catch-all Flutter web app route.
+  pod.webServer.addRoute(DoorVerifyRoute());
 
   // Checks if the flutter web app has been built and serves it if it has.
   final appDir = Directory(Uri(path: 'web/app').toFilePath());

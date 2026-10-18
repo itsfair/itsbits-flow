@@ -38,6 +38,7 @@ dependencies:
     path: ../../shared
   qr_flutter: ^4.1.0
   serverpod_flutter: 4.0.3
+  url_launcher: ^6.3.1
 
 dev_dependencies:
   # Used for agents to drive the app through the Dart MCP

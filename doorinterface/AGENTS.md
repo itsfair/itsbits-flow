@@ -49,9 +49,11 @@ PlatformIO configuration: `platformio.ini`, env `esp32dev`,
 platformio.ini
 src/
   config.h              -> FW_VERSION
-  main.cpp              -> instantiates WifiManager, NukiManager, WebInterface
+  main.cpp              -> instantiates WifiManager, NukiManager, WebInterface, BackendClient
   WifiManager.h/.cpp    -> WLAN STA attempt + AP fallback + captive portal + hostname
   WebInterface.h/.cpp   -> main webserver (STA mode): dashboard, setup, API
+  BackendClient.h/.cpp  -> local-instance connection: NVS "backend" (url, siteId),
+                           POST /api/door/verify per BLE request, config set (setup page/push)
   NukiManager.h/.cpp    -> NUKI BLE: pairing, lock/unlock, status querying
   BleServer.h/.cpp      -> BLE peripheral (GATT server) for smartphone app, see docs/ble_interface.md
   Updater.h/.cpp        -> OTA update via GitHub release pull (WiFiClientSecure + Update lib)
@@ -63,13 +65,13 @@ src/
     main_css.h          -> dashboard + setup CSS (PROGMEM)
     main_js.h           -> dashboard JS: status poll, lock/unlock buttons
     setup_html.h        -> setup page HTML (PROGMEM)
-    setup_js.h          -> setup JS: hostname, NUKI pairing, test buttons
+    setup_js.h          -> setup JS: hostname, NUKI pairing, backend config, test buttons
 lib/
   nuki_ble/             -> patched fork of AzonInc/NukiBleEsp32 (idf branch)
                            NimBLE API patches for NimBLE-Arduino 1.4.x
-                           Own Preferences.h/.cpp removed (Arduino framework used)
 docs/
-  ble_interface.md      -> spec of the BLE interface ESP↔smartphone app (prototype)
+  ble_interface.md      -> spec of the BLE interface ESP<->smartphone app
+                           + ESP->backend verification protocol
 ```
 
 Custom partition table: `partitions.csv` (2 OTA slots of 1.875 MB each,
@@ -118,8 +120,17 @@ flash** — Wi-Fi/NUKI credentials/hostname must be reconfigured.
   slicing in the controller). Stability under parallel connects must be
   observed; if needed adjust connection params of the client later.
 - **Protocol**: JSON over GATT (write on request characteristic, notify
-  on response characteristic), no encryption in the prototype. Spec in
-  `docs/ble_interface.md`.
+  on response characteristic). Every credential request is verified via
+  the local instance (one `POST /api/door/verify` per request) before
+  the door action; spec in `docs/ble_interface.md`.
+- **BackendClient** (own module, NVS namespace `"backend"`: keys
+  `url` = `host[:port]` + `siteId`): holds the local-instance address
+  and site ID. Config set either manually via the setup page
+  (`/api/backend/config` GET/POST) or pushed by the local server
+  (same POST endpoint, form-urlencoded; ACK returns `{ok, mac,
+  hostname}`). `verify()` posts `{userKey, code, siteId, deviceMac}`
+  and mirrors the backend response. Plain HTTP into the LAN (MVP; the
+  whole ESP surface auth + TLS is one coherent hardening package).
 
 ## NUKI BLE integration — important details
 
@@ -180,17 +191,41 @@ flash** — Wi-Fi/NUKI credentials/hostname must be reconfigured.
 
 - mDNS with dynamic hostname (`MDNS.begin(hostname)`).
 - Routes: `/`, `/main.css`, `/main.js`, `/setup`, `/setup.js`,
-  `/api/status`, `/api/hostname` (GET+POST), `/api/nuki/pair`,
-  `/api/nuki/cancel`, `/api/nuki/pin` (GET/POST), `/api/nuki/unlock`,
-  `/api/nuki/lock`, `/api/reboot`.
-- `/api/status` JSON: `{wifi, relay, locks, firmware}`;
+  `/display`, `/display.js`, `/qr.js`, `/api/status`, `/api/ble/info`,
+  `/api/backend/config` (GET+POST), `/api/hostname` (GET+POST),
+  `/api/nuki/pair`, `/api/nuki/cancel`, `/api/nuki/unlock`,
+  `/api/nuki/lock`, `/api/nuki/open`, `/api/nuki/unpair`,
+  `/api/nuki/pin` (GET/POST), `/api/nuki/poll` (GET/POST),
+  `/api/update/check`, `/api/update/start`, `/api/update/progress`,
+  `/api/reboot`.
+- `/api/status` JSON: `{wifi, relay, locks, firmware, ble}`;
   `locks`: `{available, count, paired, pairing, lockState, batteryPct,
-  batteryCritical, rssi, hasUltraPin}`.
+  batteryCritical, rssi, hasUltraPin, pollInterval}`; `ble` carries the
+  `qrContent`.
+- QR content (single helper `WebInterface::qrContent()`):
+  `doorinterface|<BLE_MAC>|<siteId>` — siteId empty while the backend
+  is unconfigured.
 - Dashboard: 3 cards (Wi-Fi, door opener, firmware), poll every 3 s;
   ⚙ dropdown → `/setup`.
 - Setup page: change device name (→ reboot), NUKI pairing
   (instructions + start/cancel), PIN field for Ultra/Go/Pro locks,
-  test buttons, firmware update section; poll every 2 s.
+  backend config (server URL + site ID), test buttons, firmware update
+  section; poll every 2 s.
+
+## Backend verification flow (BLE request → local instance)
+
+1. App writes `{action, userId, code, deviceId}` to the request
+   characteristic (`credential` field removed with the prototype).
+2. BleServer (loop, one request at a time): checks configured backend
+   (`DEVICE_UNCONFIGURED`), and for `open` the NUKI pairing FIRST
+   (`NOT_PAIRED` — before verification so the single-use code is not
+   wasted), then `BackendClient::verify()` → `POST /api/door/verify`.
+3. On granted + `open`: `unlatch()` → `OK` / `LOCK_FAILED`; granted +
+   `test`: `TEST_OK`; denied: backend code passed through
+   (`ACCESS_DENIED` / `RATE_LIMITED` / `CRED_INVALID`); unreachable:
+   `BACKEND_UNREACHABLE`.
+4. Response JSON to the app via notify; advertising restarts on
+   disconnect. Full contract: `docs/ble_interface.md`.
 
 ## NUKI pairing flow
 
@@ -263,10 +298,15 @@ flash** — Wi-Fi/NUKI credentials/hostname must be reconfigured.
 - [ ] SSID escaping in the status JSON.
 
 ### Backend connection
-- [ ] Decision: ESP as WS client (recommendation for multiple ESPs) or
-        WS server on ESP.
-- [ ] Secure connection ESP↔backend (TLS? mutual auth?).
-- [ ] Authentication of the backend against the ESP (API token).
+- [ ] DECIDED (this session): ESP = plain HTTP client on demand (one
+        verify call per BLE request) — WS only if push/status features
+        need it later.
+- [ ] Hardening package (ESP surface + transport): device auth/token,
+        TLS or HMAC challenge, web interface auth, BLE GATT encryption
+        (`*_ENC` flags + NimBLE security callbacks), config-push auth.
+        Tracked as ONE item because the ESP web API is currently
+        unauthenticated as a whole — protecting single hops adds
+        nothing until the surface is closed.
 
 ### Relay
 - [ ] GPIO control (pin, timing, interference suppression). Needs
@@ -301,7 +341,6 @@ flash** — Wi-Fi/NUKI credentials/hostname must be reconfigured.
 ## Continuation
 
 Next recommended step:
-**BleServer: connection to the local backend** (replaces the mocked
-answer with real credential checking via HTTP/WS) or **encryption /
-pairing of the BLE connection** (`*_ENC` flags + NimBLE security
-callbacks) or **relay GPIO** — depending on priority.
+**Hardening package** (device auth/token + TLS/HMAC challenge + ESP
+web interface auth + BLE GATT encryption — see Backend connection
+TODO) or **relay GPIO / door sensor** — depending on priority.

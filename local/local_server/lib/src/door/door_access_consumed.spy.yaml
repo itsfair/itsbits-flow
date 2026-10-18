@@ -1,0 +1,20 @@
+### Single-use bookkeeping for door codes: one row per consumed
+### (person, time step). The unique index makes the consumption check
+### race-safe (insert fails => already used => deny). Old rows are
+### pruned opportunistically.
+class: DoorAccessConsumed
+table: door_access_consumed
+fields:
+
+  ### The person the code belongs to.
+  userKey: UuidValue
+
+  ### The TOTP time step the consumed code was computed for.
+  step: int
+
+  ### When the code was consumed.
+  createdAt: DateTime, defaultModel=now
+indexes:
+  door_access_consumed_unique_idx:
+    fields: userKey, step
+    unique: true

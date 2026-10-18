@@ -6,6 +6,7 @@ import 'client.dart';
 import 'layout.dart';
 
 import 'screens/home.dart';
+import 'screens/door_device_detail.dart';
 import 'screens/member_detail.dart';
 import 'screens/members.dart';
 import 'screens/profile.dart';
@@ -58,9 +59,11 @@ class _MyAppState extends State<MyApp> {
       final setupNeeded = kSetupStates.contains(connectionStateNotifier.value);
       final signedIn = client.auth.isAuthenticated;
 
-      // Setup mask is the whole app while the connection is not usable.
+      // Setup mask is the whole app while the connection is not usable
+      // (first setup or lost/revoked credential): everything is forced
+      // onto /setup.
       if (setupNeeded) {
-        return null;
+        return location == '/setup' ? null : '/setup';
       }
 
       // Enrolled: signed-out users live on the login screen.
@@ -68,8 +71,9 @@ class _MyAppState extends State<MyApp> {
         return location == '/sign-in' ? null : '/sign-in';
       }
 
-      // Signed in: the login screen is no longer needed.
-      if (location == '/sign-in') {
+      // Signed in: the login screen and the setup mask are no longer
+      // needed.
+      if (location == '/sign-in' || location == '/setup') {
         return '/';
       }
 
@@ -98,6 +102,12 @@ class _MyAppState extends State<MyApp> {
           GoRoute(
             path: '/selbsteinlass',
             builder: (context, state) => const SelbsteinlassScreen(),
+          ),
+          GoRoute(
+            path: '/selbsteinlass/:deviceId',
+            builder: (context, state) => DoorDeviceDetailScreen(
+              deviceId: int.parse(state.pathParameters['deviceId']!),
+            ),
           ),
           GoRoute(
             path: '/standort',

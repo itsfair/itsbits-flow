@@ -71,6 +71,7 @@ Declared under `serverpod: flutter_apps:` in `global_server/pubspec.yaml`:
 | `siteDirectory` | End-user site directory (`SitePublic`, no login for browsing): `listLatest` (carousel), `list`/`count` (search/pagination, registered-only), `getSite`. Authenticated: `myMembership`, `subscribe` (validations: site registered + currently connected + member_profile complete), `unsubscribe` (marker only, data kept) |
 | `siteSync` | Device-scoped member-data delivery (pull model, `site-device` scope): `pullPending` (assembles payloads from CURRENT global state; one per (site, profile)), `confirmProcessed` (deletes task rows) |
 | `siteDetails` | Device-scoped site-details push (local instance is the editor): validated field set + optional image bytes / removal (`site_images/<siteId>.jpg`, JPEG-only); the belt of the local-only editing rule |
+| `doorAccess` (`src/sites/door_access_endpoint.dart`) | End-user door-secret delivery (`requireLogin`): `getMySiteSecret({siteId})` returns the caller's own per-(person, site) TOTP secret (active membership required; legacy rows generated lazily) — the raw material for the offline rolling door codes |
 
 ## Key design points
 
@@ -103,11 +104,23 @@ Declared under `serverpod: flutter_apps:` in `global_server/pubspec.yaml`:
   (`MemberProfileChecks.profileIsComplete`, reusable). Unsubscribe sets
   `active=false` + `endedAt`, keeps the row (reactivation replaces the
   marker).
+- **Door-code secrets**: every `SiteMembership` carries a
+  `doorCodeSecret` (serverOnly, random 32 bytes hex) — generated at
+  subscribe AND at reactivation (rotation; old app-side copies die),
+  delivered to the local instance via the member-sync payloads
+  (`SiteSyncMember.doorCodeSecret`) and to the end-user app via
+  `doorAccess.getMySiteSecret`. Legacy rows are generated lazily (sync
+  pull / endpoint = self-healing backfill, no data migration). See root
+  AGENTS.md item 8 for the full rolling-code design.
 - **Site setup**: `createSite` generates no secrets — the site admin
   sets up the local instance on site with their global credentials
   (`siteEnrollment.enroll`); device credential = non-rotating SAS
   session key (`method: 'device'`, token-level scope `site-device`,
-  pepper `serverSideSessionKeyHashPepper`).
+  pepper `serverSideSessionKeyHashPepper`). The enrollment transfer
+  ALSO carries the admin's `doorCodeSecret` (lazily generated if the
+  membership has none) so the local bootstrap yields a fully
+  door-capable admin profile in one step; ongoing updates (members,
+  rotations) travel via the sync pipeline.
 - Auth setup in `lib/server.dart` (`initializeAuthServices`: JWT +
   site-device token manager + EmailIdp incl. the member_profile hook).
 - Known harmless log entries with device connections: an

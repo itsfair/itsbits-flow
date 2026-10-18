@@ -21,6 +21,7 @@ import '../admin/users_admin_endpoint.dart' as _i9qj2dak;
 import '../auth/email_idp_endpoint.dart' as _iuc1hd5t;
 import '../auth/jwt_refresh_endpoint.dart' as _inwq3ztq;
 import '../profile/member_profile_endpoint.dart' as _i9yekdp0;
+import '../sites/door_access_endpoint.dart' as _itjnclbx;
 import '../sites/site_connection_endpoint.dart' as _iy15yji6;
 import '../sites/site_details_endpoint.dart' as _ipnkc2jo;
 import '../sites/site_directory_endpoint.dart' as _ic6n5bkb;
@@ -54,6 +55,12 @@ class Endpoints extends _is.EndpointDispatch {
         ..initialize(
           server,
           'memberProfile',
+          null,
+        ),
+      'doorAccess': _itjnclbx.DoorAccessEndpoint()
+        ..initialize(
+          server,
+          'doorAccess',
           null,
         ),
       'siteConnection': _iy15yji6.SiteConnectionEndpoint()
@@ -490,6 +497,32 @@ class Endpoints extends _is.EndpointDispatch {
                   (endpoints['memberProfile']
                           as _i9yekdp0.MemberProfileEndpoint)
                       .removeUserImage(session),
+        ),
+      },
+    );
+    connectors['doorAccess'] = _is.EndpointConnector(
+      name: 'doorAccess',
+      endpoint: endpoints['doorAccess']!,
+      methodConnectors: {
+        'getMySiteSecret': _is.MethodConnector(
+          name: 'getMySiteSecret',
+          params: {
+            'siteId': _is.ParameterDescription(
+              name: 'siteId',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['doorAccess'] as _itjnclbx.DoorAccessEndpoint)
+                      .getMySiteSecret(
+                        session,
+                        siteId: params['siteId'],
+                      ),
         ),
       },
     );

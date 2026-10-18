@@ -18,6 +18,7 @@ import 'package:serverpod_auth_idp_server/serverpod_auth_idp_server.dart'
     as _iais;
 import '../auth/email_idp_endpoint.dart' as _iuc1hd5t;
 import '../auth/jwt_refresh_endpoint.dart' as _inwq3ztq;
+import '../door/door_device_admin_endpoint.dart' as _ij1q5man;
 import '../site/member_profile_endpoint.dart' as _i0gpa131;
 import '../site/members_admin_endpoint.dart' as _i37hx4yi;
 import '../site/site_admin_endpoint.dart' as _it93jbo5;
@@ -37,6 +38,12 @@ class Endpoints extends _is.EndpointDispatch {
         ..initialize(
           server,
           'jwtRefresh',
+          null,
+        ),
+      'doorDeviceAdmin': _ij1q5man.DoorDeviceAdminEndpoint()
+        ..initialize(
+          server,
+          'doorDeviceAdmin',
           null,
         ),
       'memberProfile': _i0gpa131.MemberProfileEndpoint()
@@ -266,6 +273,210 @@ class Endpoints extends _is.EndpointDispatch {
                       .refreshAccessToken(
                         session,
                         refreshToken: params['refreshToken'],
+                      ),
+        ),
+      },
+    );
+    connectors['doorDeviceAdmin'] = _is.EndpointConnector(
+      name: 'doorDeviceAdmin',
+      endpoint: endpoints['doorDeviceAdmin']!,
+      methodConnectors: {
+        'listDevices': _is.MethodConnector(
+          name: 'listDevices',
+          params: {},
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['doorDeviceAdmin']
+                          as _ij1q5man.DoorDeviceAdminEndpoint)
+                      .listDevices(session),
+        ),
+        'addDevice': _is.MethodConnector(
+          name: 'addDevice',
+          params: {
+            'name': _is.ParameterDescription(
+              name: 'name',
+              type: _is.getType<String>(),
+              nullable: false,
+            ),
+            'address': _is.ParameterDescription(
+              name: 'address',
+              type: _is.getType<String>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['doorDeviceAdmin']
+                          as _ij1q5man.DoorDeviceAdminEndpoint)
+                      .addDevice(
+                        session,
+                        name: params['name'],
+                        address: params['address'],
+                      ),
+        ),
+        'updateDevice': _is.MethodConnector(
+          name: 'updateDevice',
+          params: {
+            'id': _is.ParameterDescription(
+              name: 'id',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+            'name': _is.ParameterDescription(
+              name: 'name',
+              type: _is.getType<String?>(),
+              nullable: true,
+            ),
+            'address': _is.ParameterDescription(
+              name: 'address',
+              type: _is.getType<String?>(),
+              nullable: true,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['doorDeviceAdmin']
+                          as _ij1q5man.DoorDeviceAdminEndpoint)
+                      .updateDevice(
+                        session,
+                        id: params['id'],
+                        name: params['name'],
+                        address: params['address'],
+                      ),
+        ),
+        'removeDevice': _is.MethodConnector(
+          name: 'removeDevice',
+          params: {
+            'id': _is.ParameterDescription(
+              name: 'id',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['doorDeviceAdmin']
+                          as _ij1q5man.DoorDeviceAdminEndpoint)
+                      .removeDevice(
+                        session,
+                        id: params['id'],
+                      ),
+        ),
+        'testDevice': _is.MethodConnector(
+          name: 'testDevice',
+          params: {
+            'id': _is.ParameterDescription(
+              name: 'id',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['doorDeviceAdmin']
+                          as _ij1q5man.DoorDeviceAdminEndpoint)
+                      .testDevice(
+                        session,
+                        id: params['id'],
+                      ),
+        ),
+        'unlockNuki': _is.MethodConnector(
+          name: 'unlockNuki',
+          params: {
+            'id': _is.ParameterDescription(
+              name: 'id',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['doorDeviceAdmin']
+                          as _ij1q5man.DoorDeviceAdminEndpoint)
+                      .unlockNuki(
+                        session,
+                        id: params['id'],
+                      ),
+        ),
+        'lockNuki': _is.MethodConnector(
+          name: 'lockNuki',
+          params: {
+            'id': _is.ParameterDescription(
+              name: 'id',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['doorDeviceAdmin']
+                          as _ij1q5man.DoorDeviceAdminEndpoint)
+                      .lockNuki(
+                        session,
+                        id: params['id'],
+                      ),
+        ),
+        'openNuki': _is.MethodConnector(
+          name: 'openNuki',
+          params: {
+            'id': _is.ParameterDescription(
+              name: 'id',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['doorDeviceAdmin']
+                          as _ij1q5man.DoorDeviceAdminEndpoint)
+                      .openNuki(
+                        session,
+                        id: params['id'],
+                      ),
+        ),
+        'pushConfig': _is.MethodConnector(
+          name: 'pushConfig',
+          params: {
+            'id': _is.ParameterDescription(
+              name: 'id',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['doorDeviceAdmin']
+                          as _ij1q5man.DoorDeviceAdminEndpoint)
+                      .pushConfig(
+                        session,
+                        id: params['id'],
                       ),
         ),
       },

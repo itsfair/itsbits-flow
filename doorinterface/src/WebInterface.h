@@ -8,19 +8,22 @@ class WifiManager;
 class NukiManager;
 class BleServer;
 class Updater;
+class BackendClient;
 
 class WebInterface {
 public:
-    void begin(WifiManager& wifi, NukiManager& nuki, BleServer& ble, Updater& updater);
+    void begin(WifiManager& wifi, NukiManager& nuki, BleServer& ble, BackendClient& backend, Updater& updater);
     void loop();
 private:
     WebServer _server{80};
     WifiManager* _wifi = nullptr;
     NukiManager* _nuki = nullptr;
     BleServer* _ble = nullptr;
+    BackendClient* _backend = nullptr;
     Updater* _updater = nullptr;
     bool _restartRequested = false;
     unsigned long _restartAt = 0;
+    String qrContent() const;
     void handleRoot();
     void handleCss();
     void handleJs();
@@ -31,6 +34,8 @@ private:
     void handleQrJs();
     void handleStatus();
     void handleBleInfo();
+    void handleBackendGet();
+    void handleBackendPost();
     void handleHostnameGet();
     void handleHostnamePost();
     void handleNukiPair();

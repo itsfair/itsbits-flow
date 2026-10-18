@@ -1,0 +1,30 @@
+### Audit/statistics log of every door-access verification attempt
+### (granted AND denied). This is the data basis for the later
+### per-(door, member) time-window rules and for statistics.
+class: DoorAccessLog
+table: door_access_logs
+fields:
+
+  ### BLE MAC of the reporting device (from the verify payload); matched
+  ### against door_devices.mac for attribution (informational — device
+  ### authentication is a separate hardening step).
+  deviceMac: String?
+
+  ### The member the access was requested for (null for malformed
+  ### requests without a parseable id).
+  userKey: UuidValue?
+
+  ### Outcome of the attempt.
+  result: DoorAccessResult
+
+  ### Optional detail (e.g. which sub-check failed internally for
+  ### debugging — never surfaced to the device).
+  detail: String?
+
+  ### When the attempt happened.
+  createdAt: DateTime, defaultModel=now
+indexes:
+  door_access_logs_user_created_idx:
+    fields: userKey, createdAt
+  door_access_logs_result_created_idx:
+    fields: result, createdAt

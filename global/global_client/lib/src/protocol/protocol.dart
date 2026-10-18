@@ -26,6 +26,7 @@ import 'admin/user_admin_exception.dart' as _ipzw5jrh;
 import 'admin/user_admin_page.dart' as _ib47g35s;
 import 'admin/user_admin_summary.dart' as _idu811wg;
 import 'profile/member_profile.dart' as _i1iocmvy;
+import 'sites/my_door_secret_info.dart' as _i6c2fb5r;
 import 'sites/my_membership_info.dart' as _ia7esjvv;
 import 'sites/site.dart' as _ilajh623;
 import 'sites/site_admin_exception.dart' as _ie4pusq6;
@@ -45,6 +46,7 @@ export 'admin/user_admin_exception.dart';
 export 'admin/user_admin_page.dart';
 export 'admin/user_admin_summary.dart';
 export 'profile/member_profile.dart';
+export 'sites/my_door_secret_info.dart';
 export 'sites/my_membership_info.dart';
 export 'sites/site.dart';
 export 'sites/site_admin_exception.dart';
@@ -108,6 +110,9 @@ class Protocol extends _isc.SerializationManager {
     if (t == _i1iocmvy.MemberProfile) {
       return _i1iocmvy.MemberProfile.fromJson(data) as T;
     }
+    if (t == _i6c2fb5r.MyDoorSecretInfo) {
+      return _i6c2fb5r.MyDoorSecretInfo.fromJson(data) as T;
+    }
     if (t == _ia7esjvv.MyMembershipInfo) {
       return _ia7esjvv.MyMembershipInfo.fromJson(data) as T;
     }
@@ -167,6 +172,10 @@ class Protocol extends _isc.SerializationManager {
     }
     if (t == _isc.getType<_i1iocmvy.MemberProfile?>()) {
       return (data != null ? _i1iocmvy.MemberProfile.fromJson(data) : null)
+          as T;
+    }
+    if (t == _isc.getType<_i6c2fb5r.MyDoorSecretInfo?>()) {
+      return (data != null ? _i6c2fb5r.MyDoorSecretInfo.fromJson(data) : null)
           as T;
     }
     if (t == _isc.getType<_ia7esjvv.MyMembershipInfo?>()) {
@@ -284,6 +293,7 @@ class Protocol extends _isc.SerializationManager {
       _ib47g35s.AdminUserPage => 'AdminUserPage',
       _idu811wg.AdminUserSummary => 'AdminUserSummary',
       _i1iocmvy.MemberProfile => 'MemberProfile',
+      _i6c2fb5r.MyDoorSecretInfo => 'MyDoorSecretInfo',
       _ia7esjvv.MyMembershipInfo => 'MyMembershipInfo',
       _ilajh623.Site => 'Site',
       _ie4pusq6.SiteAdminException => 'SiteAdminException',
@@ -321,6 +331,8 @@ class Protocol extends _isc.SerializationManager {
         return 'AdminUserSummary';
       case _i1iocmvy.MemberProfile():
         return 'MemberProfile';
+      case _i6c2fb5r.MyDoorSecretInfo():
+        return 'MyDoorSecretInfo';
       case _ia7esjvv.MyMembershipInfo():
         return 'MyMembershipInfo';
       case _ilajh623.Site():
@@ -384,6 +396,9 @@ class Protocol extends _isc.SerializationManager {
     }
     if (dataClassName == 'MemberProfile') {
       return deserialize<_i1iocmvy.MemberProfile>(data['data']);
+    }
+    if (dataClassName == 'MyDoorSecretInfo') {
+      return deserialize<_i6c2fb5r.MyDoorSecretInfo>(data['data']);
     }
     if (dataClassName == 'MyMembershipInfo') {
       return deserialize<_ia7esjvv.MyMembershipInfo>(data['data']);

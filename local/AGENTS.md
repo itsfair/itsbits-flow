@@ -45,6 +45,8 @@ DB name `local`. Details and full stack: root AGENTS.md.
 | `memberProfile` | Own person endpoints (mirror of global): `get`, `save`, `setUserImage`, `removeUserImage` — for locally logged-in persons (site admin/staff) |
 | `siteSetup` | `enterSetup({email, password, siteId?})`: verifies the **global credentials** of the site admin against the global instance (via the global client package), processes the transfer (member_profile copy + local `local-admin` login + image) — `adminInfo()`, `connectionStatus()` for the app connection chip |
 | `membersAdmin` | Local member directory (read-only, `local-admin` scope): `listMembers` (search/pagination), `countMembers`, `getMember({globalAuthUserId})` — member_profile mirror + `member_membership` mirror (role/active/endedAt) |
+| `doorDeviceAdmin` | LAN registry of this site's doorinterface (ESP32) devices (`local-admin` scope): `listDevices`, `addDevice` (+ automatic backend-config push), `updateDevice`, `removeDevice`, `pushConfig` (serverUrl from `localApiUrl` password key + site ID → ESP `/api/backend/config`, ACK stores the device MAC), `testDevice` (`GET /api/status` probe), `unlockNuki`/`lockNuki`/`openNuki` (fixed ESP paths). The HTTP calls to the ESP run SERVER-side (plain HTTP into the LAN, MVP; device auth/TLS = backlog) — no generic proxying |
+| `POST /api/door/verify` (web route, `src/web/routes/door_verify_route.dart`) | REST route for the ESPs (plain HTTP, no device auth in the MVP): one call per BLE request `{userKey, code, siteId, deviceMac}` → `{ok, code, message}` with uniform result codes (`OK` / `ACCESS_DENIED` / `RATE_LIMITED` / `CRED_INVALID` / `SERVER_ERROR`) — no information leak about which sub-check failed |
 | `siteAdmin` | Site-properties editing (local-owner rule, reversed vs. profiles; `local-admin` scope): `updateSite`, `setSiteImage`, `removeSiteImage` — strict `connected` gate (no queueing), global `siteDetails.push` runs FIRST (validated there), local snapshot update only after the global push succeeded (fail-closed) |
 | `siteSync` (pull side only, in `SiteSyncProcessor`) | Pulls pending member-data deliveries from the global `siteSync` endpoint on every connection event (initial `needsSiteSync` fire, stream pushes, pings as watchdog) and confirms them |
 
@@ -68,6 +70,14 @@ DB name `local`. Details and full stack: root AGENTS.md.
   A member→user conversion needs no image move (identical path for
   every person). Flutter web display needs CORS on the local RustFS
   (console :9101).
+- **Enrollment transfer**: the bootstrap payload carries the complete
+  admin setup — profile fields + `adminDoorCodeSecret` + the
+  `deviceSessionKey`. `_processTransfer` creates the local AuthUser +
+  login + `member_profile` copy (with secret) **and the
+  `member_membership` mirror** (role siteAdmin, active — deterministic,
+  the transfer only originates from an active siteAdmin membership).
+  Recovery with preserved local data tops up ONLY the door fields
+  (secret + mirror) idempotently; person/login stay untouched.
 - **Device connection worker** (`GlobalSiteConnection`, started in
   `server.dart`): connects to the global instance with the
   non-rotating SAS session key (`method: 'device'`), method stream
@@ -96,8 +106,33 @@ DB name `local`. Details and full stack: root AGENTS.md.
   success only. The site image lives at `site_images/<siteId>.jpg` on
   BOTH RustFS buckets (global for end-user/admin display, local mirror
   for offline-capable display; deterministic, overwrite).
+- **Door access (offline)**: the ESP posts verification requests to the
+  `/api/door/verify` web route; `DoorAccessVerifier` (`src/door/`)
+  checks the member mirror (`globalAuthUserId` → `doorCodeSecret`) and
+  the membership mirror (`active`), then the door-bound TOTP code
+  (shared `itsbits_shared/door_code.dart`: HMAC-SHA256 over
+  `<timeStep>:<normalizedMac>`, 30 s steps, ±1 window) — single-use via
+  the `door_access_consumed` table (unique user+step, race-safe,
+  15 min retention pruning), per-user rate limit (5 denied/min, fed
+  from the log), every attempt logged to `door_access_logs` (audit +
+  statistics; the basis for the later per-(door, member) time windows).
+  The member sync carries the per-(person, site) secrets
+  (`SiteSyncMember.doorCodeSecret` → `member_profile.doorCodeSecret`).
 - Birthday as UTC-midnight date sentinel (no server-side
   re-normalization) — see root AGENTS.md.
+- **Door devices MVP** (`src/door/`, table `door_devices`, one row per
+  ESP): manually managed LAN registry — the admin enters name + address
+  (`host[:port]`, scheme stripped) in the Selbsteinlass screen; address
+  is unique. The backend performs the ESP HTTP calls itself
+  (`Uri.http(address, path)`, 5 s timeout): `/api/status` probe parsed
+  losslessly into `DoorDeviceStatus`, NUKI actions are fixed paths
+  (`/api/nuki/unlock|lock|open`), results are plain `{ok, error}`
+  statuses, never exceptions (network errors are folded into the result).
+  App side: shared `DoorDeviceApi` contract + status card + add/edit
+  dialog (`itsbits_shared`), adapter `local_flutter/lib/
+  door_device_api.dart`, list `/selbsteinlass` + detail
+  `/selbsteinlass/:id` (confirm dialogs before every NUKI action, direct
+  link to the ESP web UI via `url_launcher`).
 - **Admin app shell state machine**: the setup mask (`/setup`) is forced
   while the connection is `noneSetup`/`needsReSetup` (drawer + login
   dropdown hidden; banner shows the reason: first setup vs. corrupted
@@ -115,11 +150,11 @@ DB name `local`. Details and full stack: root AGENTS.md.
   `SiteSyncProcessor`. Remaining: staff/admin role switch → local login
   (analyzed with the employees flow); roles/status reporting back to
   global via `site-device`-restricted endpoints.
-- **Protection layer**: TWO endpoints enforced now — `membersAdmin` and
-  `siteAdmin` are scope-checked (`local-admin`); the shell hides
-  drawer/dropdown during setup states. Remaining: apply the same
-  enforcement to further member/employee admin endpoints as they are
-  added.
+- **Protection layer**: THREE endpoints enforced now — `membersAdmin`,
+  `siteAdmin` and `doorDeviceAdmin` are scope-checked (`local-admin`);
+  the shell hides drawer/dropdown during setup states. Remaining: apply
+  the same enforcement to further member/employee admin endpoints as
+  they are added.
 - **Employees flow**: member verifies on site with global credentials →
   local login (same model as the admin setup).
 - **Password self-healing**: "same password globally + locally" — the

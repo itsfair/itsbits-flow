@@ -1,0 +1,7 @@
+### Exception raised by the local door-device admin endpoints (unknown
+### device, duplicate address, ESP unreachable).
+exception: DoorDeviceException
+fields:
+
+  ### Human-readable description for the admin UI.
+  message: String

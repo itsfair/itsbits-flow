@@ -34,6 +34,7 @@ abstract class SiteTransferInfo
     this.adminLastName,
     this.adminBirthday,
     this.adminImageUrl,
+    this.adminDoorCodeSecret,
     required this.deviceSessionKey,
   });
 
@@ -53,6 +54,7 @@ abstract class SiteTransferInfo
     String? adminLastName,
     DateTime? adminBirthday,
     String? adminImageUrl,
+    String? adminDoorCodeSecret,
     required String deviceSessionKey,
   }) = _SiteTransferInfoImpl;
 
@@ -83,6 +85,7 @@ abstract class SiteTransferInfo
               jsonSerialization['adminBirthday'],
             ),
       adminImageUrl: jsonSerialization['adminImageUrl'] as String?,
+      adminDoorCodeSecret: jsonSerialization['adminDoorCodeSecret'] as String?,
       deviceSessionKey: jsonSerialization['deviceSessionKey'] as String,
     );
   }
@@ -136,6 +139,13 @@ abstract class SiteTransferInfo
   /// presigned URL instead of the raw/eternal object URL.
   String? adminImageUrl;
 
+  /// Per-(person, site) TOTP door secret of the site admin — generated
+  /// here if the membership has none yet. The local instance stores it on
+  /// the admin's member_profile copy so the admin can verify door codes
+  /// offline like every other member (ongoing updates travel via the
+  /// member sync).
+  String? adminDoorCodeSecret;
+
   /// The SAS session key for the device connection. Store securely; there
   /// is no rotation (write once) and the key cannot be recovered.
   String deviceSessionKey;
@@ -159,6 +169,7 @@ abstract class SiteTransferInfo
     String? adminLastName,
     DateTime? adminBirthday,
     String? adminImageUrl,
+    String? adminDoorCodeSecret,
     String? deviceSessionKey,
   });
   @override
@@ -181,6 +192,8 @@ abstract class SiteTransferInfo
       if (adminLastName != null) 'adminLastName': adminLastName,
       if (adminBirthday != null) 'adminBirthday': adminBirthday?.toJson(),
       if (adminImageUrl != null) 'adminImageUrl': adminImageUrl,
+      if (adminDoorCodeSecret != null)
+        'adminDoorCodeSecret': adminDoorCodeSecret,
       'deviceSessionKey': deviceSessionKey,
     };
   }
@@ -205,6 +218,8 @@ abstract class SiteTransferInfo
       if (adminLastName != null) 'adminLastName': adminLastName,
       if (adminBirthday != null) 'adminBirthday': adminBirthday?.toJson(),
       if (adminImageUrl != null) 'adminImageUrl': adminImageUrl,
+      if (adminDoorCodeSecret != null)
+        'adminDoorCodeSecret': adminDoorCodeSecret,
       'deviceSessionKey': deviceSessionKey,
     };
   }
@@ -234,6 +249,7 @@ class _SiteTransferInfoImpl extends SiteTransferInfo {
     String? adminLastName,
     DateTime? adminBirthday,
     String? adminImageUrl,
+    String? adminDoorCodeSecret,
     required String deviceSessionKey,
   }) : super._(
          siteId: siteId,
@@ -251,6 +267,7 @@ class _SiteTransferInfoImpl extends SiteTransferInfo {
          adminLastName: adminLastName,
          adminBirthday: adminBirthday,
          adminImageUrl: adminImageUrl,
+         adminDoorCodeSecret: adminDoorCodeSecret,
          deviceSessionKey: deviceSessionKey,
        );
 
@@ -274,6 +291,7 @@ class _SiteTransferInfoImpl extends SiteTransferInfo {
     Object? adminLastName = _Undefined,
     Object? adminBirthday = _Undefined,
     Object? adminImageUrl = _Undefined,
+    Object? adminDoorCodeSecret = _Undefined,
     String? deviceSessionKey,
   }) {
     return SiteTransferInfo(
@@ -306,6 +324,9 @@ class _SiteTransferInfoImpl extends SiteTransferInfo {
       adminImageUrl: adminImageUrl is String?
           ? adminImageUrl
           : this.adminImageUrl,
+      adminDoorCodeSecret: adminDoorCodeSecret is String?
+          ? adminDoorCodeSecret
+          : this.adminDoorCodeSecret,
       deviceSessionKey: deviceSessionKey ?? this.deviceSessionKey,
     );
   }

@@ -18,6 +18,8 @@ import 'package:global_client/src/protocol/admin/user_admin_summary.dart'
     as _iw2ravjy;
 import 'package:global_client/src/protocol/profile/member_profile.dart'
     as _i01pu2ta;
+import 'package:global_client/src/protocol/sites/my_door_secret_info.dart'
+    as _i3oi2evo;
 import 'package:global_client/src/protocol/sites/my_membership_info.dart'
     as _iybsvnt4;
 import 'package:global_client/src/protocol/sites/site.dart' as _i8hsp7h7;
@@ -409,6 +411,33 @@ class EndpointMemberProfile extends _isc.EndpointRef {
         'removeUserImage',
         {},
       );
+}
+
+/// End-user door-access secret delivery (`requireLogin`): returns the
+/// caller's own per-(person, site) TOTP secret for one site — the raw
+/// material the end-user app computes its rolling codes from (offline,
+/// no global round trip at door time).
+///
+/// Access rules: the caller must hold an ACTIVE membership at the site.
+/// The secret itself lives on the `SiteMembership` row (serverOnly) and
+/// is generated at subscribe/reactivate time; legacy rows are generated
+/// lazily here (self-healing backfill).
+/// {@category Endpoint}
+class EndpointDoorAccess extends _isc.EndpointRef {
+  EndpointDoorAccess(_isc.EndpointCaller caller) : super(caller);
+
+  @override
+  String get name => 'doorAccess';
+
+  /// The signed-in user's door secret for [siteId]; inactive/missing
+  /// memberships are rejected.
+  _ida.Future<_i3oi2evo.MyDoorSecretInfo> getMySiteSecret({
+    required int siteId,
+  }) => caller.callServerEndpoint<_i3oi2evo.MyDoorSecretInfo>(
+    'doorAccess',
+    'getMySiteSecret',
+    {'siteId': siteId},
+  );
 }
 
 /// Device connection endpoint for the local instance.
@@ -811,6 +840,7 @@ class Client extends _isc.ServerpodClientShared {
     emailIdp = EndpointEmailIdp(this);
     jwtRefresh = EndpointJwtRefresh(this);
     memberProfile = EndpointMemberProfile(this);
+    doorAccess = EndpointDoorAccess(this);
     siteConnection = EndpointSiteConnection(this);
     siteDetails = EndpointSiteDetails(this);
     siteDirectory = EndpointSiteDirectory(this);
@@ -827,6 +857,8 @@ class Client extends _isc.ServerpodClientShared {
   late final EndpointJwtRefresh jwtRefresh;
 
   late final EndpointMemberProfile memberProfile;
+
+  late final EndpointDoorAccess doorAccess;
 
   late final EndpointSiteConnection siteConnection;
 
@@ -848,6 +880,7 @@ class Client extends _isc.ServerpodClientShared {
     'emailIdp': emailIdp,
     'jwtRefresh': jwtRefresh,
     'memberProfile': memberProfile,
+    'doorAccess': doorAccess,
     'siteConnection': siteConnection,
     'siteDetails': siteDetails,
     'siteDirectory': siteDirectory,

@@ -1,21 +1,21 @@
 # DoorInterface — BLE-Schnittstelle (ESP → Smartphone-App)
 
 Schnittstelle für die direkte Kommunikation zwischen der Enduser-Smartphone-App
-und dem ESP32 per Bluetooth Low Energy (BLE). Status: **Prototyp / Test-Stage**
-— die Backend-Anbindung (Credential-Prüfung) ist noch nicht implementiert.
-Die Türöffnung erfolgt jedoch bereits echt lokal per NUKI (`unlatch()`).
+und dem ESP32 per Bluetooth Low Energy (BLE). Status: **mit Backend-Anbindung**
+— jede Credential-Prüfung läuft über die lokale Instanz (`/api/door/verify`),
+Türöffnung per NUKI (`unlatch()`).
 
 ## Übersicht
 
 ```
-Smartphone-App                ESP32 (Peripheral)              Lokales Backend
+Smartphone-App                ESP32 (Peripheral)              Lokale Instanz
      │                              │                              │
      │── BLE Scan ─────────────────>│                              │
      │── BLE Connect ─────────────>│ (onConnect)                  │
      │── Write Request ───────────>│ (onWrite)                    │
-     │                              │── (später) HTTP/WS ─────────>│
-     │                              │<── (später) Result ─────────│
-     │<── Notify Response ─────────│                              │
+     │                              │── POST /api/door/verify ───>│ (TOTP-Prüfung)
+     │                              │<── {ok, code, message} ─────│ (offline, kein Global-
+     │<── Notify Response ─────────│                              │  Round-Trip)
      │── BLE Disconnect ──────────>│ (onDisconnect → Adv restart) │
 ```
 
@@ -28,9 +28,13 @@ Smartphone-App                ESP32 (Peripheral)              Lokales Backend
 | **Char. Response**   | `5f6d4f5a-0003-0001-8000-00805f9b34fb` | `NOTIFY` — ESP → Smartphone (Client muss subscriben) |
 
 - **Encoding:** UTF-8 JSON, kein Längenpräfix, kein Chunking (max. MTU 128).
+- **MTU:** die App verhandelt nach dem Connect explizit (`requestMTU 185`,
+  Android defaultet sonst auf 23 = 20 Nutzbytes — Requests UND Responses
+  würden abgeschnitten); die Verhandlung kappt der ESP bei seinem lokalen
+  `NimBLEDevice::setMTU(128)` → ~125 Nutzbytes je Richtung.
 - **Keine Verschlüsselung / Pairing** im Prototyp — die Characteristic-Flags
-  setzten nur `WRITE*` / `NOTIFY`, keine `*_ENC` / `*_AUTHEN`. Wird später für
-  die produktive `credential`-Übertragung zwingend gebraucht.
+  setzen nur `WRITE*` / `NOTIFY`, keine `*_ENC` / `*_AUTHEN`. Hardening
+  (Verschlüsselung, Device-Auth, TLS) ist ein bekanntes Backlog-Item.
 - **Service im Advertising:** Die Service-UUID wird ins Advertising gepackt,
   die App kann also schon beim Scan prüfen, ohne verbinden zu müssen.
 - **Advertising-Name:** = konfigurierter Hostname des ESP (z.B.
@@ -40,112 +44,106 @@ Smartphone-App                ESP32 (Peripheral)              Lokales Backend
 
 ```json
 {
-  "action": "test",
-  "credential": "<freitext>",
-  "deviceId": "<freitext>"
+  "action": "open",
+  "userId": "<globalAuthUserId (UUID) des Endnutzers>",
+  "code": "<6-stelliger rollierender Code>",
+  "deviceId": "<freitext, Logging/Echo>"
 }
 ```
 
-| Feld         | Typ   | Pflicht | Bedeutung                                                  |
-|--------------|-------|---------|------------------------------------------------------------|
-| `action`     | str   | ja      | `"test"` (Verbindungstest + Türöffnung) oder `"open"` (Türöffnung) |
-| `credential` | str   | nein*   | Zugangsdaten (im Prototyp beliebiger String)               |
-| `deviceId`   | str   | nein    | Geräte-ID des Smartphones, nur fürs Logging / Echo        |
+| Feld      | Typ | Pflicht | Bedeutung |
+|-----------|-----|---------|-----------|
+| `action`  | str | ja      | `"open"` (verifizieren + Tür öffnen) oder `"test"` (nur verifizieren, keine Türaktion) |
+| `userId`  | str | ja      | `globalAuthUserId` der Person (Tür-Schlüssel, aus dem Profil) |
+| `code`    | str | ja      | Der rollierende Code: 6 Ziffern aus `HMAC-SHA256(secret, "<step>:<MAC ohne Doppelpunkte, uppercase>")`, Schrittweite 30 s |
+| `deviceId`| str | nein    | Geräte-ID des Smartphones, nur fürs Logging / Echo |
 
-`*` Später Pflicht, sobald die Backend-Anbindung steht.
+Das alte Feld `credential` (Prototyp) ist entfallen. Der Code ist **an die Tür
+gebunden** (MAC im HMAC-Input) und **einmalig** — der lokale Server verbraucht
+jeden `(user, step)`-Code genau einmal (Replay-Schutz). Türen kurz
+nacheinander funktionieren, da die App pro Tür einen frischen Code aus dem
+gleichen Secret berechnet.
 
 ## Response-Format (ESP → Smartphone, Notify auf Response-Characteristic)
 
 ```json
 {
   "success": true,
-  "code": "TEST_OK",
-  "message": "Test ok, Tuer geoeffnet"
+  "code": "OK",
+  "message": "Tuer geoeffnet"
 }
 ```
 
-| Feld      | Typ   | immer? | Bedeutung                                      |
-|-----------|-------|--------|------------------------------------------------|
-| `success` | bool  | ja     | Request insgesamt erfolgreich?                |
-| `code`    | str   | ja     | Maschinenlesbarer Statuscode (s. Tabelle)     |
-| `message` | str   | ja     | Menschnenlesbare Erklärung (kann leer sein)    |
+### Status-Codes
 
-### Status-Codes (Prototyp)
+| `code`                | `success` | Bedeutung |
+|-----------------------|-----------|-----------|
+| `OK`                  | true      | Verifiziert + Tür geöffnet (`open`, NUKI `unlatch()`) |
+| `TEST_OK`             | true      | Verifiziert, keine Türaktion (`test`) |
+| `DEVICE_UNCONFIGURED`| false     | Kein Backend konfiguriert (Setup offen) |
+| `NOT_PAIRED`          | false     | Kein NUKI-Schloss gepaart (wird VOR der Prüfung gecheckt — verbraucht keinen Code) |
+| `CRED_INVALID`        | false     | Anfrage unvollständig oder vom Backend als malform zurückgewiesen |
+| `ACCESS_DENIED`       | false     | Verifizierung fehlgeschlagen (unbekannter User, inaktive Mitgliedschaft, falscher Code, Replay — bewusst nicht unterscheidbar) |
+| `RATE_LIMITED`        | false     | Zu viele fehlgeschlagene Versuche für diesen User (Backdoor-Bruteforce-Schutz) |
+| `BACKEND_UNREACHABLE` | false     | Lokale Instanz nicht erreichbar (Timeout/Verbindungsfehler) |
+| `LOCK_FAILED`         | false     | Verifiziert, aber `unlatch()` wurde nicht angenommen |
+| `UNKNOWN_ACTION`      | false     | `action` fehlt oder wurde nicht erkannt |
 
-| `code`            | `success` | Bedeutung                                            |
-|-------------------|-----------|------------------------------------------------------|
-| `OK`              | true      | Tür echt geöffnet (`action=open`, NUKI `unlatch()`)  |
-| `TEST_OK`         | true      | `action=test` + Tür echt geöffnet                    |
-| `NOT_PAIRED`      | false     | Kein NUKI-Schloss gepaart                            |
-| `LOCK_FAILED`     | false     | `unlatch()` wurde nicht angenommen                   |
-| `UNKNOWN_ACTION`  | false     | `action` fehlt oder wurde nicht erkannt              |
+## Backend-Verifikation (ESP → lokale Instanz)
 
-Später (mit Backend) erweitert um z.B. `BACKEND_UNREACHABLE`, `CRED_INVALID`,
-`ACCESS_DENIED`.
+`POST http://<localApiUrl>/api/door/verify` (JSON):
 
-## Ablauf einer Test-Session
+```json
+{
+  "userKey": "<userId aus dem BLE-Request>",
+  "code": "<code aus dem BLE-Request>",
+  "siteId": 42,
+  "deviceMac": "<BLE-MAC des ESP, z.B. A4:CF:12:9D:71:E2>"
+}
+```
 
-1. App scannt BLE → findet Advertising mit `doorinterface-XXXX` + Service-UUID.
-2. App verbindet → ESP loggt `[BLE] client connected`.
-3. App subscribt auf Response-Characteristic (CCCD, Notify=0x0001).
-4. App schreibt JSON auf Request-Characteristic, z.B.
-   `{"action":"test","credential":"","deviceId":"pixel7"}`.
-5. ESP extrahiert die Felder, loggt sie im Serial Monitor, löst per NUKI
-   `unlatch()` die Türöffnung aus und erzeugt die Response.
-6. Der Write wird sofort auf GATT-Ebene bestätigt; die Verarbeitung erfolgt
-   im Haupt-Loop — erst Türöffnung am NUKI (Connect, typisch 2–10 s),
-   dann Notify-Response mit dem Result-JSON.
-7. App zeigt Response an (z.B. Toast / SnackBar: "Test empfangen: pixel7").
-8. App trennt → ESP loggt `[BLE] client disconnected` und startet Advertising
-   neu, damit der nächste Client andocken kann.
+Antwort: `{ "ok": bool, "code": str, "message": str }` — `code` wie oben
+(Backend-Seite: `OK` / `ACCESS_DENIED` / `RATE_LIMITED` / `CRED_INVALID` /
+`SERVER_ERROR`). Die Prüflogik (Mirror-Datenbank, aktive Mitgliedschaft,
+TOTP-Fenster ±1 Schritt, Einmalverbrauch, Rate-Limit, Access-Log) liegt
+komplett auf der lokalen Instanz und funktioniert ohne Internet.
+
+Backend-Config auf dem ESP: NVS-Namespace `backend` (`url`, `siteId`),
+gesetzt entweder manuell über die Setup-Seite (`/setup` → Backend-Anbindung)
+oder automatisch per `POST /api/backend/config`
+(`url=<..>&siteId=<..>` → ACK `{ok, mac, hostname}` — der lokale Server pusht
+dies beim Anlegen des Geräts in der Standort-Verwaltung).
 
 ## Serial-Monitor-Ausgaben (ESP)
 
 ```
+[BE] backend=192.168.1.109:8182 siteId=42
 [BLE] init server
 [BLE] advertising name='doorinterface-a1b2'
 [BLE] client connected
-[BLE] RX (52 bytes): {"action":"test","credential":"","deviceId":"pixel7"}
-[BLE] parsed: action=test credential= deviceId=pixel7
-[BLE] TX: {"success":true,"code":"TEST_OK","message":"Test ok, Tuer geoeffnet"}
+[BLE] RX (98 bytes): {"action":"open","userId":"...","code":"123456","deviceId":"pixel7"}
+[BLE] parsed: action=open userId=... code=123456 deviceId=pixel7
+[BE] verify user=... code=123456
+[BE] Antwort (200): {"ok":true,"code":"OK","message":"Zugang gewaehrt"}
+[BLE] TX: {"success":true,"code":"OK","message":"Tuer geoeffnet"}
 [BLE] client disconnected
 ```
 
-## QR-Code (geplant)
+## QR-Code
 
-Statisch ausgedruckt. Inhalt (voreilend, noch nicht final):
+Statisch ausgedruckt (Setup-Seite → Kundendisplay) oder dynamisch unter
+`/display`. Inhalt:
+
 ```
-doorinterface|<BLE_MAC>|<optional token>
+doorinterface|<BLE_MAC>|<siteId>
 ```
 
 - **Trennzeichen:** `|` (Pipe) — NICHT `:`, da die MAC selbst Colons enthält
   (`A4:CF:12:9D:71:E2`) und ein `:`-Split die MAC zerstören würde.
-- **MAC-Format:** 6 Hex-Gruppen à 2 Stellen, getrennt durch `:` (canonical
-  Bluetooth-Adresse). App validiert mit Regex
-  `^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$`.
-- **Token:** optional, freitextlich (darf `:` und `|` enthalten — Parser nimmt
-  erster Pipe-Split, Rest joins als Token).
-
-Beispiel-QR-Inhalt:
-```
-doorinterface|A4:CF:12:9D:71:E2|my-credential-token
-```
-
-Die App parst den QR, verbindet per BLE direkt an die MAC
-(`BluetoothDevice.fromId`), sendet ggf. den Token als `credential` mit. Im
-aktuellen Prototyp noch nicht implementiert — die App kann rein über den
-Advertising-Namen finden.
-
-## Open Questions / TODOs für die App-Seite
-
-- [ ] Library-Wahl in der App (flutter_blue_plus? react-native-ble?).
-- [ ] CCCD-Subscription explizit triggern bevor Write (sonst kein Notify).
-- [ ] MTU-Verhandlung prüfen — wir setzen auf 128, Android defaultet 23.
-- [ ] Timeouts: Write ohne Notify-Antwort nach z.B. 5s.
-- [ ] Encoding von `credential` später (JWT? ephemeral token? hashed pin?).
-- [ ] Wiederverbindung / Mehrfachversuch falls Advertising noch nicht läuft.
-
-## Siehe auch
-
-- Firmware-Modul: `src/BleServer.h` / `src/BleServer.cpp`
-- Projekt-Handoff: `doorinterface/AGENTS.md` → Abschnitt „BleServer"
+- **MAC-Format:** 6 Hex-Gruppen à 2 Stellen, getrennt durch `:`. Die App
+  normalisiert (ohne Doppelpunkte, uppercase) für die Code-Berechnung —
+  identisch zur Backend-Prüfung.
+- **siteId:** die Site-ID der lokalen Instanz, damit die App das richtige
+  (Person, Site)-Secret für die Code-Berechnung wählt. Solange das Backend
+  nicht konfiguriert ist, bleibt das Feld leer (`doorinterface|<MAC>|`) —
+  die App weist solche QRs mit "Gerät nicht konfiguriert" ab.

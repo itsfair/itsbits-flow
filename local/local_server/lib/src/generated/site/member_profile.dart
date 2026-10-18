@@ -38,6 +38,7 @@ abstract class MemberProfile
     this.lastName,
     this.birthday,
     this.imageUrl,
+    this.doorCodeSecret,
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
@@ -51,6 +52,7 @@ abstract class MemberProfile
     String? lastName,
     DateTime? birthday,
     String? imageUrl,
+    String? doorCodeSecret,
     DateTime? createdAt,
   }) = _MemberProfileImpl;
 
@@ -77,6 +79,7 @@ abstract class MemberProfile
           ? null
           : _is.DateTimeJsonExtension.fromJson(jsonSerialization['birthday']),
       imageUrl: jsonSerialization['imageUrl'] as String?,
+      doorCodeSecret: jsonSerialization['doorCodeSecret'] as String?,
       createdAt: jsonSerialization['createdAt'] == null
           ? null
           : _is.DateTimeJsonExtension.fromJson(jsonSerialization['createdAt']),
@@ -115,6 +118,11 @@ abstract class MemberProfile
   /// been transferred/copied).
   String? imageUrl;
 
+  /// Per-(person, site) TOTP secret for door access (mirrored from the
+  /// global SiteMembership via the member sync). The verify route checks
+  /// the app-computed rolling codes against it — offline.
+  String? doorCodeSecret;
+
   /// When the row was created.
   DateTime createdAt;
 
@@ -134,6 +142,7 @@ abstract class MemberProfile
     String? lastName,
     DateTime? birthday,
     String? imageUrl,
+    String? doorCodeSecret,
     DateTime? createdAt,
   });
   @override
@@ -149,6 +158,7 @@ abstract class MemberProfile
       if (lastName != null) 'lastName': lastName,
       if (birthday != null) 'birthday': birthday?.toJson(),
       if (imageUrl != null) 'imageUrl': imageUrl,
+      if (doorCodeSecret != null) 'doorCodeSecret': doorCodeSecret,
       'createdAt': createdAt.toJson(),
     };
   }
@@ -211,6 +221,7 @@ class _MemberProfileImpl extends MemberProfile {
     String? lastName,
     DateTime? birthday,
     String? imageUrl,
+    String? doorCodeSecret,
     DateTime? createdAt,
   }) : super._(
          id: id,
@@ -222,6 +233,7 @@ class _MemberProfileImpl extends MemberProfile {
          lastName: lastName,
          birthday: birthday,
          imageUrl: imageUrl,
+         doorCodeSecret: doorCodeSecret,
          createdAt: createdAt,
        );
 
@@ -239,6 +251,7 @@ class _MemberProfileImpl extends MemberProfile {
     Object? lastName = _Undefined,
     Object? birthday = _Undefined,
     Object? imageUrl = _Undefined,
+    Object? doorCodeSecret = _Undefined,
     DateTime? createdAt,
   }) {
     return MemberProfile(
@@ -253,6 +266,9 @@ class _MemberProfileImpl extends MemberProfile {
       lastName: lastName is String? ? lastName : this.lastName,
       birthday: birthday is DateTime? ? birthday : this.birthday,
       imageUrl: imageUrl is String? ? imageUrl : this.imageUrl,
+      doorCodeSecret: doorCodeSecret is String?
+          ? doorCodeSecret
+          : this.doorCodeSecret,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -301,6 +317,12 @@ class MemberProfileUpdateTable extends _is.UpdateTable<MemberProfileTable> {
     value,
   );
 
+  _is.ColumnValue<String, String> doorCodeSecret(String? value) =>
+      _is.ColumnValue(
+        table.doorCodeSecret,
+        value,
+      );
+
   _is.ColumnValue<DateTime, DateTime> createdAt(DateTime value) =>
       _is.ColumnValue(
         table.createdAt,
@@ -340,6 +362,10 @@ class MemberProfileTable extends _is.Table<int?> {
       'imageUrl',
       this,
     );
+    doorCodeSecret = _is.ColumnString(
+      'doorCodeSecret',
+      this,
+    );
     createdAt = _is.ColumnDateTime(
       'createdAt',
       this,
@@ -373,6 +399,11 @@ class MemberProfileTable extends _is.Table<int?> {
   /// been transferred/copied).
   late final _is.ColumnString imageUrl;
 
+  /// Per-(person, site) TOTP secret for door access (mirrored from the
+  /// global SiteMembership via the member sync). The verify route checks
+  /// the app-computed rolling codes against it — offline.
+  late final _is.ColumnString doorCodeSecret;
+
   /// When the row was created.
   late final _is.ColumnDateTime createdAt;
 
@@ -399,6 +430,7 @@ class MemberProfileTable extends _is.Table<int?> {
     lastName,
     birthday,
     imageUrl,
+    doorCodeSecret,
     createdAt,
   ];
 
