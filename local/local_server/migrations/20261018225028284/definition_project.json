@@ -295,8 +295,8 @@
         },
         {
           "__className__": "serverpod.ColumnDefinition",
-          "name": "step",
-          "fieldName": "step",
+          "name": "timestampMs",
+          "fieldName": "timestampMs",
           "columnType": 6,
           "isNullable": false,
           "dartType": "int"
@@ -324,7 +324,7 @@
             {
               "__className__": "serverpod.IndexElementDefinition",
               "type": 0,
-              "definition": "step"
+              "definition": "timestampMs"
             }
           ],
           "type": "btree",

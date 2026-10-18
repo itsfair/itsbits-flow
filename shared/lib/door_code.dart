@@ -1,13 +1,13 @@
-/// Rolling door codes (TOTP-style, 30 s steps) shared by the end-user
-/// app (code computation) and the local instance (verification).
+/// Rolling door codes shared by the end-user app (code computation) and
+/// the local instance (verification).
 ///
 /// One secret per (person, site) — issued by the global instance. The
-/// code binds the door: the device MAC from the QR code is part of the
-/// HMAC input, so a captured code is useless at any other door and
-/// single-use enforcement stays strict even across multiple doors in
-/// quick succession.
+/// code is computed PER REQUEST from the exact millisecond timestamp
+/// (no 30 s slots, unlimited frequency), bound to the door via the
+/// device MAC from the QR code, and consumed once per (person,
+/// timestamp) by the local instance (replay protection):
 ///
-///     code = 6 digits of HMAC-SHA256(secret, utf8("<step>:<normalizedMac>"))
+///     code = 6 digits of HMAC-SHA256(secret, utf8("<timestampMs>:<normalizedMac>"))
 ///
 /// Both sides MUST use the same normalization: `normalizeDeviceMac`
 /// (uppercase hex pairs, colons/spaces stripped).
@@ -18,36 +18,18 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 
-/// Duration of one code step.
-const Duration doorCodeStepLength = Duration(seconds: 30);
-
-/// How many steps beside the current one are accepted at verification
-/// (clock skew tolerance; ±1 = ~30 s each way).
-const int doorCodeStepWindow = 1;
-
-/// The time step containing [utcNow].
-int doorCodeStep(final DateTime utcNow) =>
-    (utcNow.toUtc().millisecondsSinceEpoch ~/ 1000) ~/ 30;
-
-/// All steps accepted at verification time ([now] ± [window]).
-List<int> doorCodeSteps(
-  final DateTime now, {
-  final int window = doorCodeStepWindow,
-}) {
-  final current = doorCodeStep(now);
-  return [
-    for (var offset = -window; offset <= window; offset++) current + offset,
-  ];
-}
+/// Maximum difference between the code's timestamp and the verifying
+/// server's time (clock skew tolerance, both directions).
+const int doorCodeMaxSkewSeconds = 30;
 
 /// Canonical MAC form used in the HMAC input: uppercase, no separators.
 String normalizeDeviceMac(final String mac) =>
     mac.replaceAll(RegExp(r'[\s:-]'), '').toUpperCase();
 
-/// Computes the 6-digit door code for [step].
+/// Computes the 6-digit door code for [timestampMs].
 String computeDoorCode({
   required final String secretHex,
-  required final int step,
+  required final int timestampMs,
   required final String deviceMac,
 }) {
   final key = _hexBytes(secretHex);
@@ -55,54 +37,52 @@ String computeDoorCode({
     throw ArgumentError('door code secret is empty or not hex');
   }
   final mac = normalizeDeviceMac(deviceMac);
-  final message = utf8.encode('$step:$mac');
+  final message = utf8.encode('$timestampMs:$mac');
   final digest = Hmac(sha256, key).convert(message).bytes;
-  return _dynamicTruncate(digest, digits: 6);
+  return _dynamicTruncate(digest);
 }
 
-/// True when [code] matches the expected code for any step around [now].
+/// Verifies a computed code against the receiving server's [now]:
+/// true only when the code matches its timestamp AND the timestamp
+/// lies within the skew window.
 bool verifyDoorCode({
   required final String secretHex,
   required final String code,
   required final String deviceMac,
+  required final int timestampMs,
   required final DateTime now,
-  final int window = doorCodeStepWindow,
 }) {
-  final normalized = code.trim();
-  for (final step in doorCodeSteps(now, window: window)) {
-    if (computeDoorCode(
-          secretHex: secretHex,
-          step: step,
-          deviceMac: deviceMac,
-        ) ==
-        normalized) {
-      return true;
-    }
+  if (code.trim() ==
+      computeDoorCode(
+        secretHex: secretHex,
+        timestampMs: timestampMs,
+        deviceMac: deviceMac,
+      )) {
+    final skew = (now.toUtc().millisecondsSinceEpoch - timestampMs).abs();
+    return skew <= doorCodeMaxSkewSeconds * 1000;
   }
   return false;
 }
 
-/// The step a given code was computed for, searched around [now] — used
-/// to consume exactly the matched step (single-use). Null = no match.
-int? matchedDoorCodeStep({
+/// True when the code matches its timestamp but the timestamp is OUTSIDE
+/// the skew window — the app's clock is off (distinct, user-actionable
+/// error; only a holder of the correct secret can produce it).
+bool isTimeSkewOnly({
   required final String secretHex,
   required final String code,
   required final String deviceMac,
+  required final int timestampMs,
   required final DateTime now,
-  final int window = doorCodeStepWindow,
 }) {
-  final normalized = code.trim();
-  for (final step in doorCodeSteps(now, window: window)) {
-    if (computeDoorCode(
-          secretHex: secretHex,
-          step: step,
-          deviceMac: deviceMac,
-        ) ==
-        normalized) {
-      return step;
-    }
-  }
-  return null;
+  final matches =
+      code.trim() ==
+      computeDoorCode(
+        secretHex: secretHex,
+        timestampMs: timestampMs,
+        deviceMac: deviceMac,
+      );
+  final skew = (now.toUtc().millisecondsSinceEpoch - timestampMs).abs();
+  return matches && skew > doorCodeMaxSkewSeconds * 1000;
 }
 
 Uint8List _hexBytes(final String hex) {
@@ -117,18 +97,13 @@ Uint8List _hexBytes(final String hex) {
   return bytes;
 }
 
-/// RFC 4226 dynamic truncation, zero-padded to [digits].
-String _dynamicTruncate(final List<int> hmac, {required final int digits}) {
+/// RFC 4226 dynamic truncation, zero-padded to 6 digits.
+String _dynamicTruncate(final List<int> hmac) {
   final offset = hmac.last & 0x0f;
   final binary =
       ((hmac[offset] & 0x7f) << 24) |
       (hmac[offset + 1] << 16) |
       (hmac[offset + 2] << 8) |
       hmac[offset + 3];
-  var divisor = 1;
-  for (var i = 0; i < digits; i++) {
-    divisor *= 10;
-  }
-  final value = binary % divisor;
-  return value.toString().padLeft(digits, '0');
+  return (binary % 1000000).toString().padLeft(6, '0');
 }

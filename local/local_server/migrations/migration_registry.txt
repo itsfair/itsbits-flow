@@ -4,10 +4,4 @@
 ### manually. If a collision is detected in this file when doing a code merge, resolve
 ### the conflict by removing and recreating the conflicting migration.
 
-20261008090826264
-20261008183843803
-20261009161755067
-20261012115428990-site_image_url
-20261014143124346-door_devices
-20261016112313265
-20261018101335640
+20261018225028284

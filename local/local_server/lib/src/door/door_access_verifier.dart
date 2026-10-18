@@ -4,15 +4,23 @@ import 'package:serverpod/serverpod.dart';
 import '../generated/protocol.dart';
 
 /// Verifies one door-access attempt fully offline: member mirror +
-/// membership activity + TOTP code (door-bound, ±1 step) + single-use
-/// consumption + per-user rate limiting + the POLICY layer (deny-by-
-/// default: an active policy assignment must grant this door on this
-/// weekday inside its minute window — server-local time). Every attempt
-/// is written to the `door_access_logs` audit/statistics table.
+/// membership activity + timestamp-based door code (door-bound, valid
+/// ±30 s around the request timestamp) + single-use consumption per
+/// (user, timestamp) + per-user rate limiting + the POLICY layer
+/// (deny-by-default: an active policy assignment must grant this door
+/// on this weekday inside its minute window — server-local time). Every
+/// attempt is written to the `door_access_logs` audit/statistics table.
+///
+/// Check ORDER matters: the single-use consumption happens AFTER the
+/// policy check — a policy denial must never burn a code (the app
+/// retries immediately with a fresh timestamp; each scan is unique by
+/// construction).
 ///
 /// Security stance: ALL credential/policy failures return the uniform
 /// `denied` result — the device never learns WHICH check failed (no
-/// user enumeration). Details go into the log row only.
+/// user enumeration). The only distinct outcomes are `timeSkew` (the
+/// code itself was valid — phone clock issue, user-actionable) and
+/// details go into the log row only.
 class DoorAccessVerifier {
   /// Denied attempts allowed per user per minute before rate limiting
   /// kicks in (code brute-force protection; BLE + network round trips
@@ -28,6 +36,7 @@ class DoorAccessVerifier {
     required final String code,
     required final String deviceMac,
     required final int siteId,
+    required final int timestampMs,
     final DateTime? now,
   }) async {
     final at = now ?? DateTime.now();
@@ -89,13 +98,17 @@ class DoorAccessVerifier {
       );
     }
 
-    final step = door_code.matchedDoorCodeStep(
-      secretHex: secret,
-      code: code,
-      deviceMac: deviceMac,
-      now: at,
-    );
-    if (step == null) {
+    // Code check: recompute from the transmitted timestamp. A match
+    // outside the skew window = phone clock problem (distinct, helpful
+    // result; the limiter does NOT count these).
+    final codeMatches =
+        code.trim() ==
+        door_code.computeDoorCode(
+          secretHex: secret,
+          timestampMs: timestampMs,
+          deviceMac: deviceMac,
+        );
+    if (!codeMatches) {
       return _log(
         session,
         userKey: userKey,
@@ -104,36 +117,19 @@ class DoorAccessVerifier {
         detail: 'code mismatch',
       );
     }
-
-    // Single-use: the unique (user, step) index makes this race-safe —
-    // a failed insert means the code was already consumed (replay).
-    try {
-      await DoorAccessConsumed.db.insertRow(
-        session,
-        DoorAccessConsumed(userKey: userKey, step: step),
-      );
-    } catch (e) {
+    final skewMs = (at.toUtc().millisecondsSinceEpoch - timestampMs).abs();
+    if (skewMs > door_code.doorCodeMaxSkewSeconds * 1000) {
       return _log(
         session,
         userKey: userKey,
         deviceMac: deviceMac,
-        result: DoorAccessResult.denied,
-        detail: 'replay or consume failed: $e',
+        result: DoorAccessResult.timeSkew,
+        detail: 'skew ${skewMs ~/ 1000} s',
       );
     }
 
-    // Opportunistic pruning of stale consumption rows (best-effort).
-    try {
-      await DoorAccessConsumed.db.deleteWhere(
-        session,
-        where: (t) => t.createdAt < DateTime.now().subtract(_consumedRetention),
-      );
-    } catch (_) {}
-
-    // Policy layer (deny-by-default): the door must resolve to a
-    // registered device and an ACTIVE assignment must carry a rule
-    // granting THIS door on THIS weekday inside its minute window
-    // (server-local time = site time).
+    // Policy layer (deny-by-default): BEFORE consumption — a denial
+    // here must not burn the request's unique code.
     final device = await _resolveDevice(session, deviceMac);
     if (device == null) {
       return _log(
@@ -161,12 +157,38 @@ class DoorAccessVerifier {
       );
     }
 
+    // Single-use consumption LAST (right before the grant): the unique
+    // (user, timestamp) index makes this race-safe — a failed insert
+    // means the pair was already used (replay).
+    try {
+      await DoorAccessConsumed.db.insertRow(
+        session,
+        DoorAccessConsumed(userKey: userKey, timestampMs: timestampMs),
+      );
+    } catch (e) {
+      return _log(
+        session,
+        userKey: userKey,
+        deviceMac: deviceMac,
+        result: DoorAccessResult.denied,
+        detail: 'replay or consume failed: $e',
+      );
+    }
+
+    // Opportunistic pruning of stale consumption rows (best-effort).
+    try {
+      await DoorAccessConsumed.db.deleteWhere(
+        session,
+        where: (t) => t.createdAt < at.subtract(_consumedRetention),
+      );
+    } catch (_) {}
+
     return _log(
       session,
       userKey: userKey,
       deviceMac: deviceMac,
       result: DoorAccessResult.granted,
-      detail: 'step $step, ${policyCheck.reason}',
+      detail: policyCheck.reason,
     );
   }
 

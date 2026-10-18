@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:global_client/global_client.dart' show SiteAdminException;
+import 'package:itsbits_shared/door_code.dart' as door_code;
 import 'package:serverpod_client/serverpod_client.dart'
     show ServerpodClientException;
 
@@ -11,8 +14,10 @@ import '../door_secret_store.dart';
 
 /// Self-entry flow: runs automatically after scanning a doorinterface QR.
 /// Fetches (once per site, cached) the door secret from the global
-/// instance, computes the rolling code offline and sends it over BLE to
-/// the device, which verifies via the local instance and unlatches.
+/// instance, computes the code offline from a FRESH millisecond
+/// timestamp (every scan is unique — unlimited retries/frequency) and
+/// sends it over BLE to the device, which verifies via the local
+/// instance and unlatches.
 class DoorOpenScreen extends StatefulWidget {
   final ParsedQr parsed;
 
@@ -120,11 +125,24 @@ class _DoorOpenScreenState extends State<DoorOpenScreen> {
       _phase = DoorOpenPhase.connecting;
       _message = 'Verbinde mit dem Türgerät …';
     });
+    // Fresh timestamp per attempt — every request gets its own code,
+    // so retries/frequent opens never collide.
+    final timestampMs = DateTime.now().millisecondsSinceEpoch;
+    final code = door_code.computeDoorCode(
+      secretHex: secret,
+      timestampMs: timestampMs,
+      deviceMac: widget.parsed.remoteId,
+    );
+    final requestJson = jsonEncode({
+      'action': 'open',
+      'userId': userKey,
+      'code': code,
+      'timestampMs': timestampMs,
+      'deviceId': BleConstants.deviceId,
+    });
     return _session.run(
       remoteId: widget.parsed.remoteId,
-      siteId: siteId,
-      userKey: userKey,
-      secretHex: secret,
+      requestJson: requestJson,
     );
   }
 
@@ -148,6 +166,9 @@ class _DoorOpenScreenState extends State<DoorOpenScreen> {
       'CRED_INVALID' => 'Zugangsdaten unvollständig — bitte Scan wiederholen.',
       'ACCESS_DENIED' =>
         'Zugang verweigert${detail == null ? '' : ': $detail'}.',
+      'TIME_SKEW' =>
+        'Die Uhrzeit auf deinem Gerät weicht ab — bitte in den '
+            'Einstellungen die automatische Zeiteinstellung aktivieren.',
       'RATE_LIMITED' =>
         'Zu viele Versuche — bitte kurz warten und erneut versuchen.',
       'BACKEND_UNREACHABLE' =>

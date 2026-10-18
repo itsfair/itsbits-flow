@@ -41,10 +41,11 @@ public:
         String action   = extractField(payload, "action");
         String userId   = extractField(payload, "userId");
         String code     = extractField(payload, "code");
+        String timestampMs = extractField(payload, "timestampMs");
         String deviceId = extractField(payload, "deviceId");
-        Serial.printf("[BLE] parsed: action=%s userId=%s code=%s deviceId=%s\n",
-            action.c_str(), userId.c_str(), code.c_str(), deviceId.c_str());
-        _owner->queueRequest(action, userId, code, deviceId);
+        Serial.printf("[BLE] parsed: action=%s userId=%s code=%s ts=%s deviceId=%s\n",
+            action.c_str(), userId.c_str(), code.c_str(), timestampMs.c_str(), deviceId.c_str());
+        _owner->queueRequest(action, userId, code, timestampMs, deviceId);
     }
 };
 
@@ -85,14 +86,16 @@ void BleServer::loop() {
     String action = _pendingAction;
     String userId = _pendingUserId;
     String code = _pendingCode;
+    String timestampMs = _pendingTimestampMs;
     _pendingAction = "";
     _pendingUserId = "";
     _pendingCode = "";
+    _pendingTimestampMs = "";
     _pendingDeviceId = "";
 
     bool success = false;
     String respCode, message;
-    handleRequest(action, userId, code, success, respCode, message);
+    handleRequest(action, userId, code, timestampMs, success, respCode, message);
 
     String resp = "{\"success\":";
     resp += success ? "true" : "false";
@@ -104,11 +107,12 @@ void BleServer::loop() {
 }
 
 /// Real credential flow: every verification goes through the local
-/// backend (door-bound TOTP, single-use). A granted 'open' consumes the
-/// code and unlatches; 'test' verifies without a door action. The
-/// NOT_PAIRED check runs BEFORE verification so a failed open does not
-/// waste the user's single-use code.
-void BleServer::handleRequest(const String& action, const String& userId, const String& code, bool& success, String& codeOut, String& messageOut) {
+/// backend (door-bound timestamp code, single-use per (user, timestamp)
+/// — each scan computes a fresh code, so retries open immediately). A
+/// granted 'open' consumes the (user, timestamp) pair and unlatches;
+/// 'test' verifies without a door action. The NOT_PAIRED check runs
+/// BEFORE verification so a failed open does not waste the request.
+void BleServer::handleRequest(const String& action, const String& userId, const String& code, const String& timestampMs, bool& success, String& codeOut, String& messageOut) {
     if (action != "open" && action != "test") {
         success = false; codeOut = "UNKNOWN_ACTION"; messageOut = "Aktion unbekannt";
         return;
@@ -121,12 +125,12 @@ void BleServer::handleRequest(const String& action, const String& userId, const 
         success = false; codeOut = "NOT_PAIRED"; messageOut = "Kein Schloss gepaart";
         return;
     }
-    if (userId.isEmpty() || code.isEmpty()) {
+    if (userId.isEmpty() || code.isEmpty() || timestampMs.isEmpty()) {
         success = false; codeOut = "CRED_INVALID"; messageOut = "Zugangsdaten unvollstaendig";
         return;
     }
 
-    BackendClient::VerifyResult v = _backend->verify(userId, code, getAddress());
+    BackendClient::VerifyResult v = _backend->verify(userId, code, timestampMs, getAddress());
     if (!v.httpOk) {
         success = false; codeOut = "BACKEND_UNREACHABLE";
         messageOut = v.message.isEmpty() ? String("Backend nicht erreichbar") : v.message;
@@ -150,10 +154,11 @@ void BleServer::handleRequest(const String& action, const String& userId, const 
     success = false; codeOut = "LOCK_FAILED"; messageOut = "Oeffnen fehlgeschlagen";
 }
 
-void BleServer::queueRequest(const String& action, const String& userId, const String& code, const String& deviceId) {
+void BleServer::queueRequest(const String& action, const String& userId, const String& code, const String& timestampMs, const String& deviceId) {
     _pendingAction = action;
     _pendingUserId = userId;
     _pendingCode = code;
+    _pendingTimestampMs = timestampMs;
     _pendingDeviceId = deviceId;
 }
 

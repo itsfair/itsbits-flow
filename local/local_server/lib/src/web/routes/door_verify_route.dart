@@ -39,10 +39,12 @@ class DoorVerifyRoute extends Route {
     final userKeyRaw = json['userKey'];
     final code = json['code'];
     final deviceMac = json['deviceMac'];
+    final timestampMs = json['timestampMs'];
     final siteId = json['siteId'];
     if (userKeyRaw is! String ||
         code is! String ||
         deviceMac is! String ||
+        timestampMs is! int ||
         siteId is! int) {
       return _respond(DoorAccessResult.invalid);
     }
@@ -61,6 +63,7 @@ class DoorVerifyRoute extends Route {
         code: code,
         deviceMac: deviceMac,
         siteId: siteId,
+        timestampMs: timestampMs,
       );
       return _respond(result);
     } catch (e) {
@@ -73,6 +76,12 @@ class DoorVerifyRoute extends Route {
     final (status, code, message) = switch (result) {
       DoorAccessResult.granted => (200, 'OK', 'Zugang gewährt'),
       DoorAccessResult.denied => (200, 'ACCESS_DENIED', 'Zugang verweigert'),
+      DoorAccessResult.timeSkew => (
+        200,
+        'TIME_SKEW',
+        'Geräte-Zeit weicht ab — bitte automatische Zeiteinstellung '
+            'aktivieren',
+      ),
       DoorAccessResult.rateLimited => (
         200,
         'RATE_LIMITED',

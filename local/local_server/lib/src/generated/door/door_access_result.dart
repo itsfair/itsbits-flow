@@ -18,9 +18,14 @@ enum DoorAccessResult implements _is.SerializableModel {
   granted,
 
   /// Well-formed request, but the credential check failed (unknown user,
-  /// inactive membership, wrong/expired code, replay). Uniform denial —
+  /// inactive membership, wrong code, replay). Uniform denial —
   /// no information leak about WHICH check failed.
   denied,
+
+  /// The CODE was valid but its timestamp lies outside the skew window
+  /// (phone clock off — user-actionable). Only a holder of the correct
+  /// secret can produce it; does NOT feed the rate limiter.
+  timeSkew,
 
   /// Too many denied attempts for this user in a short window.
   rateLimited,
@@ -37,6 +42,8 @@ enum DoorAccessResult implements _is.SerializableModel {
         return DoorAccessResult.granted;
       case 'denied':
         return DoorAccessResult.denied;
+      case 'timeSkew':
+        return DoorAccessResult.timeSkew;
       case 'rateLimited':
         return DoorAccessResult.rateLimited;
       case 'invalid':

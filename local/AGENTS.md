@@ -110,14 +110,17 @@ DB name `local`. Details and full stack: root AGENTS.md.
 - **Door access (offline)**: the ESP posts verification requests to the
   `/api/door/verify` web route; `DoorAccessVerifier` (`src/door/`)
   checks the member mirror (`globalAuthUserId` → `doorCodeSecret`) and
-  the membership mirror (`active`), then the door-bound TOTP code
+  the membership mirror (`active`), then the door-bound TIMESTAMP code
   (shared `itsbits_shared/door_code.dart`: HMAC-SHA256 over
-  `<timeStep>:<normalizedMac>`, 30 s steps, ±1 window) — single-use via
-  the `door_access_consumed` table (unique user+step, race-safe,
-  15 min retention pruning), per-user rate limit (5 denied/min, fed
-  from the log), every attempt logged to `door_access_logs` (audit +
-  statistics; the basis for the later per-(door, member) time windows).
-  The member sync carries the per-(person, site) secrets
+  `<ms-since-epoch>:<normalizedMac>`; every request is unique —
+  unlimited frequency/instant retries/multiple doors, NO slots; valid
+  ±30 s skew, distinct `timeSkew` result) — single-use via the
+  `door_access_consumed` table (unique user+timestamp, race-safe,
+  15 min retention pruning, consumed AFTER the policy check so denials
+  never burn a code), per-user rate limit (5 denied/min, fed from the
+  log; `timeSkew` does NOT feed it), every attempt logged to
+  `door_access_logs` (audit + statistics). The member sync carries the
+  per-(person, site) secrets
   (`SiteSyncMember.doorCodeSecret` → `member_profile.doorCodeSecret`).
 - **Access policies (deny-by-default)**: WITHOUT an active assignment
   nobody may open any door (also the site admin). `access_policies`
@@ -145,9 +148,9 @@ DB name `local`. Details and full stack: root AGENTS.md.
   statuses, never exceptions (network errors are folded into the result).
   App side: shared `DoorDeviceApi` contract + status card + add/edit
   dialog (`itsbits_shared`), adapter `local_flutter/lib/
-  door_device_api.dart`, list `/selbsteinlass` + detail
-  `/selbsteinlass/:id` (confirm dialogs before every NUKI action, direct
-  link to the ESP web UI via `url_launcher`).
+  door_device_api.dart`, list `/self-entry/locks` + detail
+  `/self-entry/locks/:id` (confirm dialogs before every NUKI action,
+  direct link to the ESP web UI via `url_launcher`).
 - **Admin app shell state machine**: the setup mask (`/setup`) is forced
   while the connection is `noneSetup`/`needsReSetup` (drawer + login
   dropdown hidden; banner shows the reason: first setup vs. corrupted

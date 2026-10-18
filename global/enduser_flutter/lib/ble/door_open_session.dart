@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:bluetooth_low_energy/bluetooth_low_energy.dart';
-import 'package:itsbits_shared/door_code.dart' as door_code;
 
 import 'ble_constants.dart';
 
@@ -35,33 +34,33 @@ class DoorOpenResult {
   });
 }
 
-/// One-shot BLE session against a doorinterface: connect → discover →
-/// subscribe → compute the rolling door code (TOTP, door-bound) → write
-/// the verify request → await the notify response → disconnect.
+/// One-shot BLE session against a doorinterface: resolve Bluetooth
+/// state (WAIT for it — the manager resolves its state asynchronously,
+/// see diag report) → connect → MTU → discover → subscribe → write the
+/// verify request (code is computed by the caller with a fresh
+/// timestamp) → await the notify response → disconnect.
 ///
-/// Uses `bluetooth_low_energy` (Apache-2.0) instead of flutter_blue_plus
-/// (proprietary license at connect since 2.x). Android-first: the device
+/// EVERY await carries a timeout so a hanging GATT operation can never
+/// freeze the UI and the guaranteed cleanup (disconnect) always runs —
+/// no connection leaks that poison later attempts.
+///
+/// Uses `bluetooth_low_energy` (Apache-2.0). Android-first: the device
 /// is addressed by its BLE MAC from the QR code.
 class DoorOpenSession {
   Future<DoorOpenResult> run({
     required final String remoteId,
-    required final int siteId,
-    required final String userKey,
-    required final String secretHex,
+    required final String requestJson,
   }) async {
     final manager = CentralManager();
     Peripheral? peripheral;
     StreamSubscription<dynamic>? notifySub;
     try {
-      final state = manager.state;
-      if (state == BluetoothLowEnergyState.unauthorized) {
-        await manager.authorize();
-      }
-      if (manager.state != BluetoothLowEnergyState.poweredOn) {
-        return const DoorOpenResult(
+      final bluetoothError = await _awaitBluetoothReady(manager);
+      if (bluetoothError != null) {
+        return DoorOpenResult(
           finalPhase: DoorOpenPhase.error,
           success: false,
-          errorMessage: 'Bluetooth ist nicht aktiv oder nicht berechtigt.',
+          errorMessage: bluetoothError,
         );
       }
 
@@ -69,14 +68,15 @@ class DoorOpenSession {
       await manager.connect(peripheral).timeout(BleConstants.connectTimeout);
 
       // Android defaults to MTU 23 (20 payload bytes) — without an
-      // explicit request both the ~100-byte request JSON and the ESP's
-      // response get truncated (FormatException on the response JSON).
-      // The ESP caps negotiation at its local setMTU(128).
+      // explicit request both the request JSON and the ESP's response
+      // get truncated. The ESP caps negotiation at its setMTU(128).
       try {
-        await manager.requestMTU(peripheral, mtu: 185);
+        await manager.requestMTU(peripheral, mtu: 185).timeout(_mtuTimeout);
       } on UnsupportedError catch (_) {}
 
-      final services = await manager.discoverGATT(peripheral);
+      final services = await manager
+          .discoverGATT(peripheral)
+          .timeout(_discoveryTimeout);
       GATTCharacteristic? requestChar;
       GATTCharacteristic? responseChar;
       for (final service in services) {
@@ -107,29 +107,18 @@ class DoorOpenSession {
           completer.complete(utf8.decode(args.value, allowMalformed: true));
         }
       });
-      await manager.setCharacteristicNotifyState(
-        peripheral,
-        responseChar,
-        state: true,
-      );
+      await manager
+          .setCharacteristicNotifyState(peripheral, responseChar, state: true)
+          .timeout(_opTimeout);
 
-      final code = door_code.computeDoorCode(
-        secretHex: secretHex,
-        step: door_code.doorCodeStep(DateTime.now()),
-        deviceMac: remoteId,
-      );
-      final request = jsonEncode({
-        'action': 'open',
-        'userId': userKey,
-        'code': code,
-        'deviceId': 'flutter-enduser',
-      });
-      await manager.writeCharacteristic(
-        peripheral,
-        requestChar,
-        value: Uint8List.fromList(utf8.encode(request)),
-        type: GATTCharacteristicWriteType.withResponse,
-      );
+      await manager
+          .writeCharacteristic(
+            peripheral,
+            requestChar,
+            value: Uint8List.fromList(utf8.encode(requestJson)),
+            type: GATTCharacteristicWriteType.withResponse,
+          )
+          .timeout(_opTimeout);
 
       final responseJson = await completer.future.timeout(
         BleConstants.responseTimeout,
@@ -146,7 +135,9 @@ class DoorOpenSession {
       return const DoorOpenResult(
         finalPhase: DoorOpenPhase.error,
         success: false,
-        errorMessage: 'Keine Antwort vom Gerät (Timeout).',
+        errorMessage:
+            'Verbindung zum Gerät ist nicht stabil — bitte erneut '
+            'scannen.',
       );
     } on FormatException catch (e) {
       return DoorOpenResult(
@@ -166,12 +157,56 @@ class DoorOpenSession {
       await notifySub?.cancel();
       if (peripheral != null) {
         try {
-          await manager.disconnect(peripheral);
+          await manager.disconnect(peripheral).timeout(_opTimeout);
         } catch (_) {}
       }
     }
   }
+
+  Future<String?> _awaitBluetoothReady(final CentralManager manager) async {
+    const resolveTimeout = Duration(seconds: 5);
+    if (manager.state == BluetoothLowEnergyState.poweredOn) return null;
+
+    for (var attempt = 0; attempt < 3; attempt++) {
+      final completer = Completer<BluetoothLowEnergyState>();
+      final sub = manager.stateChanged.listen(
+        (args) {
+          if (!completer.isCompleted) completer.complete(args.state);
+        },
+      );
+      BluetoothLowEnergyState state;
+      try {
+        state = await completer.future.timeout(resolveTimeout);
+      } on TimeoutException {
+        await sub.cancel();
+        return 'Bluetooth-Status konnte nicht ermittelt werden — '
+            'bitte erneut scannen.';
+      } finally {
+        await sub.cancel();
+      }
+
+      if (state == BluetoothLowEnergyState.poweredOn) return null;
+      if (state == BluetoothLowEnergyState.unauthorized) {
+        // Pops the Android permission dialog; the next loop iteration
+        // waits for the resulting state change.
+        await manager.authorize();
+        continue;
+      }
+      return switch (state) {
+        BluetoothLowEnergyState.unsupported =>
+          'Bluetooth wird von diesem Gerät nicht unterstützt.',
+        BluetoothLowEnergyState.poweredOff => 'Bluetooth ist ausgeschaltet.',
+        _ => 'Bluetooth ist nicht verfügbar.',
+      };
+    }
+    return 'Bluetooth-Berechtigung wurde nicht erteilt — bitte erneut '
+        'scannen.';
+  }
 }
+
+const Duration _mtuTimeout = Duration(seconds: 5);
+const Duration _discoveryTimeout = Duration(seconds: 10);
+const Duration _opTimeout = Duration(seconds: 5);
 
 bool _sameUuid(final UUID a, final UUID b) {
   for (var i = 0; i < 16; i++) {

@@ -5,13 +5,8 @@ void main() {
   const secret =
       '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
   const mac = 'A4:CF:12:9D:71:E2';
-  final fixedTime = DateTime.utc(2026, 1, 1, 12, 0, 15); // step boundary +15 s
-
-  test('step derives from unix time in 30 s buckets', () {
-    final base = doorCodeStep(fixedTime);
-    expect(doorCodeStep(fixedTime.add(const Duration(seconds: 14))), base);
-    expect(doorCodeStep(fixedTime.add(const Duration(seconds: 16))), base + 1);
-  });
+  final now = DateTime.utc(2026, 1, 1, 12, 0, 0);
+  final timestampMs = now.millisecondsSinceEpoch;
 
   test('mac normalization is stable across formats', () {
     expect(normalizeDeviceMac('a4:cf:12:9d:71:e2'), 'A4CF129D71E2');
@@ -19,56 +14,84 @@ void main() {
     expect(normalizeDeviceMac('a4cf129d71e2'), 'A4CF129D71E2');
   });
 
-  test('codes match for the same step and differ per door and step', () {
-    final step = doorCodeStep(fixedTime);
+  test('codes are deterministic per timestamp and unique per scan', () {
     final code = computeDoorCode(
       secretHex: secret,
-      step: step,
+      timestampMs: timestampMs,
       deviceMac: mac,
     );
     expect(code, hasLength(6));
     expect(
-      computeDoorCode(secretHex: secret, step: step, deviceMac: mac),
+      computeDoorCode(secretHex: secret, timestampMs: timestampMs, deviceMac: mac),
       code,
+    );
+  });
+
+  test('codes differ per door and per timestamp', () {
+    final code = computeDoorCode(
+      secretHex: secret,
+      timestampMs: timestampMs,
+      deviceMac: mac,
     );
     expect(
       computeDoorCode(
         secretHex: secret,
-        step: step,
+        timestampMs: timestampMs,
         deviceMac: 'AA:BB:CC:DD:EE:FF',
       ),
       isNot(code),
     );
     expect(
-      computeDoorCode(secretHex: secret, step: step + 1, deviceMac: mac),
+      computeDoorCode(
+        secretHex: secret,
+        timestampMs: timestampMs + 1,
+        deviceMac: mac,
+      ),
       isNot(code),
     );
   });
 
-  test('verification accepts the code within the ±1 step window', () {
+  test('verification accepts the timestamp within the skew window', () {
     expect(
       verifyDoorCode(
         secretHex: secret,
         code: computeDoorCode(
           secretHex: secret,
-          step: doorCodeStep(fixedTime) - 1,
+          timestampMs: timestampMs - 25 * 1000,
           deviceMac: mac,
         ),
         deviceMac: mac,
-        now: fixedTime,
+        timestampMs: timestampMs - 25 * 1000,
+        now: now.toLocal(),
       ),
       isTrue,
+    );
+  });
+
+  test('verification flags out-of-window timestamps as skew-only', () {
+    final staleTs = timestampMs - 45 * 1000;
+    final code = computeDoorCode(
+      secretHex: secret,
+      timestampMs: staleTs,
+      deviceMac: mac,
     );
     expect(
       verifyDoorCode(
         secretHex: secret,
-        code: computeDoorCode(
-          secretHex: secret,
-          step: doorCodeStep(fixedTime) + 1,
-          deviceMac: mac,
-        ),
+        code: code,
         deviceMac: mac,
-        now: fixedTime,
+        timestampMs: staleTs,
+        now: now.toLocal(),
+      ),
+      isFalse,
+    );
+    expect(
+      isTimeSkewOnly(
+        secretHex: secret,
+        code: code,
+        deviceMac: mac,
+        timestampMs: staleTs,
+        now: now.toLocal(),
       ),
       isTrue,
     );
@@ -78,64 +101,22 @@ void main() {
     expect(
       verifyDoorCode(
         secretHex: secret,
-        code: computeDoorCode(
-          secretHex: secret,
-          step: doorCodeStep(fixedTime) - 2,
-          deviceMac: mac,
-        ),
+        code: '000000',
         deviceMac: mac,
-        now: fixedTime,
+        timestampMs: timestampMs,
+        now: now.toLocal(),
       ),
       isFalse,
     );
     expect(
-      verifyDoorCode(
-        secretHex: 'ff$secret'.substring(2),
-        code: '123456',
-        deviceMac: mac,
-        now: fixedTime,
-      ),
-      isFalse,
-    );
-    expect(
-      verifyDoorCode(
-        secretHex: secret,
-        code: computeDoorCode(
-          secretHex: secret,
-          step: doorCodeStep(fixedTime),
-          deviceMac: mac,
-        ),
-        deviceMac: 'AA:BB:CC:DD:EE:FF',
-        now: fixedTime,
-      ),
-      isFalse,
-    );
-  });
-
-  test('matched step resolves for consumption', () {
-    final current = doorCodeStep(fixedTime);
-    final code = computeDoorCode(
-      secretHex: secret,
-      step: current - 1,
-      deviceMac: mac,
-    );
-    expect(
-      matchedDoorCodeStep(
-        secretHex: secret,
-        code: code,
-        deviceMac: mac,
-        now: fixedTime,
-      ),
-      current - 1,
-    );
-    expect(
-      matchedDoorCodeStep(
+      isTimeSkewOnly(
         secretHex: secret,
         code: '000000',
         deviceMac: mac,
-        now: fixedTime,
+        timestampMs: timestampMs,
+        now: now.toLocal(),
       ),
-      isNull,
+      isFalse,
     );
   });
 }

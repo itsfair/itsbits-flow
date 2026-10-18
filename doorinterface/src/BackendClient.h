@@ -27,9 +27,12 @@ public:
     bool setConfig(const String& url, const String& siteId, String& error);
 
     /// POSTs one verification request to `<url>/api/door/verify`.
-    VerifyResult verify(const String& userKey, const String& code, const String& deviceMac);
+    /// [timestampMs] is the millisecond epoch the app computed the code
+    /// with — relayed verbatim (the backend validates the skew).
+    VerifyResult verify(const String& userKey, const String& code, const String& timestampMs, const String& deviceMac);
 
 private:
     String _url;
     int _siteId = 0;
 };
+

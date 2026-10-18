@@ -15,7 +15,7 @@ public:
     void loop();
     void sendResponse(const String& resp);
     String getAddress();
-    void queueRequest(const String& action, const String& userId, const String& code, const String& deviceId);
+    void queueRequest(const String& action, const String& userId, const String& code, const String& timestampMs, const String& deviceId);
 
 private:
     NukiManager* _nuki = nullptr;
@@ -23,7 +23,8 @@ private:
     String _pendingAction = "";
     String _pendingUserId = "";
     String _pendingCode = "";
+    String _pendingTimestampMs = "";
     String _pendingDeviceId = "";
 
-    void handleRequest(const String& action, const String& userId, const String& code, bool& success, String& codeOut, String& messageOut);
+    void handleRequest(const String& action, const String& userId, const String& code, const String& timestampMs, bool& success, String& codeOut, String& messageOut);
 };

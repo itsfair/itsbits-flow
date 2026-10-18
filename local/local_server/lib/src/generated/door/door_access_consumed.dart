@@ -13,22 +13,22 @@
 import 'package:serverpod/serverpod.dart' as _is;
 
 /// Single-use bookkeeping for door codes: one row per consumed
-/// (person, time step). The unique index makes the consumption check
-/// race-safe (insert fails => already used => deny). Old rows are
-/// pruned opportunistically.
+/// (person, request timestamp). The unique index makes the consumption
+/// check race-safe (insert fails => already used => deny). Old rows are
+/// pruned opportunistically (~15 min retention).
 abstract class DoorAccessConsumed
     implements _is.TableRow<int?>, _is.ProtocolSerialization {
   DoorAccessConsumed._({
     this.id,
     required this.userKey,
-    required this.step,
+    required this.timestampMs,
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
   factory DoorAccessConsumed({
     int? id,
     required _is.UuidValue userKey,
-    required int step,
+    required int timestampMs,
     DateTime? createdAt,
   }) = _DoorAccessConsumedImpl;
 
@@ -38,7 +38,7 @@ abstract class DoorAccessConsumed
       userKey: _is.UuidValueJsonExtension.fromJson(
         jsonSerialization['userKey'],
       ),
-      step: jsonSerialization['step'] as int,
+      timestampMs: jsonSerialization['timestampMs'] as int,
       createdAt: jsonSerialization['createdAt'] == null
           ? null
           : _is.DateTimeJsonExtension.fromJson(jsonSerialization['createdAt']),
@@ -55,8 +55,9 @@ abstract class DoorAccessConsumed
   /// The person the code belongs to.
   _is.UuidValue userKey;
 
-  /// The TOTP time step the consumed code was computed for.
-  int step;
+  /// The millisecond timestamp the consumed code was computed for
+  /// (each request computes its own code from a fresh timestamp).
+  int timestampMs;
 
   /// When the code was consumed.
   DateTime createdAt;
@@ -70,7 +71,7 @@ abstract class DoorAccessConsumed
   DoorAccessConsumed copyWith({
     int? id,
     _is.UuidValue? userKey,
-    int? step,
+    int? timestampMs,
     DateTime? createdAt,
   });
   @override
@@ -79,7 +80,7 @@ abstract class DoorAccessConsumed
       '__className__': 'DoorAccessConsumed',
       if (id != null) 'id': id,
       'userKey': userKey.toJson(),
-      'step': step,
+      'timestampMs': timestampMs,
       'createdAt': createdAt.toJson(),
     };
   }
@@ -90,7 +91,7 @@ abstract class DoorAccessConsumed
       '__className__': 'DoorAccessConsumed',
       if (id != null) 'id': id,
       'userKey': userKey.toJson(),
-      'step': step,
+      'timestampMs': timestampMs,
       'createdAt': createdAt.toJson(),
     };
   }
@@ -129,12 +130,12 @@ class _DoorAccessConsumedImpl extends DoorAccessConsumed {
   _DoorAccessConsumedImpl({
     int? id,
     required _is.UuidValue userKey,
-    required int step,
+    required int timestampMs,
     DateTime? createdAt,
   }) : super._(
          id: id,
          userKey: userKey,
-         step: step,
+         timestampMs: timestampMs,
          createdAt: createdAt,
        );
 
@@ -145,13 +146,13 @@ class _DoorAccessConsumedImpl extends DoorAccessConsumed {
   DoorAccessConsumed copyWith({
     Object? id = _Undefined,
     _is.UuidValue? userKey,
-    int? step,
+    int? timestampMs,
     DateTime? createdAt,
   }) {
     return DoorAccessConsumed(
       id: id is int? ? id : this.id,
       userKey: userKey ?? this.userKey,
-      step: step ?? this.step,
+      timestampMs: timestampMs ?? this.timestampMs,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -167,8 +168,8 @@ class DoorAccessConsumedUpdateTable
         value,
       );
 
-  _is.ColumnValue<int, int> step(int value) => _is.ColumnValue(
-    table.step,
+  _is.ColumnValue<int, int> timestampMs(int value) => _is.ColumnValue(
+    table.timestampMs,
     value,
   );
 
@@ -187,8 +188,8 @@ class DoorAccessConsumedTable extends _is.Table<int?> {
       'userKey',
       this,
     );
-    step = _is.ColumnInt(
-      'step',
+    timestampMs = _is.ColumnInt(
+      'timestampMs',
       this,
     );
     createdAt = _is.ColumnDateTime(
@@ -202,8 +203,9 @@ class DoorAccessConsumedTable extends _is.Table<int?> {
   /// The person the code belongs to.
   late final _is.ColumnUuid userKey;
 
-  /// The TOTP time step the consumed code was computed for.
-  late final _is.ColumnInt step;
+  /// The millisecond timestamp the consumed code was computed for
+  /// (each request computes its own code from a fresh timestamp).
+  late final _is.ColumnInt timestampMs;
 
   /// When the code was consumed.
   late final _is.ColumnDateTime createdAt;
@@ -212,7 +214,7 @@ class DoorAccessConsumedTable extends _is.Table<int?> {
   List<_is.Column> get columns => [
     id,
     userKey,
-    step,
+    timestampMs,
     createdAt,
   ];
 }

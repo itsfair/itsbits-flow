@@ -13,7 +13,7 @@ Smartphone-App                ESP32 (Peripheral)              Lokale Instanz
      │── BLE Scan ─────────────────>│                              │
      │── BLE Connect ─────────────>│ (onConnect)                  │
      │── Write Request ───────────>│ (onWrite)                    │
-     │                              │── POST /api/door/verify ───>│ (TOTP-Prüfung)
+     │                              │── POST /api/door/verify ───>│ (Code-Prüfung)
      │                              │<── {ok, code, message} ─────│ (offline, kein Global-
      │<── Notify Response ─────────│                              │  Round-Trip)
      │── BLE Disconnect ──────────>│ (onDisconnect → Adv restart) │
@@ -55,14 +55,15 @@ Smartphone-App                ESP32 (Peripheral)              Lokale Instanz
 |-----------|-----|---------|-----------|
 | `action`  | str | ja      | `"open"` (verifizieren + Tür öffnen) oder `"test"` (nur verifizieren, keine Türaktion) |
 | `userId`  | str | ja      | `globalAuthUserId` der Person (Tür-Schlüssel, aus dem Profil) |
-| `code`    | str | ja      | Der rollierende Code: 6 Ziffern aus `HMAC-SHA256(secret, "<step>:<MAC ohne Doppelpunkte, uppercase>")`, Schrittweite 30 s |
+| `code`    | str | ja      | 6 Ziffern aus `HMAC-SHA256(secret, "<timestampMs>:<MAC ohne Doppelpunkte, uppercase>")` |
+| `timestampMs` | num | ja | Der Millisekunden-Epoch-Zeitstempel, mit dem die App den Code berechnet hat (jede Anfrage einzigartig → unbegrenzt oft öffnen, Sofort-Retry; Backend prüft ±30 s Zeitabweichung) |
 | `deviceId`| str | nein    | Geräte-ID des Smartphones, nur fürs Logging / Echo |
 
 Das alte Feld `credential` (Prototyp) ist entfallen. Der Code ist **an die Tür
-gebunden** (MAC im HMAC-Input) und **einmalig** — der lokale Server verbraucht
-jeden `(user, step)`-Code genau einmal (Replay-Schutz). Türen kurz
-nacheinander funktionieren, da die App pro Tür einen frischen Code aus dem
-gleichen Secret berechnet.
+gebunden** (MAC im HMAC-Input) und **einmalig pro (user, timestamp)** — der
+lokale Server verbraucht jedes Paar genau einmal (Replay-Schutz). Jeder Scan
+erzeugt einen frischen Timestamp → Mehrfach-Öffnungen, Sofort-Retry und
+Mehrfach-Türen funktionieren ohne Wartezeit.
 
 ## Response-Format (ESP → Smartphone, Notify auf Response-Characteristic)
 
@@ -83,8 +84,9 @@ gleichen Secret berechnet.
 | `DEVICE_UNCONFIGURED`| false     | Kein Backend konfiguriert (Setup offen) |
 | `NOT_PAIRED`          | false     | Kein NUKI-Schloss gepaart (wird VOR der Prüfung gecheckt — verbraucht keinen Code) |
 | `CRED_INVALID`        | false     | Anfrage unvollständig oder vom Backend als malform zurückgewiesen |
-| `ACCESS_DENIED`       | false     | Verifizierung fehlgeschlagen (unbekannter User, inaktive Mitgliedschaft, falscher Code, Replay — bewusst nicht unterscheidbar) |
-| `RATE_LIMITED`        | false     | Zu viele fehlgeschlagene Versuche für diesen User (Backdoor-Bruteforce-Schutz) |
+| `ACCESS_DENIED`       | false     | Verifizierung fehlgeschlagen (unbekannter User, inaktive Mitgliedschaft, falscher Code, Replay, Policy-Fenster — bewusst nicht unterscheidbar) |
+| `TIME_SKEW`           | false     | Code war gültig, aber der Zeitstempel liegt > ±30 s von der Instanz-Zeit (Handy-Uhr falsch — Nutzer bitte automatische Zeiteinstellung aktivieren) |
+| `RATE_LIMITED`        | false     | Zu viele fehlgeschlagene Versuche für diesen User (Bruteforce-Schutz) |
 | `BACKEND_UNREACHABLE` | false     | Lokale Instanz nicht erreichbar (Timeout/Verbindungsfehler) |
 | `LOCK_FAILED`         | false     | Verifiziert, aber `unlatch()` wurde nicht angenommen |
 | `UNKNOWN_ACTION`      | false     | `action` fehlt oder wurde nicht erkannt |
@@ -97,6 +99,7 @@ gleichen Secret berechnet.
 {
   "userKey": "<userId aus dem BLE-Request>",
   "code": "<code aus dem BLE-Request>",
+  "timestampMs": 1760000000000,
   "siteId": 42,
   "deviceMac": "<BLE-MAC des ESP, z.B. A4:CF:12:9D:71:E2>"
 }
@@ -105,7 +108,7 @@ gleichen Secret berechnet.
 Antwort: `{ "ok": bool, "code": str, "message": str }` — `code` wie oben
 (Backend-Seite: `OK` / `ACCESS_DENIED` / `RATE_LIMITED` / `CRED_INVALID` /
 `SERVER_ERROR`). Die Prüflogik (Mirror-Datenbank, aktive Mitgliedschaft,
-TOTP-Fenster ±1 Schritt, Einmalverbrauch, Rate-Limit, Access-Log) liegt
+Zeitfenster ±30 s, Einmalverbrauch, Rate-Limit, Access-Log) liegt
 komplett auf der lokalen Instanz und funktioniert ohne Internet.
 
 Backend-Config auf dem ESP: NVS-Namespace `backend` (`url`, `siteId`),

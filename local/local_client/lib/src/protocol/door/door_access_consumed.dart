@@ -13,22 +13,22 @@
 import 'package:serverpod_client/serverpod_client.dart' as _isc;
 
 /// Single-use bookkeeping for door codes: one row per consumed
-/// (person, time step). The unique index makes the consumption check
-/// race-safe (insert fails => already used => deny). Old rows are
-/// pruned opportunistically.
+/// (person, request timestamp). The unique index makes the consumption
+/// check race-safe (insert fails => already used => deny). Old rows are
+/// pruned opportunistically (~15 min retention).
 abstract class DoorAccessConsumed
     implements _isc.SerializableModel, _isc.ProtocolSerialization {
   DoorAccessConsumed._({
     this.id,
     required this.userKey,
-    required this.step,
+    required this.timestampMs,
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
   factory DoorAccessConsumed({
     int? id,
     required _isc.UuidValue userKey,
-    required int step,
+    required int timestampMs,
     DateTime? createdAt,
   }) = _DoorAccessConsumedImpl;
 
@@ -38,7 +38,7 @@ abstract class DoorAccessConsumed
       userKey: _isc.UuidValueJsonExtension.fromJson(
         jsonSerialization['userKey'],
       ),
-      step: jsonSerialization['step'] as int,
+      timestampMs: jsonSerialization['timestampMs'] as int,
       createdAt: jsonSerialization['createdAt'] == null
           ? null
           : _isc.DateTimeJsonExtension.fromJson(jsonSerialization['createdAt']),
@@ -53,8 +53,9 @@ abstract class DoorAccessConsumed
   /// The person the code belongs to.
   _isc.UuidValue userKey;
 
-  /// The TOTP time step the consumed code was computed for.
-  int step;
+  /// The millisecond timestamp the consumed code was computed for
+  /// (each request computes its own code from a fresh timestamp).
+  int timestampMs;
 
   /// When the code was consumed.
   DateTime createdAt;
@@ -65,7 +66,7 @@ abstract class DoorAccessConsumed
   DoorAccessConsumed copyWith({
     int? id,
     _isc.UuidValue? userKey,
-    int? step,
+    int? timestampMs,
     DateTime? createdAt,
   });
   @override
@@ -74,7 +75,7 @@ abstract class DoorAccessConsumed
       '__className__': 'DoorAccessConsumed',
       if (id != null) 'id': id,
       'userKey': userKey.toJson(),
-      'step': step,
+      'timestampMs': timestampMs,
       'createdAt': createdAt.toJson(),
     };
   }
@@ -85,7 +86,7 @@ abstract class DoorAccessConsumed
       '__className__': 'DoorAccessConsumed',
       if (id != null) 'id': id,
       'userKey': userKey.toJson(),
-      'step': step,
+      'timestampMs': timestampMs,
       'createdAt': createdAt.toJson(),
     };
   }
@@ -102,12 +103,12 @@ class _DoorAccessConsumedImpl extends DoorAccessConsumed {
   _DoorAccessConsumedImpl({
     int? id,
     required _isc.UuidValue userKey,
-    required int step,
+    required int timestampMs,
     DateTime? createdAt,
   }) : super._(
          id: id,
          userKey: userKey,
-         step: step,
+         timestampMs: timestampMs,
          createdAt: createdAt,
        );
 
@@ -118,13 +119,13 @@ class _DoorAccessConsumedImpl extends DoorAccessConsumed {
   DoorAccessConsumed copyWith({
     Object? id = _Undefined,
     _isc.UuidValue? userKey,
-    int? step,
+    int? timestampMs,
     DateTime? createdAt,
   }) {
     return DoorAccessConsumed(
       id: id is int? ? id : this.id,
       userKey: userKey ?? this.userKey,
-      step: step ?? this.step,
+      timestampMs: timestampMs ?? this.timestampMs,
       createdAt: createdAt ?? this.createdAt,
     );
   }

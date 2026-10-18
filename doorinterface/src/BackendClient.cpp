@@ -81,7 +81,7 @@ bool BackendClient::setConfig(const String& urlIn, const String& siteIdIn, Strin
     return true;
 }
 
-BackendClient::VerifyResult BackendClient::verify(const String& userKey, const String& code, const String& deviceMac) {
+BackendClient::VerifyResult BackendClient::verify(const String& userKey, const String& code, const String& timestampMs, const String& deviceMac) {
     VerifyResult r;
     if (!isConfigured()) {
         r.code = "DEVICE_UNCONFIGURED";
@@ -92,6 +92,7 @@ BackendClient::VerifyResult BackendClient::verify(const String& userKey, const S
     String body = "{";
     body += "\"userKey\":\"" + jsonEscape(userKey) + "\"";
     body += ",\"code\":\"" + jsonEscape(code) + "\"";
+    body += ",\"timestampMs\":" + jsonEscape(timestampMs);
     body += ",\"siteId\":" + String(_siteId);
     body += ",\"deviceMac\":\"" + jsonEscape(deviceMac) + "\"";
     body += "}";
@@ -107,7 +108,7 @@ BackendClient::VerifyResult BackendClient::verify(const String& userKey, const S
         return r;
     }
     http.addHeader("Content-Type", "application/json");
-    Serial.printf("[BE] verify user=%s code=%s\n", userKey.c_str(), code.c_str());
+    Serial.printf("[BE] verify user=%s code=%s ts=%s\n", userKey.c_str(), code.c_str(), timestampMs.c_str());
     int status = http.POST(body);
     if (status <= 0) {
         Serial.printf("[BE] Fehler: %s\n", HTTPClient::errorToString(status).c_str());
