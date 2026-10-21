@@ -19,6 +19,22 @@ static String extractField(const String& json, const String& key) {
     return json.substring(c + 1, end);
 }
 
+/// Extracts a NUMBER field (no quotes — e.g. "timestampMs":1760000000000).
+/// String-only extractField would grab the next key's name instead.
+static String extractNumberField(const String& json, const String& key) {
+    String needle = "\"" + key + "\"";
+    int k = json.indexOf(needle);
+    if (k < 0) return "";
+    int c = json.indexOf(':', k);
+    if (c < 0) return "";
+    c++;
+    while (c < json.length() && json.charAt(c) == ' ') c++;
+    int start = c;
+    while (c < json.length() && isDigit(json.charAt(c))) c++;
+    if (c == start) return "";
+    return json.substring(start, c);
+}
+
 class ServerCallbacks : public NimBLEServerCallbacks {
     void onConnect(NimBLEServer*) override {
         Serial.println("[BLE] client connected");
@@ -41,7 +57,7 @@ public:
         String action   = extractField(payload, "action");
         String userId   = extractField(payload, "userId");
         String code     = extractField(payload, "code");
-        String timestampMs = extractField(payload, "timestampMs");
+        String timestampMs = extractNumberField(payload, "timestampMs");
         String deviceId = extractField(payload, "deviceId");
         Serial.printf("[BLE] parsed: action=%s userId=%s code=%s ts=%s deviceId=%s\n",
             action.c_str(), userId.c_str(), code.c_str(), timestampMs.c_str(), deviceId.c_str());
