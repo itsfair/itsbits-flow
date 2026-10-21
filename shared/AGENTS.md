@@ -39,7 +39,7 @@ Client plain-fields (image URL, names, birthday) travel as
 | `lib/screens/site_list_screen.dart` | Full list: debounced search, pagination, grid of `SiteCard`s; optional host FAB |
 | `lib/screens/site_detail_body.dart` | Shared site detail display body (image/chip/address/contact) |
 | `lib/screens/site_details_editor.dart` | Site-properties editor (fields + JPEG image) + `SiteDetailsApi` (get/save/setSiteImage/removeSiteImage) — the local app's "Standort" page; connectivity gating is server-side |
-| `lib/door_code.dart` | Rolling door codes (TOTP-style, 30 s steps): shared HMAC computation/verification used by the end-user app (compute) and the local server (verify) — door-bound (`normalizeDeviceMac` in the HMAC input), single-source-of-truth algorithm |
+| `lib/door_code.dart` | Re-export shim: the rolling door codes (TOTP-style HMAC computation/verification, door-bound via `normalizeDeviceMac`) live in the PURE-DART package `itsbits_dart` (`lib/door_code.dart` there) so both servers can import them without a Flutter dependency; this file only re-exports for the Flutter apps |
 | `lib/door_device_directory.dart` | `DoorDeviceData`/`DoorDeviceStatusData`/`DoorDevicePushData`, `DoorDeviceApi` (injected backend contract for the local door-device admin) |
 | `lib/widgets/door_device_status_card.dart` | Connection-test/status card for one doorinterface (ESP status probe result) |
 | `lib/widgets/door_device_dialog.dart` | Add/edit dialog for door devices (name + LAN address) |

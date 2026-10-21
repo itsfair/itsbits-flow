@@ -16,6 +16,8 @@ dependencies:
   flutter_svg: ^2.2.0
   go_router: ^18.0.2
   image_picker: ^1.1.2
+  itsbits_dart:
+    path: ../itsbits_dart
   qr_flutter: ^4.1.0
 dev_dependencies:
   flutter_lints: '>=3.0.0 <7.0.0'

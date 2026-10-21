@@ -1,0 +1,17 @@
+# Build-context filters for building the server images from the repo
+# root (see the server Dockerfiles). Keeps large/irrelevant dirs out of
+# the context and keeps secrets out of the images.
+.git
+**/.git
+**/.dart_tool
+**/build
+**/node_modules
+
+# ESP32 firmware is built by PlatformIO, never part of a server image.
+doorinterface/
+
+# NEVER bake secrets: all passwords travel via SERVERPOD_PASSWORD_* env.
+**/config/passwords.yaml
+
+# Local probe artifacts.
+_presign_probe/

@@ -1,5 +1,5 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:itsbits_shared/door_code.dart';
+import 'package:itsbits_dart/door_code.dart';
+import 'package:test/test.dart';
 
 void main() {
   const secret =
@@ -22,7 +22,11 @@ void main() {
     );
     expect(code, hasLength(6));
     expect(
-      computeDoorCode(secretHex: secret, timestampMs: timestampMs, deviceMac: mac),
+      computeDoorCode(
+        secretHex: secret,
+        timestampMs: timestampMs,
+        deviceMac: mac,
+      ),
       code,
     );
   });

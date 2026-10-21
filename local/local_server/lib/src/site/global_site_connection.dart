@@ -11,6 +11,7 @@ import 'package:serverpod_auth_idp_server/providers/email.dart'
     hide AuthSuccess;
 
 import '../generated/protocol.dart';
+import 'site_connection_secrets.dart';
 import 'site_sync_processor.dart';
 
 /// Scope of the local site admin on this local instance (created at setup).
@@ -43,7 +44,9 @@ class SiteConnectionAuthStorage implements ClientAuthSuccessStorage {
 
     final auth = AuthSuccess(
       authStrategy: AuthStrategy.session.name,
-      token: row.deviceSessionKey!,
+      // At-rest decryption: the row stores AES-GCM ciphertext
+      // (`SiteConnectionSecrets`); legacy plaintext rows pass through.
+      token: await SiteConnectionSecrets.decrypt(row.deviceSessionKey!),
       authUserId: row.adminAuthUserId!,
       scopeNames: {kSiteDeviceScope},
     );
@@ -155,7 +158,11 @@ class GlobalSiteConnection {
           siteCountry: transfer.siteCountry,
           siteCompanyEmail: transfer.siteCompanyEmail,
           adminAuthUserId: transfer.adminAuthUserId,
-          deviceSessionKey: transfer.deviceSessionKey,
+          // At-rest encrypted (SiteConnectionSecrets; legacy plaintext
+          // rows re-encrypt on the next enrollment/recovery write).
+          deviceSessionKey: await SiteConnectionSecrets.encrypt(
+            transfer.deviceSessionKey,
+          ),
         ),
       );
     } else {
@@ -171,7 +178,9 @@ class GlobalSiteConnection {
           siteCountry: transfer.siteCountry,
           siteCompanyEmail: transfer.siteCompanyEmail,
           adminAuthUserId: transfer.adminAuthUserId,
-          deviceSessionKey: transfer.deviceSessionKey,
+          deviceSessionKey: await SiteConnectionSecrets.encrypt(
+            transfer.deviceSessionKey,
+          ),
         ),
       );
     }

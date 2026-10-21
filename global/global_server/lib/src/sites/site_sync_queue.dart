@@ -16,6 +16,15 @@ abstract final class SiteSyncQueue {
   /// Latest-pull cap per call (local pulls again at its next ping).
   static const int maxBatchSize = 100;
 
+  /// Delivery-attempt cap: a task that has been pulled (or failed its
+  /// data check) this many times without a confirm is DROPPED from
+  /// delivery and alarms exactly once (the row stays for diagnosis —
+  /// a re-enqueue of the same person resets it, see collapse below).
+  /// Persistent non-applying tasks usually come from permanent trouble
+  /// at that site (image transfer, storage outage); delivery would
+  /// otherwise retry at every ping forever.
+  static const int maxDeliveryAttempts = 50;
+
   /// Enqueues current-state deliveries for every site the profile has an
   /// ACTIVE membership at; used by all global profile edits (`save`,
   /// `setUserImage`, `removeUserImage`).
@@ -46,7 +55,7 @@ abstract final class SiteSyncQueue {
         session,
         SiteSyncTask(siteId: siteId, profileId: profileId),
         conflictColumns: (t) => [t.siteId, t.profileId],
-        updateColumns: (t) => [t.createdAt],
+        updateColumns: (t) => [t.createdAt, t.attempts, t.lastError],
       );
       SiteSyncNotifier.instance.notifySite(siteId);
     }

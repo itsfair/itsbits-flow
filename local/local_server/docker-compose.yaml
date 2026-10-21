@@ -34,7 +34,7 @@ services:
   # (SERVERPOD_RUSTFS_ENDPOINT; see config/passwords.yaml). Files live
   # at deterministic paths (e.g. member_images/<globalAuthUserId>.jpg).
   rustfs:
-    image: rustfs/rustfs:latest
+    image: rustfs/rustfs:1.0.0
     ports:
       - "9200:9000"
       - "9201:9001"

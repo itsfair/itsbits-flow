@@ -180,8 +180,13 @@ DB name `local`. Details and full stack: root AGENTS.md.
 - **Password self-healing**: "same password globally + locally" — the
   local copy's password is derived from the *verified* global login;
   define behavior on global password change.
-- Encryption at rest for the stored device session key (before
-  production).
+- ~~Encryption at rest for the stored device session key~~ DONE (this
+  session): `SiteConnectionSecrets` (`src/site/`) stores
+  `deviceSessionKey` as AES-256-GCM ciphertext (`enc:v1...`); key via
+  the `siteDeviceKeyCipherPassword` password key (set in production);
+  legacy plaintext rows pass through on read and re-encrypt on the
+  next enrollment write. Regression-tested in
+  `site_connection_secrets_test.dart`.
 
 ---
 

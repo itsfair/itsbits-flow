@@ -114,7 +114,9 @@ abstract class SiteConnection
 
   /// The device credential: non-rotating SAS session key issued by the
   /// global backend at enrollment (`AuthStrategy.session`). Write-once;
-  /// storage needs no rotation handling. Encrypt at rest is a To-do.
+  /// storage needs no rotation handling. Stores AES-256-GCM ciphertext
+  /// (`enc:v1...`, key via `siteDeviceKeyCipherPassword`) — legacy
+  /// plaintext rows pass through on read until the next enrollment write.
   String? deviceSessionKey;
 
   /// When the enrollment happened (may be a recovery).
@@ -444,7 +446,9 @@ class SiteConnectionTable extends _is.Table<int?> {
 
   /// The device credential: non-rotating SAS session key issued by the
   /// global backend at enrollment (`AuthStrategy.session`). Write-once;
-  /// storage needs no rotation handling. Encrypt at rest is a To-do.
+  /// storage needs no rotation handling. Stores AES-256-GCM ciphertext
+  /// (`enc:v1...`, key via `siteDeviceKeyCipherPassword`) — legacy
+  /// plaintext rows pass through on read until the next enrollment write.
   late final _is.ColumnString deviceSessionKey;
 
   /// When the enrollment happened (may be a recovery).

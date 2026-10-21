@@ -9,6 +9,7 @@ workspace:
   - global/global_server
   - global/global_flutter
   - global/enduser_flutter
+  - itsbits_dart
   - local/local_client
   - local/local_server
   - local/local_flutter

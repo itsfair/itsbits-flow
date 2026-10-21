@@ -1,4 +1,4 @@
-import 'package:itsbits_shared/door_code.dart' as door_code;
+import 'package:itsbits_dart/door_code.dart' as door_code;
 import 'package:serverpod/serverpod.dart';
 
 import '../generated/protocol.dart';

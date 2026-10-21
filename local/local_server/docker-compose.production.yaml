@@ -1,0 +1,89 @@
+# Production stack for the LOCAL site instance — one Docker network.
+# Mirrors the global stack (same image family, dev-offset ports).
+#
+# Usage:
+#   cp production.env.example production.env   # then fill in ALL values
+#   docker compose -f docker-compose.production.yaml up -d
+#
+# The server applies pending DB migrations automatically at boot. On the
+# FIRST start (site not yet enrolled) it runs headless; the site admin
+# completes setup from the local admin app (/setup with GLOBAL
+# credentials) — that requires this instance to reach the GLOBAL instance
+# (SERVERPOD_PASSWORD_globalApiUrl) and the ESPs to reach the web server
+# (SERVERPOD_PASSWORD_localApiUrl, LAN base URL of port 8182).
+#
+# Security expectations:
+#   - RustFS S3 :9200 stays LAN-only; the web server :8182 serves the
+#     admin app AND the door-interface REST routes over plain HTTP into
+#     the LAN (ESP MVP) — never expose it to the internet.
+#   - Postgres is NOT published — only the stack's internal network.
+#
+# First start: open the admin web app (:8182) → /setup and enroll with
+# the site admin's GLOBAL account.
+
+services:
+  postgres:
+    image: ghcr.io/serverpod/postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: local
+      POSTGRES_PASSWORD: ${SERVERPOD_PASSWORD_database}
+    volumes:
+      - local_prod_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d local"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # File storage (S3 API on :9200). Credentials come from production.env
+  # — ROTATE off the rustfsadmin dev defaults. SERVERPOD_RUSTFS_ENDPOINT
+  # must be reachable by admin-app browsers as well: presigned URLs are
+  # assembled per payload.
+  rustfs:
+    image: rustfs/rustfs:1.0.0
+    restart: unless-stopped
+    ports:
+      - "${RUSTFS_S3_PORT:-9200}:9000"
+    environment:
+      - RUSTFS_ACCESS_KEY=${SERVERPOD_RUSTFS_ACCESS_KEY}
+      - RUSTFS_SECRET_KEY=${SERVERPOD_RUSTFS_SECRET_KEY}
+    command: /data
+    volumes:
+      - local_prod_files:/data
+
+  # One-shot bootstrap: creates the bucket PRIVATE (all reads presigned).
+  create_buckets:
+    image: minio/mc
+    depends_on: [rustfs]
+    entrypoint: '/bin/sh'
+    command: >
+      -c "
+      until mc alias set fs http://rustfs:9000 $$RUSTFS_ACCESS_KEY $$RUSTFS_SECRET_KEY; do sleep 2; done;
+      mc mb fs/itsbits-flow --ignore-existing;
+      mc anonymous set none fs/itsbits-flow;
+      exit 0;
+      "
+    environment:
+      - RUSTFS_ACCESS_KEY=${SERVERPOD_RUSTFS_ACCESS_KEY}
+      - RUSTFS_SECRET_KEY=${SERVERPOD_RUSTFS_SECRET_KEY}
+
+  server:
+    image: itsbits-flow-local-server
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rustfs:
+        condition: service_started
+    ports:
+      - "${SERVER_API_PORT:-8180}:8180"
+      - "${SERVER_INSIGHTS_PORT:-8181}:8181"
+      - "${SERVER_WEB_PORT:-8182}:8182"
+    env_file:
+      - production.env
+
+volumes:
+  local_prod_data:
+  local_prod_files:

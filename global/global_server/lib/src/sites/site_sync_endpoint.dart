@@ -46,14 +46,17 @@ class SiteSyncEndpoint extends Endpoint {
 
     final result = <SiteSyncMember>[];
     for (final task in tasks) {
+      if (task.attempts >= SiteSyncQueue.maxDeliveryAttempts) {
+        continue;
+      }
       final profile = task.profile;
       if (profile == null) {
-        await _failTask(session, task, 'member_profile fehlt.');
+        await _bumpAttempts(session, task, 'member_profile fehlt.');
         continue;
       }
       var membership = membershipsByProfile[task.profileId];
       if (membership == null) {
-        await _failTask(
+        await _bumpAttempts(
           session,
           task,
           'SiteMembership fehlt (unexpectly removed).',
@@ -93,6 +96,7 @@ class SiteSyncEndpoint extends Endpoint {
           membershipCreatedAt: membership.createdAt,
         ),
       );
+      await _bumpAttempts(session, task, null);
     }
     return result;
   }
@@ -121,18 +125,30 @@ class SiteSyncEndpoint extends Endpoint {
 
   // -- Private helpers
 
-  Future<void> _failTask(
+  /// Counts one delivery/no-deliverable-data cycle against the attempt
+  /// cap ([SiteSyncQueue.maxDeliveryAttempts]) and alarms EXACTLY ONCE
+  /// per capped task (equality check on the cap value; capped tasks then
+  /// skip delivery above — see [pullPending] — until a re-enqueue resets
+  /// attempts, [SiteSyncQueue.enqueueForSites]).
+  Future<void> _bumpAttempts(
     final Session session,
     final SiteSyncTask task,
-    final String message,
+    final String? error,
   ) async {
+    final attempts = task.attempts + 1;
     await SiteSyncTask.db.updateRow(
       session,
-      task.copyWith(
-        attempts: task.attempts + 1,
-        lastError: message,
-      ),
+      task.copyWith(attempts: attempts, lastError: error),
       columns: (t) => [t.attempts, t.lastError],
     );
+    if (attempts == SiteSyncQueue.maxDeliveryAttempts) {
+      session.log(
+        '[SiteSync] attempt cap reached: site ${task.siteId}, profile '
+        '${task.profileId}, task ${task.id} is DROPPED from delivery. '
+        'Check that site\'s server logs (apply/image failures); a new '
+        'change for the person re-enqueues a fresh delivery.',
+        level: LogLevel.error,
+      );
+    }
   }
 }

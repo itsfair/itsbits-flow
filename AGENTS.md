@@ -56,7 +56,10 @@ cloud round trip** (BLE + local instance suffice); securing that path
   days only — no server-side re-normalization.
 - Site device connections use a **non-rotating SAS session key**
   (`method: 'device'`, token-level scope `site-device`, pepper
-  `serverSideSessionKeyHashPepper` in `config/passwords.yaml`).
+  `serverSideSessionKeyHashPepper` in `config/passwords.yaml`). The
+  LOCAL instance stores that key **encrypted at rest** (AES-256-GCM,
+  key via `siteDeviceKeyCipherPassword` — legacy plaintext rows pass
+  through until their next enrollment write).
 
 ## Layout
 
@@ -65,6 +68,7 @@ cloud round trip** (BLE + local instance suffice); securing that path
 | `global/` | Global-instance packages | `global_server` (backend), `global_client` (generated), `global_flutter` (platform admin app), `enduser_flutter` (end-user app, runs on a physical device) | [`global/AGENTS.md`](global/AGENTS.md) |
 | `local/` | Local-site-packages | `local_server` (backend), `local_client` (generated), `local_flutter` (site admin app) | [`local/AGENTS.md`](local/AGENTS.md) |
 | `shared/` | Shared Dart package | Client-agnostic Flutter/UI building blocks and shared logic for both instances; never imports `global_client`/`local_client` types (clients arrive injected) | [`shared/AGENTS.md`](shared/AGENTS.md) |
+| `itsbits_dart/` | Pure-Dart shared package | Server-safe shared logic (rolling door codes) with NO Flutter dependency — importable by both Serverpod servers and all apps; this is what keeps the `local_server` Docker build dart-only | — |
 | `doorinterface/` | ESP32 firmware (PlatformIO/Arduino) | Door control: NUKI BLE, Wi-Fi setup via captive portal, web interface, BLE peripheral for the end-user app, OTA | [`doorinterface/AGENTS.md`](doorinterface/AGENTS.md) |
 
 - All Dart/Flutter packages live in **one workspace** (`pubspec.yaml` at
@@ -209,8 +213,11 @@ server's `docker-compose.yaml` (start with `serverpod start` or
    deletion concepts per Art. 17 — subscriptions currently keep data
    after deactivation on PURPOSE, document this), re-check on every data
    set change. Plus: enforce HTTPS for all
-   transfers in production; rotate S3 credentials before production;
-   encryption at rest for the local `site_connections` row.
+   transfers in production; rotate S3 credentials before production.
+   Encryption at rest for the local `site_connections` device session
+   key is DONE (this session — AES-256-GCM via `SiteConnectionSecrets`,
+   key `siteDeviceKeyCipherPassword`, legacy plaintext rows pass
+   through until their next enrollment write).
    Images: presigned/short-lived URLs for ALL reads (display + sync
    transfer) are DONE (this session — private buckets on both stacks,
    `ImageUrlSigner`, legacy absolute-URL rows normalized at sign time;
@@ -259,9 +266,12 @@ server's `docker-compose.yaml` (start with `serverpod start` or
 12. **SiteSyncNotifier scaling**: the real-time push registry is
     in-process (dev: single server instance); multi-instance production
     needs a message bus (Redis pub/sub).
-13. **SiteSync task retry cap**: task rows survive failed applications
-    indefinitely (retried on every ping); add an attempt cap + alarm
-    (log/notify) before production.
+13. **SiteSync task retry cap**: DONE (this session) — every pull/
+    failed data check bumps `attempts` (global `siteSyncEndpoint`);
+    capped tasks are dropped from delivery and alarm exactly once
+    (`SiteSyncQueue.maxDeliveryAttempts = 50`, LogLevel.error).
+    A re-enqueue of the same person resets attempts/lastError. The row
+    itself stays pending for diagnosis.
 14. **Site block/delete**: currently only `revokeSiteConnection`
     (forces re-setup). An explicit global admin "block" (queue-only, no
     re-setup) and "delete" (mark + drop queue rows) feature is planned.
