@@ -97,9 +97,15 @@ class SiteConnectionEndpoint extends Endpoint {
   // -- Private helpers
 
   Future<void> _touch(final Session session, final Site site) async {
-    await Site.db.updateRow(
+    // LASTSEEN ONLY: a full-row update here would rewrite every column from
+    // the in-memory site object cached at STREAM START — a heartbeat during
+    // a long-lived stream would, e.g., erase a site image the local side
+    // pushed in the meantime (this was the real cause of the spurious
+    // sites.imageUrl NULLs, AGENTS backlog item 15).
+    await Site.db.updateWhere(
       session,
-      site.copyWith(lastSeenAt: DateTime.now()),
+      columnValues: (t) => [t.lastSeenAt(DateTime.now())],
+      where: (t) => t.id.equals(site.id!),
     );
   }
 

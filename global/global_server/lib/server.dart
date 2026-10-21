@@ -106,11 +106,14 @@ void run(List<String> args) async {
   // SERVERPOD_RUSTFS_ENDPOINT; value in config/passwords.yaml — dev uses
   // the LAN IP for tests from real devices). Never set `publicHost` on
   // the adapter.
+  // The bucket is PRIVATE: reads are presigned (ImageUrlSigner), writes
+  // run with the SigV4 credentials. `public: false` is intentional —
+  // the storageId keeps its historic name.
   pod.addCloudStorage(
     RustFsCloudStorage(
       serverpod: pod,
       storageId: 'public',
-      public: true,
+      public: false,
       bucket: 'itsbits-flow',
       baseUri: _rustFsEndpointUri(pod),
     ),

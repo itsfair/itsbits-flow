@@ -2,6 +2,7 @@ import 'package:serverpod/serverpod.dart';
 
 import '../auth/scopes.dart';
 import '../generated/protocol.dart';
+import '../images/image_url_signer.dart';
 import 'door_code_secrets.dart';
 import 'site_device_context.dart';
 import 'site_sync_queue.dart';
@@ -73,13 +74,18 @@ class SiteSyncEndpoint extends Endpoint {
       result.add(
         SiteSyncMember(
           taskId: task.id!,
+          taskCreatedAt: task.createdAt,
           profileId: profile.id!,
           globalAuthUserId: profile.authUserId,
           email: profile.email,
           firstName: profile.firstName,
           lastName: profile.lastName,
           birthday: profile.birthday,
-          imageUrl: profile.imageUrl,
+          imageUrl: await ImageUrlSigner.signedWithExpiry(
+            session,
+            profile.imageUrl,
+            const Duration(minutes: 5),
+          ),
           roleName: membership.role.name,
           active: membership.active,
           endedAt: membership.endedAt,
@@ -91,18 +97,26 @@ class SiteSyncEndpoint extends Endpoint {
     return result;
   }
 
-  /// Deletes the confirmed task rows (scoped to the calling site — the
-  /// local instance never sees other sites' ids anyway).
+  /// Deletes the confirmed task rows OPTIMISTICALLY (scoped to the calling
+  /// site): a row is removed only while it still carries the createdAt the
+  /// local instance actually saw. An enqueue that raced the pull re-regs
+  /// its newer state by bumping createdAt — that marker survives the stale
+  /// confirm and is delivered at the next watchdog ping / notify.
   Future<void> confirmProcessed(
     final Session session, {
-    required final List<int> taskIds,
+    required final List<SiteSyncConfirmation> confirmations,
   }) async {
     final site = await requireDeviceSite(session);
-    if (taskIds.isEmpty) return;
-    await SiteSyncTask.db.deleteWhere(
-      session,
-      where: (t) => t.id.inSet(taskIds.toSet()) & t.siteId.equals(site.id!),
-    );
+    if (confirmations.isEmpty) return;
+    for (final confirmation in confirmations) {
+      await SiteSyncTask.db.deleteWhere(
+        session,
+        where: (t) =>
+            t.id.equals(confirmation.taskId) &
+            t.siteId.equals(site.id!) &
+            t.createdAt.equals(confirmation.taskCreatedAt),
+      );
+    }
   }
 
   // -- Private helpers

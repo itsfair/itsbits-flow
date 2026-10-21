@@ -65,8 +65,10 @@ DB name `local`. Details and full stack: root AGENTS.md.
   linked to the member_profile copy); employees later the same way.
 - **Image handling**: `member_images/<globalAuthUserId>.jpg`
   (deterministic, one object per person, overwrite on change,
-  JPEG-only). Enrollment transfers the image **fail-fast** (download
-  from the global `imageUrl` first — failure aborts the whole
+  JPEG-only). `imageUrl` stores the object PATH; payload assembly
+  presigns (`ImageUrlSigner`, private bucket, see root AGENTS.md).
+  Enrollment transfers the image **fail-fast** (download from the
+  global-signed `imageUrl` first — failure aborts the whole
   enrollment; then DB transaction, then upload into the local RustFS).
   A member→user conversion needs no image move (identical path for
   every person). Flutter web display needs CORS on the local RustFS

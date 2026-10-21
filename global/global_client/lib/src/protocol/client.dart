@@ -30,6 +30,8 @@ import 'package:global_client/src/protocol/sites/site_enrollment_info.dart'
 import 'package:global_client/src/protocol/sites/site_event.dart' as _i1j3efl1;
 import 'package:global_client/src/protocol/sites/site_ping.dart' as _izjurmoq;
 import 'package:global_client/src/protocol/sites/site_public.dart' as _idicvci9;
+import 'package:global_client/src/protocol/sites/site_sync_confirmation.dart'
+    as _iycadot6;
 import 'package:global_client/src/protocol/sites/site_sync_member.dart'
     as _is9y68do;
 import 'package:http/http.dart' as _i85jenna;
@@ -391,7 +393,9 @@ class EndpointMemberProfile extends _isc.EndpointRef {
 
   /// Stores the uploaded image at `member_images/<authUserId>.jpg`
   /// (deterministic, overwrites the previous object since every person
-  /// owns exactly one image) and updates the profile's `imageUrl`.
+  /// owns exactly one image) and records the object PATH in the profile's
+  /// `imageUrl` (presigning happens at payload assembly, see
+  /// [ImageUrlSigner]).
   ///
   /// Uploads are expected to be JPEG (the shared frontend's image picker
   /// produces JPEG bytes only); no magic-byte detection — format
@@ -704,14 +708,18 @@ class EndpointSiteSync extends _isc.EndpointRef {
         {},
       );
 
-  /// Deletes the confirmed task rows (scoped to the calling site — the
-  /// local instance never sees other sites' ids anyway).
-  _ida.Future<void> confirmProcessed({required List<int> taskIds}) =>
-      caller.callServerEndpoint<void>(
-        'siteSync',
-        'confirmProcessed',
-        {'taskIds': taskIds},
-      );
+  /// Deletes the confirmed task rows OPTIMISTICALLY (scoped to the calling
+  /// site): a row is removed only while it still carries the createdAt the
+  /// local instance actually saw. An enqueue that raced the pull re-regs
+  /// its newer state by bumping createdAt — that marker survives the stale
+  /// confirm and is delivered at the next watchdog ping / notify.
+  _ida.Future<void> confirmProcessed({
+    required List<_iycadot6.SiteSyncConfirmation> confirmations,
+  }) => caller.callServerEndpoint<void>(
+    'siteSync',
+    'confirmProcessed',
+    {'confirmations': confirmations},
+  );
 }
 
 /// Admin endpoint for creating and viewing sites ("Betriebe").

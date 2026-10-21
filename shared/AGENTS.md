@@ -61,6 +61,11 @@ present).
 
 ## Conventions
 
+- Image URLs arrive PRESIGNED (15-min expiry, bucket is private):
+  render them immediately, never persist/copy them long-term — re-fetch
+  from the backend when needed. Each fresh signature changes the URL,
+  which also guards against a stale Flutter image cache.
+
 - Birthday values travel as UTC-midnight sentinels
   (`DateTime.utc(y, m, d)`) — no server-side re-normalization.
 - Profile data is fetched through `ProfileState`; hosts drive

@@ -47,15 +47,30 @@ class SiteDetailsEndpoint extends Endpoint {
       companyEmail: companyEmail,
     );
 
-    String? imageUrl = site.imageUrl;
+    // `imageUrl` (the object PATH) is only touched when an image change is
+    // intended — fields-only pushes must not rewrite the value at all (a
+    // same-value rewrite of the loaded row historically produced spurious
+    // nulls, AGENTS.md backlog item 15).
+    final updated = site.copyWith(
+      name: fields.name,
+      street: fields.street,
+      zipCode: fields.zipCode,
+      city: fields.city,
+      country: fields.country,
+      companyEmail: fields.companyEmail,
+    );
+
     if (removeImage) {
-      if (imageUrl case final url? when url.isNotEmpty) {
+      if (site.imageUrl case final prior? when prior.isNotEmpty) {
         await session.storage.deleteFile(
           storageId: _storageId,
           path: _siteImagePath(site.id!),
         );
       }
-      imageUrl = null;
+      await Site.db.updateRow(
+        session,
+        updated.copyWith(imageUrl: null),
+      );
     } else if (image != null) {
       final path = _siteImagePath(site.id!);
       await session.storage.storeFile(
@@ -63,25 +78,13 @@ class SiteDetailsEndpoint extends Endpoint {
         path: path,
         byteData: image,
       );
-      final url = await session.storage.publicDownloadUrl(
-        storageId: _storageId,
-        path: path,
+      await Site.db.updateRow(
+        session,
+        updated.copyWith(imageUrl: path),
       );
-      imageUrl = url.toString();
+    } else {
+      await Site.db.updateRow(session, updated);
     }
-
-    await Site.db.updateRow(
-      session,
-      site.copyWith(
-        name: fields.name,
-        street: fields.street,
-        zipCode: fields.zipCode,
-        city: fields.city,
-        country: fields.country,
-        companyEmail: fields.companyEmail,
-        imageUrl: imageUrl,
-      ),
-    );
   }
 
   String _siteImagePath(final int siteId) => '$_siteImagesFolder/$siteId.jpg';

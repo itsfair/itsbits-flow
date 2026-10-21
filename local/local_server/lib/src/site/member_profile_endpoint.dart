@@ -4,6 +4,7 @@ import 'package:serverpod/serverpod.dart';
 import 'package:serverpod_auth_idp_server/core.dart';
 
 import '../generated/protocol.dart';
+import '../images/image_url_signer.dart';
 
 /// Own person/profile endpoints of the local instance — mirror of the
 /// global `memberProfile` endpoint (same model shape, see AGENTS.md).
@@ -32,7 +33,8 @@ class MemberProfileEndpoint extends Endpoint {
   /// of writing a wrong exchange key.
   Future<MemberProfile> get(final Session session) async {
     final authUserId = session.authenticated!.authUserId;
-    return _ownRow(session, authUserId);
+    final row = await _ownRow(session, authUserId);
+    return _signRow(session, row);
   }
 
   /// Validates and saves the locally mirrored profile data of the
@@ -51,7 +53,7 @@ class MemberProfileEndpoint extends Endpoint {
     _validateBirthday(birthday);
 
     final row = await _ownRow(session, authUserId);
-    return MemberProfile.db.updateRow(
+    final updated = await MemberProfile.db.updateRow(
       session,
       row.copyWith(
         firstName: first,
@@ -59,6 +61,7 @@ class MemberProfileEndpoint extends Endpoint {
         birthday: birthday,
       ),
     );
+    return _signRow(session, updated);
   }
 
   /// Stores the uploaded image at
@@ -78,15 +81,12 @@ class MemberProfileEndpoint extends Endpoint {
       path: path,
       byteData: image,
     );
-    final url = await session.storage.publicDownloadUrl(
-      storageId: _storageId,
-      path: path,
-    );
 
-    return MemberProfile.db.updateRow(
+    final updated = await MemberProfile.db.updateRow(
       session,
-      row.copyWith(imageUrl: url.toString()),
+      row.copyWith(imageUrl: path),
     );
+    return _signRow(session, updated);
   }
 
   /// Deletes the locally stored object and clears `imageUrl` (NOTE: the
@@ -102,13 +102,24 @@ class MemberProfileEndpoint extends Endpoint {
       );
     }
 
-    return MemberProfile.db.updateRow(
+    final updated = await MemberProfile.db.updateRow(
       session,
       row.copyWith(imageUrl: null),
     );
+    return _signRow(session, updated);
   }
 
   // -- Private helpers
+
+  Future<MemberProfile> _signRow(
+    final Session session,
+    final MemberProfile row,
+  ) {
+    return ImageUrlSigner.signed(session, row.imageUrl).then(
+      (signedUrl) =>
+          signedUrl == null ? row : row.copyWith(imageUrl: signedUrl),
+    );
+  }
 
   Future<MemberProfile> _ownRow(
     final Session session,

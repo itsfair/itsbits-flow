@@ -2,6 +2,7 @@ import 'package:serverpod/serverpod.dart';
 import 'package:serverpod_auth_idp_server/core.dart';
 
 import '../generated/protocol.dart';
+import '../images/image_url_signer.dart';
 import '../profile/member_profile_checks.dart';
 import 'site_connection_status.dart';
 import 'site_sync_queue.dart';
@@ -73,7 +74,7 @@ class SiteDirectoryEndpoint extends Endpoint {
     if (site == null || site.status != SiteSetupStatus.registered) {
       throw _error('Site wurde nicht gefunden.');
     }
-    return _sitePublic(site);
+    return _sitePublic(session, site);
   }
 
   // -- Authenticated membership level (requireLogin-like guards below).
@@ -213,10 +214,15 @@ class SiteDirectoryEndpoint extends Endpoint {
       offset: offset < 0 ? 0 : offset,
       orderByList: (t) => [t.createdAt.desc(), t.id.desc()],
     );
-    return [for (final site in sites) _sitePublic(site)];
+    return [
+      for (final site in sites) await _sitePublic(session, site),
+    ];
   }
 
-  SitePublic _sitePublic(final Site site) => SitePublic(
+  Future<SitePublic> _sitePublic(
+    final Session session,
+    final Site site,
+  ) async => SitePublic(
     id: site.id!,
     name: site.name,
     street: site.street,
@@ -224,7 +230,7 @@ class SiteDirectoryEndpoint extends Endpoint {
     city: site.city,
     country: site.country,
     companyEmail: site.companyEmail,
-    imageUrl: site.imageUrl,
+    imageUrl: await ImageUrlSigner.signed(session, site.imageUrl),
     isOnline: SiteConnectionStatus.isConnected(site),
     createdAt: site.createdAt,
   );

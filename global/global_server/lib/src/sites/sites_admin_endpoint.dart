@@ -3,6 +3,7 @@ import 'package:serverpod_auth_idp_server/core.dart';
 
 import '../auth/scopes.dart';
 import '../generated/protocol.dart';
+import '../images/image_url_signer.dart';
 import 'site_device_authentication.dart';
 import 'site_field_validation.dart';
 
@@ -105,13 +106,21 @@ class SitesAdminEndpoint extends Endpoint {
               Site.t.companyEmail.ilike('%${_escapeLike(q)}%') |
               Site.t.city.ilike('%${_escapeLike(q)}%');
 
-    return Site.db.find(
-      session,
-      where: filter,
-      limit: limit.clamp(1, pageSize),
-      offset: offset < 0 ? 0 : offset,
-      orderByList: (t) => [t.createdAt.desc(), t.id.desc()],
-    );
+    return Site.db
+        .find(
+          session,
+          where: filter,
+          limit: limit.clamp(1, pageSize),
+          offset: offset < 0 ? 0 : offset,
+          orderByList: (t) => [t.createdAt.desc(), t.id.desc()],
+        )
+        .then((rows) async {
+          final signed = <Site>[];
+          for (final row in rows) {
+            signed.add(await _signSite(session, row));
+          }
+          return signed;
+        });
   }
 
   /// Number of sites matching the given [query] (for the "more available"
@@ -140,7 +149,7 @@ class SitesAdminEndpoint extends Endpoint {
     if (site == null) {
       throw SiteAdminException(message: 'Site wurde nicht gefunden.');
     }
-    return site;
+    return _signSite(session, site);
   }
 
   /// Ends the device credential for the local instance (e.g. to force a
@@ -150,7 +159,13 @@ class SitesAdminEndpoint extends Endpoint {
     final Session session, {
     required final int siteId,
   }) async {
-    final site = await getSite(session, siteId: siteId);
+    // Internal use only: must NOT get a signed URL (signing is exclusive
+    // to terminal payload assembly — a signed URL is not a valid object
+    // path and would be lost on re-signing).
+    final site = await Site.db.findById(session, siteId);
+    if (site == null) {
+      throw SiteAdminException(message: 'Site wurde nicht gefunden.');
+    }
     final deviceSessions = await SiteDeviceSession.db.find(
       session,
       where: (t) => t.siteId.equals(siteId),
@@ -162,7 +177,14 @@ class SitesAdminEndpoint extends Endpoint {
       );
       await SiteDeviceSession.db.deleteRow(session, row);
     }
-    return site;
+    return _signSite(session, site);
+  }
+
+  Future<Site> _signSite(final Session session, final Site row) {
+    return ImageUrlSigner.signed(session, row.imageUrl).then(
+      (signedUrl) =>
+          signedUrl == null ? row : row.copyWith(imageUrl: signedUrl),
+    );
   }
 
   // -- Private helpers

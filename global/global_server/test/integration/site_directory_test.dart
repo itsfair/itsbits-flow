@@ -269,7 +269,78 @@ void main() {
 
       await endpoints.siteSync.confirmProcessed(
         deviceSession,
-        taskIds: [payload.single.taskId],
+        confirmations: [
+          SiteSyncConfirmation(
+            taskId: payload.single.taskId,
+            taskCreatedAt: payload.single.taskCreatedAt,
+          ),
+        ],
+      );
+      expect(await SiteSyncTask.db.find(session), isEmpty);
+    });
+
+    test('when an enqueue out-races the confirm the newer state NOT deleted '
+        '(optimistic confirm)', () async {
+      final session = sessionBuilder.build();
+      final site = await createSite(session, lastSeenAt: DateTime.now());
+      final (authUserId, profile) = await createProfile(session);
+      await endpoints.siteDirectory.subscribe(
+        authenticated(authUserId),
+        siteId: site.id!,
+      );
+
+      final deviceSessionId = UuidValue.fromString(
+        'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+      );
+      await SiteDeviceSession.db.insertRow(
+        session,
+        SiteDeviceSession(
+          siteId: site.id!,
+          serverSideSessionId: deviceSessionId,
+        ),
+      );
+      final deviceSession = sessionBuilder.copyWith(
+        authentication: AuthenticationOverride.authenticationInfo(
+          authUserId.uuid,
+          {const Scope('site-device')},
+          authId: deviceSessionId.uuid,
+        ),
+      );
+
+      final payload = await endpoints.siteSync.pullPending(deviceSession);
+      final taskRow = (await SiteSyncTask.db.find(session)).single;
+
+      // The out-race: newer state bumps the row (createdAt) while the
+      // local side confirms the state it actually saw (the older
+      // taskCreatedAt from the payload).
+      taskRow.createdAt = taskRow.createdAt.add(
+        const Duration(seconds: 1),
+      );
+      await SiteSyncTask.db.updateRow(session, taskRow);
+
+      await endpoints.siteSync.confirmProcessed(
+        deviceSession,
+        confirmations: [
+          SiteSyncConfirmation(
+            taskId: payload.single.taskId,
+            taskCreatedAt: payload.single.taskCreatedAt,
+          ),
+        ],
+      );
+      final tasksAfter = await SiteSyncTask.db.find(session);
+      expect(tasksAfter, hasLength(1));
+
+      // The newer state is delivered by the next pull and then confirmed.
+      final payload2 = await endpoints.siteSync.pullPending(deviceSession);
+      expect(payload2, hasLength(1));
+      await endpoints.siteSync.confirmProcessed(
+        deviceSession,
+        confirmations: [
+          SiteSyncConfirmation(
+            taskId: payload2.single.taskId,
+            taskCreatedAt: payload2.single.taskCreatedAt,
+          ),
+        ],
       );
       expect(await SiteSyncTask.db.find(session), isEmpty);
     });

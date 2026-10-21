@@ -111,18 +111,35 @@ server's `docker-compose.yaml` (start with `serverpod start` or
   package.
 - File storage: RustFS (S3 API), bucket `itsbits-flow`, credentials
   `rustfsadmin / rustfsadmin_secret` (defaults of the
-  `serverpod_cloud_storage_rustfs` adapter). The **endpoint**
+  `serverpod_cloud_storage_rustfs` adapter — ROTATE before any shared
+  deployment via `SERVERPOD_RUSTFS_ACCESS_KEY/SECRET_KEY/BUCKET`; the
+  compose files interpolate `RUSTFS_ACCESS_KEY/SECRET_KEY` with the
+  same dev defaults so a `.env` next to the compose file hardens the
+  stack). The **endpoint**
   (scheme/host/port of the S3 API) is a deployment value and travels
   via the `rustFsEndpoint` password key in `config/passwords.yaml`
   (`shared:` block) — override chain in `lib/server.dart`:
   `SERVERPOD_RUSTFS_ENDPOINT` env var > password file > local default
   (global `:9000`, local `:9200`; local avoids 9100 — Dart DevTools
   binds it by default). Dev password value: LAN IP of the
-  dev machine so tests from real devices work. Credentials/bucket can
-  also be overridden via `SERVERPOD_RUSTFS_ACCESS_KEY/SECRET_KEY/BUCKET`.
+  dev machine so tests from real devices work.
+  **Buckets are PRIVATE** (this session): anonymous access is revoked
+  on both stacks; every display/sync reads goes through a presigned
+  GET URL (`ImageUrlSigner` in both servers, 15 min expiry — 5 min for
+  server-to-server transfer payloads). DB `imageUrl`-like columns
+  (`member_profile.imageUrl`, `sites.imageUrl`,
+  `site_connections.siteImageUrl`) store the OBJECT PATH
+  (`member_images/<id>.jpg`, `site_images/<id>.jpg`), presigning
+  happens at every payload assembly (legacy absolute-URL rows are
+  path-extracted at sign time — no schema migration needed; fold a
+  data cleanup into the next real schema migration).
   **Do not set `publicHost`** — keep the adapter's default URL scheme
   (`{baseUri}/{bucket}/{path}`). Flutter web access to files needs CORS
-  on the bucket. RustFS stays LAN-only (never expose the ports).
+  on the bucket (verified: RustFS answers GETs with
+  `access-control-allow-origin: *`). RustFS stays LAN-only (never
+  expose the ports). Presign round-trip proof against both stacks:
+  `dart run tool/rustfs_presign_probe.dart <baseUri> <access> <secret>
+  itsbits-flow _presign_probe/<name>.txt` (in `global_server`).
 
 ## Toolchain requirements
 
@@ -159,8 +176,12 @@ server's `docker-compose.yaml` (start with `serverpod start` or
    IMPLEMENTED (global `site_sync_tasks` queue + real-time stream push;
    local `SiteSyncProcessor` pulls at every connection event; new
    member/profile updates/deactivation markers incl. image mirroring at
-   the identical `member_images/<globalAuthUserId>.jpg` paths; local
-   `member_membership` role/active mirror). Remaining: staff switch →
+   the identical `member_images/<globalAuthUserId>.jpg` paths); local
+   `member_membership` role/active mirror). Confirmations are OPTIMISTIC
+   (this session): a confirm (taskId + the task's assembled createdAt) only
+   deletes the row while it still carries that exact createdAt — an
+   enqueue that out-routes a pull keeps its marker (regression-tested in
+   `site_directory_test.dart`). Remaining: staff switch →
    local login (employees flow); roles/status reported back via
    `site-device`-restricted endpoints.
 2. **Live status push** to the admin clients (message central) instead
@@ -187,10 +208,13 @@ server's `docker-compose.yaml` (start with `serverpod start` or
    draft; needs a proper GDPR review (Arts. 13/14 information duties,
    deletion concepts per Art. 17 — subscriptions currently keep data
    after deactivation on PURPOSE, document this), re-check on every data
-   set change. Plus: presigned/short-lived image URLs for the enrollment
-   transfer instead of raw capability URLs; enforce HTTPS for all
+   set change. Plus: enforce HTTPS for all
    transfers in production; rotate S3 credentials before production;
    encryption at rest for the local `site_connections` row.
+   Images: presigned/short-lived URLs for ALL reads (display + sync
+   transfer) are DONE (this session — private buckets on both stacks,
+   `ImageUrlSigner`, legacy absolute-URL rows normalized at sign time;
+   fold a row/data cleanup into the next real schema migration).
 8. **ESP32 ↔ backend protocol**: DECIDED + implemented: the ESP is a
    plain HTTP client on demand — one `POST /api/door/verify` per BLE
    request against the local web server (custom REST route, no Serverpod
@@ -241,21 +265,15 @@ server's `docker-compose.yaml` (start with `serverpod start` or
 14. **Site block/delete**: currently only `revokeSiteConnection`
     (forces re-setup). An explicit global admin "block" (queue-only, no
     re-setup) and "delete" (mark + drop queue rows) feature is planned.
-15. **Image cache-busting (OBSERVED in testing, fix pending)**:
-    image URLs are deterministic without a version — after an overwrite
-    the browser/Flutter `ImageCache` keeps serving the OLD picture
-    (profile AND site images; the storage bytes are replaced correctly).
-    Fix: append `?v=<epochMs>` on every image write
-    (`memberProfile.setUserImage` global, `siteDetails.push` image path,
-    local `siteAdmin.setSiteImage`) so each change yields a NEW URL.
-    Related/observed in the same manual test: the global `sites.imageUrl`
-    ended up NULL after a fields-only push although the object still
-    exists in both buckets — suspected deserialization/copyWith edge in
-    the `siteDetails.push` fields-only path (all 16 logged pushes returned
-    success). Fix: only touch `imageUrl` in the row update when an image
-    change is intended (avoid the explicit same-value write), verify with
-    integration tests for the push order (fields-only after image, image
-    after fields), investigate further if the test does not reproduce.
+15. **Image cache-busting + sites.imageUrl NULL**: RESOLVED (this
+    session) — image URLs are now presigned (fresh query params per
+    assembly, old cache entries never reused). The REAL cause of the
+    spurious `sites.imageUrl` NULL: the device heartbeat `_touch`
+    (siteConnection.connect) rewrote the FULL row every 30 s from the
+    site object cached at stream start — erasing values the local side
+    pushed during the stream. Fixed: `_touch` updates ONLY `lastSeenAt`
+    via `updateWhere`; regression-covered by `site_details_test.dart`
+    (image/fields push order + removeImage).
 
 Part-specific backlogs live in the workspace/instance AGENTS.md files
 (`global/AGENTS.md`, `local/AGENTS.md`, `doorinterface/AGENTS.md`).

@@ -33,6 +33,8 @@ import 'package:global_server/src/generated/sites/site_event.dart' as _ip757k8u;
 import 'package:global_server/src/generated/sites/site_ping.dart' as _i2wwgvmf;
 import 'package:global_server/src/generated/sites/site_public.dart'
     as _insc1xa7;
+import 'package:global_server/src/generated/sites/site_sync_confirmation.dart'
+    as _ijxtucaj;
 import 'package:global_server/src/generated/sites/site_sync_member.dart'
     as _ivmpa84h;
 import 'package:serverpod/serverpod.dart' as _is;
@@ -1358,7 +1360,7 @@ class _SiteSyncEndpoint {
 
   _ida.Future<void> confirmProcessed(
     _ist.TestSessionBuilder sessionBuilder, {
-    required List<int> taskIds,
+    required List<_ijxtucaj.SiteSyncConfirmation> confirmations,
   }) async {
     return _ist.callAwaitableFunctionAndHandleExceptions(() async {
       var _localUniqueSession =
@@ -1371,7 +1373,7 @@ class _SiteSyncEndpoint {
           createSessionCallback: (_) => _localUniqueSession,
           endpointPath: 'siteSync',
           methodName: 'confirmProcessed',
-          parameters: _ist.testObjectToJson({'taskIds': taskIds}),
+          parameters: _ist.testObjectToJson({'confirmations': confirmations}),
           serializationManager: _serializationManager,
         );
         var _localReturnValue =

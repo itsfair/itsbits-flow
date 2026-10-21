@@ -289,13 +289,11 @@ class GlobalSiteConnection {
           path: imagePath,
           byteData: imageBytes,
         );
-        final publicUrl = await session.storage.publicDownloadUrl(
-          storageId: 'public',
-          path: imagePath,
-        );
         memberProfile = await MemberProfile.db.updateRow(
           session,
-          memberProfile.copyWith(imageUrl: publicUrl.toString()),
+          // The mirror row stores the object PATH (presigning happens at
+          // payload assembly — see ImageUrlSigner).
+          memberProfile.copyWith(imageUrl: imagePath),
           transaction: transaction,
         );
       }

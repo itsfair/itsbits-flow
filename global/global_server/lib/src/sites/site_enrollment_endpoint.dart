@@ -3,6 +3,7 @@ import 'package:serverpod_auth_idp_server/core.dart';
 import 'package:serverpod_auth_idp_server/providers/email.dart';
 
 import '../generated/protocol.dart';
+import '../images/image_url_signer.dart';
 import 'door_code_secrets.dart';
 import 'site_device_authentication.dart';
 
@@ -173,7 +174,11 @@ class SiteEnrollmentEndpoint extends Endpoint {
         adminFirstName: memberProfile.firstName,
         adminLastName: memberProfile.lastName,
         adminBirthday: memberProfile.birthday,
-        adminImageUrl: memberProfile.imageUrl,
+        adminImageUrl: await ImageUrlSigner.signedWithExpiry(
+          session,
+          memberProfile.imageUrl,
+          const Duration(minutes: 5),
+        ),
         adminDoorCodeSecret: adminDoorCodeSecret,
         deviceSessionKey: issued.sessionKey,
       ),

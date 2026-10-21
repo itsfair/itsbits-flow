@@ -10,6 +10,12 @@ fields:
   ### local instance to confirm processing).
   taskId: int
 
+  ### The task row's createdAt at ASSEMBLY time. The confirm is optimistic:
+  ### it only deletes the task row while it still carries this exact
+  ### timestamp — an enqueue that out-raced the pull re-registered its
+  ### newer state (createdAt bump), so the stale confirm cannot erase it.
+  taskCreatedAt: DateTime
+
   ### Global member_profile id (reference only).
   profileId: int
 

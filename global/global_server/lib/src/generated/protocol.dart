@@ -16,6 +16,8 @@ import 'package:global_server/src/generated/sites/site_admin_membership_candidat
     as _igjb6jg5;
 import 'package:global_server/src/generated/sites/site_public.dart'
     as _insc1xa7;
+import 'package:global_server/src/generated/sites/site_sync_confirmation.dart'
+    as _ijxtucaj;
 import 'package:global_server/src/generated/sites/site_sync_member.dart'
     as _ivmpa84h;
 import 'package:serverpod/protocol.dart' as _isp;
@@ -41,6 +43,7 @@ import 'sites/site_ping.dart' as _icfqqkiq;
 import 'sites/site_public.dart' as _ix6rnrmo;
 import 'sites/site_role.dart' as _iuk2ydaa;
 import 'sites/site_setup_status.dart' as _ijgbvr7h;
+import 'sites/site_sync_confirmation.dart' as _isz3mxqr;
 import 'sites/site_sync_member.dart' as _i4azfjze;
 import 'sites/site_sync_task.dart' as _iplwnvy0;
 import 'sites/site_transfer_info.dart' as _i1cuvu3u;
@@ -61,6 +64,7 @@ export 'sites/site_ping.dart';
 export 'sites/site_public.dart';
 export 'sites/site_role.dart';
 export 'sites/site_setup_status.dart';
+export 'sites/site_sync_confirmation.dart';
 export 'sites/site_sync_member.dart';
 export 'sites/site_sync_task.dart';
 export 'sites/site_transfer_info.dart';
@@ -603,6 +607,9 @@ class Protocol extends _is.DatabaseSerializationManager {
     if (t == _ijgbvr7h.SiteSetupStatus) {
       return _ijgbvr7h.SiteSetupStatus.fromJson(data) as T;
     }
+    if (t == _isz3mxqr.SiteSyncConfirmation) {
+      return _isz3mxqr.SiteSyncConfirmation.fromJson(data) as T;
+    }
     if (t == _i4azfjze.SiteSyncMember) {
       return _i4azfjze.SiteSyncMember.fromJson(data) as T;
     }
@@ -677,6 +684,12 @@ class Protocol extends _is.DatabaseSerializationManager {
       return (data != null ? _ijgbvr7h.SiteSetupStatus.fromJson(data) : null)
           as T;
     }
+    if (t == _is.getType<_isz3mxqr.SiteSyncConfirmation?>()) {
+      return (data != null
+              ? _isz3mxqr.SiteSyncConfirmation.fromJson(data)
+              : null)
+          as T;
+    }
     if (t == _is.getType<_i4azfjze.SiteSyncMember?>()) {
       return (data != null ? _i4azfjze.SiteSyncMember.fromJson(data) : null)
           as T;
@@ -725,8 +738,11 @@ class Protocol extends _is.DatabaseSerializationManager {
               .toList()
           as T;
     }
-    if (t == List<int>) {
-      return (data as List).map((e) => deserialize<int>(e)).toList() as T;
+    if (t == List<_ijxtucaj.SiteSyncConfirmation>) {
+      return (data as List)
+              .map((e) => deserialize<_ijxtucaj.SiteSyncConfirmation>(e))
+              .toList()
+          as T;
     }
     if (t == List<_inl2gdz9.Site>) {
       return (data as List).map((e) => deserialize<_inl2gdz9.Site>(e)).toList()
@@ -763,6 +779,7 @@ class Protocol extends _is.DatabaseSerializationManager {
       _ix6rnrmo.SitePublic => 'SitePublic',
       _iuk2ydaa.SiteRole => 'SiteRole',
       _ijgbvr7h.SiteSetupStatus => 'SiteSetupStatus',
+      _isz3mxqr.SiteSyncConfirmation => 'SiteSyncConfirmation',
       _i4azfjze.SiteSyncMember => 'SiteSyncMember',
       _iplwnvy0.SiteSyncTask => 'SiteSyncTask',
       _i1cuvu3u.SiteTransferInfo => 'SiteTransferInfo',
@@ -814,6 +831,8 @@ class Protocol extends _is.DatabaseSerializationManager {
         return 'SiteRole';
       case _ijgbvr7h.SiteSetupStatus():
         return 'SiteSetupStatus';
+      case _isz3mxqr.SiteSyncConfirmation():
+        return 'SiteSyncConfirmation';
       case _i4azfjze.SiteSyncMember():
         return 'SiteSyncMember';
       case _iplwnvy0.SiteSyncTask():
@@ -896,6 +915,9 @@ class Protocol extends _is.DatabaseSerializationManager {
     }
     if (dataClassName == 'SiteSetupStatus') {
       return deserialize<_ijgbvr7h.SiteSetupStatus>(data['data']);
+    }
+    if (dataClassName == 'SiteSyncConfirmation') {
+      return deserialize<_isz3mxqr.SiteSyncConfirmation>(data['data']);
     }
     if (dataClassName == 'SiteSyncMember') {
       return deserialize<_i4azfjze.SiteSyncMember>(data['data']);

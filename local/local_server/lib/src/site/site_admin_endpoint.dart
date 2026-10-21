@@ -83,14 +83,13 @@ class SiteAdminEndpoint extends Endpoint {
       path: _siteImagePath(row.siteId),
       byteData: image,
     );
-    final publicUrl = await session.storage.publicDownloadUrl(
-      storageId: _storageId,
-      path: _siteImagePath(row.siteId),
-    );
 
+    // The snapshot stores the object PATH (presigning happens at payload
+    // assembly — see ImageUrlSigner); a publicDownloadUrl here would
+    // throw on the private bucket.
     return SiteConnection.db.updateRow(
       session,
-      row.copyWith(siteImageUrl: publicUrl.toString()),
+      row.copyWith(siteImageUrl: _siteImagePath(row.siteId)),
     );
   }
 

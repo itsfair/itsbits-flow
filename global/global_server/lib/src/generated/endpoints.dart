@@ -12,6 +12,8 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:typed_data' as _idt;
 import 'package:global_server/src/generated/sites/site_ping.dart' as _i2wwgvmf;
+import 'package:global_server/src/generated/sites/site_sync_confirmation.dart'
+    as _ijxtucaj;
 import 'package:serverpod/serverpod.dart' as _is;
 import 'package:serverpod_auth_core_server/serverpod_auth_core_server.dart'
     as _iacs;
@@ -871,9 +873,9 @@ class Endpoints extends _is.EndpointDispatch {
         'confirmProcessed': _is.MethodConnector(
           name: 'confirmProcessed',
           params: {
-            'taskIds': _is.ParameterDescription(
-              name: 'taskIds',
-              type: _is.getType<List<int>>(),
+            'confirmations': _is.ParameterDescription(
+              name: 'confirmations',
+              type: _is.getType<List<_ijxtucaj.SiteSyncConfirmation>>(),
               nullable: false,
             ),
           },
@@ -884,7 +886,7 @@ class Endpoints extends _is.EndpointDispatch {
               ) async => (endpoints['siteSync'] as _iojr50j8.SiteSyncEndpoint)
                   .confirmProcessed(
                     session,
-                    taskIds: params['taskIds'],
+                    confirmations: params['confirmations'],
                   ),
         ),
       },

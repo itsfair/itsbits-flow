@@ -15,6 +15,8 @@ import 'package:global_client/src/protocol/sites/site.dart' as _i8hsp7h7;
 import 'package:global_client/src/protocol/sites/site_admin_membership_candidate.dart'
     as _iyuybenn;
 import 'package:global_client/src/protocol/sites/site_public.dart' as _idicvci9;
+import 'package:global_client/src/protocol/sites/site_sync_confirmation.dart'
+    as _iycadot6;
 import 'package:global_client/src/protocol/sites/site_sync_member.dart'
     as _is9y68do;
 import 'package:serverpod_auth_core_client/serverpod_auth_core_client.dart'
@@ -39,6 +41,7 @@ import 'sites/site_ping.dart' as _icfqqkiq;
 import 'sites/site_public.dart' as _ix6rnrmo;
 import 'sites/site_role.dart' as _iuk2ydaa;
 import 'sites/site_setup_status.dart' as _ijgbvr7h;
+import 'sites/site_sync_confirmation.dart' as _isz3mxqr;
 import 'sites/site_sync_member.dart' as _i4azfjze;
 import 'sites/site_sync_task.dart' as _iplwnvy0;
 import 'sites/site_transfer_info.dart' as _i1cuvu3u;
@@ -59,6 +62,7 @@ export 'sites/site_ping.dart';
 export 'sites/site_public.dart';
 export 'sites/site_role.dart';
 export 'sites/site_setup_status.dart';
+export 'sites/site_sync_confirmation.dart';
 export 'sites/site_sync_member.dart';
 export 'sites/site_sync_task.dart';
 export 'sites/site_transfer_info.dart';
@@ -149,6 +153,9 @@ class Protocol extends _isc.SerializationManager {
     if (t == _ijgbvr7h.SiteSetupStatus) {
       return _ijgbvr7h.SiteSetupStatus.fromJson(data) as T;
     }
+    if (t == _isz3mxqr.SiteSyncConfirmation) {
+      return _isz3mxqr.SiteSyncConfirmation.fromJson(data) as T;
+    }
     if (t == _i4azfjze.SiteSyncMember) {
       return _i4azfjze.SiteSyncMember.fromJson(data) as T;
     }
@@ -223,6 +230,12 @@ class Protocol extends _isc.SerializationManager {
       return (data != null ? _ijgbvr7h.SiteSetupStatus.fromJson(data) : null)
           as T;
     }
+    if (t == _isc.getType<_isz3mxqr.SiteSyncConfirmation?>()) {
+      return (data != null
+              ? _isz3mxqr.SiteSyncConfirmation.fromJson(data)
+              : null)
+          as T;
+    }
     if (t == _isc.getType<_i4azfjze.SiteSyncMember?>()) {
       return (data != null ? _i4azfjze.SiteSyncMember.fromJson(data) : null)
           as T;
@@ -271,8 +284,11 @@ class Protocol extends _isc.SerializationManager {
               .toList()
           as T;
     }
-    if (t == List<int>) {
-      return (data as List).map((e) => deserialize<int>(e)).toList() as T;
+    if (t == List<_iycadot6.SiteSyncConfirmation>) {
+      return (data as List)
+              .map((e) => deserialize<_iycadot6.SiteSyncConfirmation>(e))
+              .toList()
+          as T;
     }
     if (t == List<_i8hsp7h7.Site>) {
       return (data as List).map((e) => deserialize<_i8hsp7h7.Site>(e)).toList()
@@ -306,6 +322,7 @@ class Protocol extends _isc.SerializationManager {
       _ix6rnrmo.SitePublic => 'SitePublic',
       _iuk2ydaa.SiteRole => 'SiteRole',
       _ijgbvr7h.SiteSetupStatus => 'SiteSetupStatus',
+      _isz3mxqr.SiteSyncConfirmation => 'SiteSyncConfirmation',
       _i4azfjze.SiteSyncMember => 'SiteSyncMember',
       _iplwnvy0.SiteSyncTask => 'SiteSyncTask',
       _i1cuvu3u.SiteTransferInfo => 'SiteTransferInfo',
@@ -357,6 +374,8 @@ class Protocol extends _isc.SerializationManager {
         return 'SiteRole';
       case _ijgbvr7h.SiteSetupStatus():
         return 'SiteSetupStatus';
+      case _isz3mxqr.SiteSyncConfirmation():
+        return 'SiteSyncConfirmation';
       case _i4azfjze.SiteSyncMember():
         return 'SiteSyncMember';
       case _iplwnvy0.SiteSyncTask():
@@ -435,6 +454,9 @@ class Protocol extends _isc.SerializationManager {
     }
     if (dataClassName == 'SiteSetupStatus') {
       return deserialize<_ijgbvr7h.SiteSetupStatus>(data['data']);
+    }
+    if (dataClassName == 'SiteSyncConfirmation') {
+      return deserialize<_isz3mxqr.SiteSyncConfirmation>(data['data']);
     }
     if (dataClassName == 'SiteSyncMember') {
       return deserialize<_i4azfjze.SiteSyncMember>(data['data']);

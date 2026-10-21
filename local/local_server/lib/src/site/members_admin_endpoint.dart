@@ -1,6 +1,7 @@
 import 'package:serverpod/serverpod.dart';
 
 import '../generated/protocol.dart';
+import '../images/image_url_signer.dart';
 import 'global_site_connection.dart';
 
 /// Admin endpoint for the local member directory (read-only this step):
@@ -44,7 +45,7 @@ class MembersAdminEndpoint extends Endpoint {
 
     return [
       for (final profile in profiles)
-        _toSummary(profile, membershipByProfileId[profile.id]),
+        await _toSummary(session, profile, membershipByProfileId[profile.id]),
     ];
   }
 
@@ -84,7 +85,7 @@ class MembersAdminEndpoint extends Endpoint {
       firstName: profile.firstName,
       lastName: profile.lastName,
       birthday: profile.birthday,
-      imageUrl: profile.imageUrl,
+      imageUrl: await ImageUrlSigner.signed(session, profile.imageUrl),
       profileCreatedAt: profile.createdAt,
       hasLocalLogin: profile.authUserId != null,
       roleName: memberships.firstOrNull?.role.name,
@@ -106,16 +107,17 @@ class MembersAdminEndpoint extends Endpoint {
     };
   }
 
-  MemberSummary _toSummary(
+  Future<MemberSummary> _toSummary(
+    final Session session,
     final MemberProfile profile,
     final MemberMembership? membership,
-  ) {
+  ) async {
     return MemberSummary(
       globalAuthUserId: profile.globalAuthUserId,
       email: profile.email,
       firstName: profile.firstName,
       lastName: profile.lastName,
-      imageUrl: profile.imageUrl,
+      imageUrl: await ImageUrlSigner.signed(session, profile.imageUrl),
       hasLocalLogin: profile.authUserId != null,
       roleName: membership?.role.name,
       active: membership?.active,

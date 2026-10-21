@@ -21,6 +21,7 @@ abstract class SiteSyncMember
     implements _is.SerializableModel, _is.ProtocolSerialization {
   SiteSyncMember._({
     required this.taskId,
+    required this.taskCreatedAt,
     required this.profileId,
     required this.globalAuthUserId,
     required this.email,
@@ -37,6 +38,7 @@ abstract class SiteSyncMember
 
   factory SiteSyncMember({
     required int taskId,
+    required DateTime taskCreatedAt,
     required int profileId,
     required _is.UuidValue globalAuthUserId,
     required String email,
@@ -54,6 +56,9 @@ abstract class SiteSyncMember
   factory SiteSyncMember.fromJson(Map<String, dynamic> jsonSerialization) {
     return SiteSyncMember(
       taskId: jsonSerialization['taskId'] as int,
+      taskCreatedAt: _is.DateTimeJsonExtension.fromJson(
+        jsonSerialization['taskCreatedAt'],
+      ),
       profileId: jsonSerialization['profileId'] as int,
       globalAuthUserId: _is.UuidValueJsonExtension.fromJson(
         jsonSerialization['globalAuthUserId'],
@@ -82,6 +87,12 @@ abstract class SiteSyncMember
   /// Id of the site_sync_tasks row this payload belongs to (used by the
   /// local instance to confirm processing).
   int taskId;
+
+  /// The task row's createdAt at ASSEMBLY time. The confirm is optimistic:
+  /// it only deletes the task row while it still carries this exact
+  /// timestamp — an enqueue that out-raced the pull re-registered its
+  /// newer state (createdAt bump), so the stale confirm cannot erase it.
+  DateTime taskCreatedAt;
 
   /// Global member_profile id (reference only).
   int profileId;
@@ -123,6 +134,7 @@ abstract class SiteSyncMember
   @_is.useResult
   SiteSyncMember copyWith({
     int? taskId,
+    DateTime? taskCreatedAt,
     int? profileId,
     _is.UuidValue? globalAuthUserId,
     String? email,
@@ -141,6 +153,7 @@ abstract class SiteSyncMember
     return {
       '__className__': 'SiteSyncMember',
       'taskId': taskId,
+      'taskCreatedAt': taskCreatedAt.toJson(),
       'profileId': profileId,
       'globalAuthUserId': globalAuthUserId.toJson(),
       'email': email,
@@ -162,6 +175,7 @@ abstract class SiteSyncMember
     return {
       '__className__': 'SiteSyncMember',
       'taskId': taskId,
+      'taskCreatedAt': taskCreatedAt.toJson(),
       'profileId': profileId,
       'globalAuthUserId': globalAuthUserId.toJson(),
       'email': email,
@@ -189,6 +203,7 @@ class _Undefined {}
 class _SiteSyncMemberImpl extends SiteSyncMember {
   _SiteSyncMemberImpl({
     required int taskId,
+    required DateTime taskCreatedAt,
     required int profileId,
     required _is.UuidValue globalAuthUserId,
     required String email,
@@ -203,6 +218,7 @@ class _SiteSyncMemberImpl extends SiteSyncMember {
     DateTime? membershipCreatedAt,
   }) : super._(
          taskId: taskId,
+         taskCreatedAt: taskCreatedAt,
          profileId: profileId,
          globalAuthUserId: globalAuthUserId,
          email: email,
@@ -223,6 +239,7 @@ class _SiteSyncMemberImpl extends SiteSyncMember {
   @override
   SiteSyncMember copyWith({
     int? taskId,
+    DateTime? taskCreatedAt,
     int? profileId,
     _is.UuidValue? globalAuthUserId,
     String? email,
@@ -238,6 +255,7 @@ class _SiteSyncMemberImpl extends SiteSyncMember {
   }) {
     return SiteSyncMember(
       taskId: taskId ?? this.taskId,
+      taskCreatedAt: taskCreatedAt ?? this.taskCreatedAt,
       profileId: profileId ?? this.profileId,
       globalAuthUserId: globalAuthUserId ?? this.globalAuthUserId,
       email: email ?? this.email,

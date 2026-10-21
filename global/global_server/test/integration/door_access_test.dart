@@ -115,8 +115,7 @@ void main() {
       expect(stored?.doorCodeSecret, info.secret);
     });
 
-    test('when the membership is inactive then access is rejected',
-        () async {
+    test('when the membership is inactive then access is rejected', () async {
       final session = sessionBuilder.build();
       final (authUserId, profile) = await createProfile(session);
       final site = await createSite(session);
@@ -136,8 +135,7 @@ void main() {
       );
     });
 
-    test('when the caller is not a member then access is rejected',
-        () async {
+    test('when the caller is not a member then access is rejected', () async {
       final session = sessionBuilder.build();
       final (authUserId, profile) = await createProfile(session);
       final site = await createSite(session);

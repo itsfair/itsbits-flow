@@ -1,0 +1,9 @@
+### One confirmed member-data delivery (site sync at-least-once): the
+### local instance confirms a task by id + the task row's createdAt it
+### actually saw. The GLOBAL side deletes a task row only when BOTH
+### match — an enqueue that raced the pull bumped createdAt, so a stale
+### confirm never erases the newer state's marker.
+class: SiteSyncConfirmation
+fields:
+  taskId: int
+  taskCreatedAt: DateTime

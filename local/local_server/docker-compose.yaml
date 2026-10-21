@@ -39,12 +39,31 @@ services:
       - "9200:9000"
       - "9201:9001"
     environment:
-      - RUSTFS_ACCESS_KEY=rustfsadmin
-      - RUSTFS_SECRET_KEY=rustfsadmin_secret
+      - RUSTFS_ACCESS_KEY=${RUSTFS_ACCESS_KEY:-rustfsadmin}
+      - RUSTFS_SECRET_KEY=${RUSTFS_SECRET_KEY:-rustfsadmin_secret}
       - RUSTFS_CONSOLE_ENABLE=true
     command: /data
     volumes:
       - local_files:/data
+
+  # One-shot bucket bootstrap: creates the bucket PRIVATE (display reads
+  # go through presigned URLs, anonymous access is revoked). The local
+  # bucket was previously never created; this service is idempotent
+  # (--ignore-existing). Credentials must match the rustfs service above.
+  create_buckets:
+    image: minio/mc
+    depends_on: [rustfs]
+    entrypoint: '/bin/sh'
+    command: >
+      -c "
+      until mc alias set fs http://rustfs:9000 $$RUSTFS_ACCESS_KEY $$RUSTFS_SECRET_KEY; do sleep 2; done;
+      mc mb fs/itsbits-flow --ignore-existing;
+      mc anonymous set none fs/itsbits-flow;
+      exit 0;
+      "
+    environment:
+      - RUSTFS_ACCESS_KEY=${RUSTFS_ACCESS_KEY:-rustfsadmin}
+      - RUSTFS_SECRET_KEY=${RUSTFS_SECRET_KEY:-rustfsadmin_secret}
 
 
 volumes:

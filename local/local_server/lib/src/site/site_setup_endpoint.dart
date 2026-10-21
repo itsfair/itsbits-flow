@@ -2,6 +2,7 @@ import 'package:global_client/global_client.dart' as gc;
 import 'package:serverpod/serverpod.dart';
 
 import '../generated/protocol.dart';
+import '../images/image_url_signer.dart';
 import 'global_site_connection.dart';
 
 /// Local setup endpoint: connects this instance to its site's global
@@ -108,12 +109,15 @@ class SiteSetupEndpoint extends Endpoint {
       siteCity: site?.siteCity,
       siteCountry: site?.siteCountry,
       siteCompanyEmail: site?.siteCompanyEmail,
-      siteImageUrl: site?.siteImageUrl,
+      siteImageUrl: await ImageUrlSigner.signed(session, site?.siteImageUrl),
       adminEmail: adminProfile?.email,
       adminFirstName: adminProfile?.firstName,
       adminLastName: adminProfile?.lastName,
       adminBirthday: adminProfile?.birthday,
-      adminImageUrl: adminProfile?.imageUrl,
+      adminImageUrl: await ImageUrlSigner.signed(
+        session,
+        adminProfile?.imageUrl,
+      ),
     );
   }
 

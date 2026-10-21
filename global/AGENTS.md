@@ -79,7 +79,10 @@ Declared under `serverpod: flutter_apps:` in `global_server/pubspec.yaml`:
   sparse row at registration), `email`, `firstName`/`lastName`,
   `birthday` (UTC-midnight sentinel), `imageUrl`, `createdAt`; unique
   index on `authUserId`. Images at `member_images/<authUserId>.jpg`
-  (deterministic, overwrite, JPEG-only for now). The built-in Serverpod
+  (deterministic, overwrite, JPEG-only for now). `imageUrl` stores the
+  OBJECT PATH; every payload assembly presigns it
+  (`ImageUrlSigner`, private bucket, 15 min expiry — see root
+  AGENTS.md). The built-in Serverpod
   UserProfile feature is bypassed by design.
 - **Admin scopes**: `global-admin` scope enforced declaratively via
   `Endpoint.requiredScopes`; scopes are baked into tokens at login —

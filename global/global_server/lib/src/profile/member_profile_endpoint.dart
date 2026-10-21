@@ -4,6 +4,7 @@ import 'package:serverpod/serverpod.dart';
 import 'package:serverpod_auth_idp_server/core.dart';
 
 import '../generated/protocol.dart';
+import '../images/image_url_signer.dart';
 import '../sites/site_sync_queue.dart';
 
 /// Own person/profile endpoints of the global instance (replacing the
@@ -29,7 +30,8 @@ class MemberProfileEndpoint extends Endpoint {
   /// should not happen; the hook fires at registration).
   Future<MemberProfile> get(final Session session) async {
     final authUserId = session.authenticated!.authUserId;
-    return _ownRow(session, authUserId);
+    final row = await _ownRow(session, authUserId);
+    return await _signRow(session, row);
   }
 
   /// Validates and saves the profile data of the signed-in user.
@@ -57,12 +59,14 @@ class MemberProfileEndpoint extends Endpoint {
       ),
     );
     await SiteSyncQueue.enqueueForProfile(session, updated.id!);
-    return updated;
+    return _signRow(session, updated);
   }
 
   /// Stores the uploaded image at `member_images/<authUserId>.jpg`
   /// (deterministic, overwrites the previous object since every person
-  /// owns exactly one image) and updates the profile's `imageUrl`.
+  /// owns exactly one image) and records the object PATH in the profile's
+  /// `imageUrl` (presigning happens at payload assembly, see
+  /// [ImageUrlSigner]).
   ///
   /// Uploads are expected to be JPEG (the shared frontend's image picker
   /// produces JPEG bytes only); no magic-byte detection — format
@@ -80,17 +84,13 @@ class MemberProfileEndpoint extends Endpoint {
       path: path,
       byteData: image,
     );
-    final url = await session.storage.publicDownloadUrl(
-      storageId: _storageId,
-      path: path,
-    );
 
     final updated = await MemberProfile.db.updateRow(
       session,
-      row.copyWith(imageUrl: url.toString()),
+      row.copyWith(imageUrl: path),
     );
     await SiteSyncQueue.enqueueForProfile(session, updated.id!);
-    return updated;
+    return _signRow(session, updated);
   }
 
   /// Deletes the stored object and clears the profile's `imageUrl`.
@@ -110,10 +110,20 @@ class MemberProfileEndpoint extends Endpoint {
       row.copyWith(imageUrl: null),
     );
     await SiteSyncQueue.enqueueForProfile(session, updated.id!);
-    return updated;
+    return _signRow(session, updated);
   }
 
   // -- Private helpers
+
+  Future<MemberProfile> _signRow(
+    final Session session,
+    final MemberProfile row,
+  ) {
+    return ImageUrlSigner.signed(session, row.imageUrl).then(
+      (signedUrl) =>
+          signedUrl == null ? row : row.copyWith(imageUrl: signedUrl),
+    );
+  }
 
   /// Row lookup by authUserId; inserts a sparse row (null data) if the
   /// hook missed it, using the built-in module profile's email when

@@ -40,11 +40,11 @@ class SiteSyncProcessor {
     if (_busy) return;
     _busy = true;
     try {
-      final appliedTaskIds = await _pullAndApply();
-      if (appliedTaskIds.isNotEmpty) {
+      final confirmations = await _pullAndApply();
+      if (confirmations.isNotEmpty) {
         final client = await _openSyncClient();
         if (client != null) {
-          await client.siteSync.confirmProcessed(taskIds: appliedTaskIds);
+          await client.siteSync.confirmProcessed(confirmations: confirmations);
         }
       }
     } on Object catch (error) {
@@ -58,18 +58,23 @@ class SiteSyncProcessor {
 
   // -- Batching
 
-  Future<List<int>> _pullAndApply() async {
+  Future<List<gc.SiteSyncConfirmation>> _pullAndApply() async {
     final client = await _openSyncClient();
     if (client == null) return [];
 
     final tasks = await client.siteSync.pullPending();
-    final appliedTaskIds = <int>[];
+    final confirmations = <gc.SiteSyncConfirmation>[];
     for (final task in tasks) {
       if (await _applyMember(task)) {
-        appliedTaskIds.add(task.taskId);
+        confirmations.add(
+          gc.SiteSyncConfirmation(
+            taskId: task.taskId,
+            taskCreatedAt: task.taskCreatedAt,
+          ),
+        );
       }
     }
-    return appliedTaskIds;
+    return confirmations;
   }
 
   /// An authenticated global client for this instance's device session
@@ -137,13 +142,11 @@ class SiteSyncProcessor {
             path: _imagePath(member.globalAuthUserId),
             byteData: imageBytes,
           );
-          final publicUrl = await session.storage.publicDownloadUrl(
-            storageId: 'public',
-            path: _imagePath(member.globalAuthUserId),
-          );
           profile = await MemberProfile.db.updateRow(
             session,
-            profile.copyWith(imageUrl: publicUrl.toString()),
+            // The mirror row stores the object PATH (presigning happens at
+            // payload assembly — see ImageUrlSigner).
+            profile.copyWith(imageUrl: _imagePath(member.globalAuthUserId)),
             transaction: transaction,
           );
         } else if (!hasGlobalImage && profile.imageUrl != null) {
