@@ -6,6 +6,7 @@ import 'package:serverpod_auth_idp_server/providers/email.dart';
 import 'package:serverpod_cloud_storage_rustfs/serverpod_cloud_storage_rustfs.dart';
 
 import 'src/cache_busting.dart';
+import 'src/auth/email_sender.dart';
 import 'src/generated/protocol.dart';
 import 'src/generated/serverpod.dart';
 import 'src/sites/site_device_authentication.dart';
@@ -130,24 +131,34 @@ Uri _rustFsEndpointUri(Serverpod pod) {
   return Uri.parse(endpoint);
 }
 
-void _sendRegistrationCode(
+final _emailSender = EmailSender(appDisplayName: 'itsbits-flow');
+
+Future<void> _sendRegistrationCode(
   Session session, {
   required String email,
   required UuidValue accountRequestId,
   required String verificationCode,
   required Transaction? transaction,
 }) {
-  session.log('[EmailIdp] Registration code ($email): $verificationCode');
+  return _emailSender.sendRegistrationCode(
+    session,
+    email: email,
+    verificationCode: verificationCode,
+  );
 }
 
-void _sendPasswordResetCode(
+Future<void> _sendPasswordResetCode(
   Session session, {
   required String email,
   required UuidValue passwordResetRequestId,
   required String verificationCode,
   required Transaction? transaction,
 }) {
-  session.log('[EmailIdp] Password reset code ($email): $verificationCode');
+  return _emailSender.sendPasswordResetCode(
+    session,
+    email: email,
+    verificationCode: verificationCode,
+  );
 }
 
 /// Creates the sparse `member_profile` row right after the account was

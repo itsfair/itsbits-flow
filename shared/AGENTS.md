@@ -45,6 +45,19 @@ Client plain-fields (image URL, names, birthday) travel as
 | `lib/widgets/door_device_dialog.dart` | Add/edit dialog for door devices (name + LAN address) |
 | `lib/screens/membership_terms_dialog.dart` | DSGVO consent dialog before subscribing (default German draft text; hosts may not override yet) |
 | `lib/shared_flags.dart` | `kProfileEditingEnabled` (package-level default; hosts overrule by not wiring editing) |
+| `lib/app_logo.dart` | `AppLogo` — renders the shared logo package asset (`size`, optional mono-color `color` filter) |
+
+## Logo contract
+
+The brand logo lives ONCE in this package: `assets/logo.svg`
+(declared under `flutter: assets:`). All instance apps render it via
+`packages/itsbits_shared/assets/logo.svg` through the `AppLogo`
+widget — replacing the file automatically updates every app. Place
+the final logo as an SVG with exactly that name/path; additionally
+export a PNG (e.g. 256×256, square) to
+`global_server/assets/logo.png` for email embedding (SVG is not
+renderable in email clients; the SMTP sender attaches it inline when
+present).
 
 ## Conventions
 

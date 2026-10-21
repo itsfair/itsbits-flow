@@ -61,7 +61,7 @@ Declared under `serverpod: flutter_apps:` in `global_server/pubspec.yaml`:
 
 | Endpoint | Purpose |
 |---|---|
-| `emailIdp` (`src/auth/email_idp_endpoint.dart`) | Email IdP: registration, login, password reset (verification codes are only logged in dev). `onAfterAccountCreated` hook creates the sparse `member_profile` row |
+| `emailIdp` (`src/auth/email_idp_endpoint.dart`) | Email IdP: registration, login, password reset (verification codes are sent via SMTP, see "SMTP verification emails" below; without `smtpHost` they are only logged — the dev/test fallback, see below). `onAfterAccountCreated` hook creates the sparse `member_profile` row | |
 | `jwtRefresh` (`src/auth/jwt_refresh_endpoint.dart`) | Renew access tokens |
 | `memberProfile` | Own person endpoints: `get`, `save` (names 1–60 chars + birthday), `setUserImage`, `removeUserImage` |
 | `usersAdmin` | Platform admin: `listUsers` (50/page, email/name filter), `getUser`, `setBlocked`, `setGlobalAdmin` |
@@ -128,6 +128,34 @@ Declared under `serverpod: flutter_apps:` in `global_server/pubspec.yaml`:
   manager; the SAS key is validated afterwards by the session manager)
   and a persistent `STREAM siteConnection.connect` entry (the long-lived
   method stream — normal while a site is connected).
+
+## SMTP verification emails
+
+The Email IdP send callbacks in `lib/server.dart` delegate to
+`EmailSender` (`lib/src/auth/email_sender.dart`, `mailer` package,
+version pinned to the toolchain). Configuration = password keys in
+`config/passwords.yaml` (put them under `shared:` to apply to all run
+modes), each overridable via `SERVERPOD_PASSWORD_<key>` env vars —
+that is the deployment/docker path, no code change needed:
+
+| Key | Meaning | Default |
+|---|---|---|
+| `smtpHost` | SMTP server; empty/absent = codes are ONLY logged (dev/test fallback) | unset |
+| `smtpPort` | port | 587 |
+| `smtpSsl` | `true` = implicit TLS (typical 465); `false` = STARTTLS | false |
+| `smtpAllowInsecure` | allow an unencrypted fallback connection (self-hosted LAN relays) | false |
+| `smtpUsername` / `smtpPassword` | SMTP login | none |
+| `smtpFromAddress` | sender address; falls back to `smtpUsername` | — |
+| `smtpFromName` | display name | appDisplayName (`itsbits-flow`) |
+
+- Behavior: registration send failures are RETHROWN (visible client
+  error, the account request rolls back cleanly, user can retry);
+  password-reset failures are only logged (no account enumeration —
+  the send only happens for existing emails).
+- A logo is inlined into the HTML body when `assets/logo.png` exists
+  in the server package (SVG does not render in email clients — export
+  a PNG next to the shared SVG, see the logo contract in
+  `shared/AGENTS.md`).
 
 ## Open work items (this part)
 

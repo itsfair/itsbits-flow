@@ -49,3 +49,18 @@ volumes:
   global_data:
   global_test_data:
   global_files:
+
+# The Serverpod server itself runs OUTSIDE this compose file (dev:
+# `serverpod start`). SMTP credentials for the verification emails
+# (registration / password reset) are passed to the server process via
+# environment variables using Serverpod's built-in password override
+# (SERVERPOD_PASSWORD_<key> mirrors config/passwords.yaml keys) — set
+# them wherever the server process runs, e.g. its container env:
+#   SERVERPOD_PASSWORD_smtpHost=smtp.example.com
+#   SERVERPOD_PASSWORD_smtpPort=587
+#   SERVERPOD_PASSWORD_smtpSsl=false
+#   SERVERPOD_PASSWORD_smtpAllowInsecure=false
+#   SERVERPOD_PASSWORD_smtpUsername=...
+#   SERVERPOD_PASSWORD_smtpPassword=...
+#   SERVERPOD_PASSWORD_smtpFromAddress=...
+# Without smtpHost the codes are only logged (dev/test fallback).

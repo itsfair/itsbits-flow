@@ -78,6 +78,15 @@ cloud round trip** (BLE + local instance suffice); securing that path
 - The local backend verifies global site-admin credentials during site
   setup — it depends on the `global_client` package (relative path
   dependency into the same workspace).
+- **Logo contract** (this session): the brand logo lives ONCE at
+  `shared/assets/logo.svg` (package asset
+  `packages/itsbits_shared/assets/logo.svg`, rendered via the shared
+  `AppLogo` widget) and serves ALL instance apps; a PNG export at
+  `global_server/assets/logo.png` is embedded into verification emails
+  (see `global/AGENTS.md`, "SMTP verification emails"). For the local
+  server no email/logo wiring exists yet (it still uses the
+  Serverpod-Cloud email config — self-hosted production there cannot
+  send; swap it to the same EmailSender pattern when needed).
 
 ## Infrastructure (dev)
 
